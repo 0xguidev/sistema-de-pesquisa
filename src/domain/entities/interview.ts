@@ -4,12 +4,18 @@ import { Entity } from 'src/core/entities/entity'
 
 interface InterviewProps {
   surveyId: UniqueEntityID
-  slug: Slug
+  slug?: Slug
   createdAt?: Date
 }
 
 export class Interview extends Entity<InterviewProps> {
   constructor(props: InterviewProps, id?: UniqueEntityID) {
     super(props, id)
+  }
+
+  static create(props: InterviewProps, id?: UniqueEntityID) {
+    const interview = new Interview(props, id)
+
+    return interview
   }
 }
