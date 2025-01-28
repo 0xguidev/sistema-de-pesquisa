@@ -1,15 +1,14 @@
-import { OptionAnswer } from "src/domain/entities/option-answer"
-import { OptionAnswerRepository } from "src/domain/repositories/option-answer-repository"
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { OptionAnswer } from 'src/domain/entities/option-answer'
+import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-repository'
 
 export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
   public items: OptionAnswer[] = []
 
-  constructor(
-    // private survey: InMemorySurveyRepository,
-  ) {}
+  constructor() {} // private survey: InMemorySurveyRepository,
 
-  async findById(id: string) {
-    const optionanswer = this.items.find((item) => item.id.toString() === id)
+  async findById(id: UniqueEntityID) {
+    const optionanswer = this.items.find((item) => item.id === id)
 
     if (!optionanswer) {
       return null
@@ -92,13 +91,24 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
   }
 
   async save(optionanswer: OptionAnswer) {
-    const itemIndex = this.items.findIndex((item) => item.id === optionanswer.id)
+    const itemIndex = this.items.findIndex(
+      (item) => item.id === optionanswer.id,
+    )
 
     this.items[itemIndex] = optionanswer
   }
 
-  async delete(optionanswer: OptionAnswer) {
-    const itemIndex = this.items.findIndex((item) => item.id === optionanswer.id)
+  async update(optionanswer: OptionAnswer): Promise<void> {
+    const result = this.findById(optionanswer.id)
+    if (!result) {
+      throw new Error('Question not found')
+    }
+
+    this.save(optionanswer)
+  }
+
+  async delete(id: UniqueEntityID) {
+    const itemIndex = this.items.findIndex((item) => item.id === id)
 
     this.items.splice(itemIndex, 1)
   }

@@ -1,14 +1,14 @@
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Interview } from 'src/domain/entities/interview'
 import { InterviewRepository } from 'src/domain/repositories/interview-repository'
 
 export class InMemoryInterviewRepository implements InterviewRepository {
   public items: Interview[] = []
 
-  constructor() // private survey: InMemorySurveyRepository,
-  {}
+  constructor() {} // private survey: InMemorySurveyRepository,
 
-  async findById(id: string) {
-    const interview = this.items.find((item) => item.id.toString() === id)
+  async findById(id: UniqueEntityID) {
+    const interview = this.items.find((item) => item.id === id)
 
     if (!interview) {
       return null
@@ -96,8 +96,17 @@ export class InMemoryInterviewRepository implements InterviewRepository {
     this.items[itemIndex] = interview
   }
 
-  async delete(interview: Interview) {
-    const itemIndex = this.items.findIndex((item) => item.id === interview.id)
+  async update(interview: Interview): Promise<void> {
+    const result = this.findById(interview.id)
+    if (!result) {
+      throw new Error('Question not found')
+    }
+
+    this.save(interview)
+  }
+
+  async delete(id: UniqueEntityID) {
+    const itemIndex = this.items.findIndex((item) => item.id === id)
 
     this.items.splice(itemIndex, 1)
   }

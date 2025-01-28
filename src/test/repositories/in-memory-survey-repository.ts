@@ -1,3 +1,4 @@
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Survey } from 'src/domain/entities/survey'
 import { SurveyRepository } from 'src/domain/repositories/survey-repository'
 
@@ -6,8 +7,8 @@ export class InMemorSurveyRepository implements SurveyRepository {
 
   constructor() {}
 
-  async findById(id: string) {
-    const survey = this.items.find((item) => item.id.toString() === id)
+  async findById(id: UniqueEntityID) {
+    const survey = this.items.find((item) => item.id === id)
 
     if (!survey) {
       return null
@@ -95,8 +96,17 @@ export class InMemorSurveyRepository implements SurveyRepository {
     this.items[itemIndex] = survey
   }
 
-  async delete(survey: Survey) {
-    const itemIndex = this.items.findIndex((item) => item.id === survey.id)
+  async update(survey: Survey): Promise<void> {
+    const result = this.findById(survey.id)
+    if (!result) {
+      throw new Error('Question not found')
+    }
+
+    this.save(survey)
+  }
+
+  async delete(id: UniqueEntityID) {
+    const itemIndex = this.items.findIndex((item) => item.id === id)
 
     this.items.splice(itemIndex, 1)
   }

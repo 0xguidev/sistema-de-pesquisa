@@ -1,3 +1,4 @@
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { AnswerQuestion } from 'src/domain/entities/answer-question'
 import { AnswerQuestionRepository } from 'src/domain/repositories/answer-question-repository'
 
@@ -8,8 +9,8 @@ export class InMemoryAnswerQuestionsRepository
 
   constructor() {} // private survey: InMemorySurveyRepository,
 
-  async findById(id: string) {
-    const answerquestion = this.items.find((item) => item.id.toString() === id)
+  async findById(id: UniqueEntityID) {
+    const answerquestion = this.items.find((item) => item.id === id)
 
     if (!answerquestion) {
       return null
@@ -99,10 +100,17 @@ export class InMemoryAnswerQuestionsRepository
     this.items[itemIndex] = answerquestion
   }
 
-  async delete(answerquestion: AnswerQuestion) {
-    const itemIndex = this.items.findIndex(
-      (item) => item.id === answerquestion.id,
-    )
+  async update(answerquestion: AnswerQuestion): Promise<void> {
+    const result = this.findById(answerquestion.id)
+    if (!result) {
+      throw new Error('Question not found')
+    }
+
+    this.save(answerquestion)
+  }
+
+  async delete(id: UniqueEntityID) {
+    const itemIndex = this.items.findIndex((item) => item.id === id)
 
     this.items.splice(itemIndex, 1)
   }
