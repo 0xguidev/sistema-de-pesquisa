@@ -1,16 +1,16 @@
 import { expect, beforeEach } from 'vitest'
 import { CreateQuestion } from './create-question'
 import { CreateSurvey } from './create-survey'
-import { InMemoryQuestionsRepository } from '../../test/repositories/in-memory-questions-repository'
+import { InMemoryQuestionRepository } from '../../test/repositories/in-memory-questions-repository'
 import { InMemorSurveyRepository } from '../../test/repositories/in-memory-survey-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
-let inMemoryQuestionsRepository: InMemoryQuestionsRepository
+let inMemoryQuestionsRepository: InMemoryQuestionRepository
 let inMemorySurveyRepository: InMemorSurveyRepository
 
 describe('create an question', async () => {
   beforeEach(() => {
-    inMemoryQuestionsRepository = new InMemoryQuestionsRepository()
+    inMemoryQuestionsRepository = new InMemoryQuestionRepository()
     inMemorySurveyRepository = new InMemorSurveyRepository()
   })
 

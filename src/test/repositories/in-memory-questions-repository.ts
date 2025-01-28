@@ -1,15 +1,14 @@
-import { Question } from "src/domain/entities/question"
-import { QuestionRepository } from "src/domain/repositories/question-repository"
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { Question } from 'src/domain/entities/question'
+import { QuestionRepository } from 'src/domain/repositories/question-repository'
 
-export class InMemoryQuestionsRepository implements QuestionRepository {
+export class InMemoryQuestionRepository implements QuestionRepository {
   public items: Question[] = []
 
-  constructor(
-    // private survey: InMemorySurveyRepository,
-  ) {}
+  constructor() {} // private survey: InMemorySurveyRepository,
 
-  async findById(id: string) {
-    const question = this.items.find((item) => item.id.toString() === id)
+  async findById(id: UniqueEntityID) {
+    const question = this.items.find((item) => item.id === id)
 
     if (!question) {
       return null
@@ -97,8 +96,17 @@ export class InMemoryQuestionsRepository implements QuestionRepository {
     this.items[itemIndex] = question
   }
 
-  async delete(question: Question) {
-    const itemIndex = this.items.findIndex((item) => item.id === question.id)
+  async update(question: Question): Promise<void> {
+    const result = this.findById(question.id)
+    if (!result) {
+      throw new Error('Question not found')
+    }
+    
+    this.save(question)
+  }
+
+  async delete(id: UniqueEntityID) {
+    const itemIndex = this.items.findIndex((item) => item.id === id)
 
     this.items.splice(itemIndex, 1)
   }

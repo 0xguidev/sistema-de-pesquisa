@@ -9,7 +9,7 @@ interface CreateQuestionUseCaseRequest {
   surveyId: UniqueEntityID
 }
 
-type CreateQuestionUseCaseResponse = Either<
+export type CreateQuestionUseCaseResponse = Either<
   null,
   {
     question: Question

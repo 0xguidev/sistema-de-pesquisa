@@ -15,6 +15,23 @@ export class Question extends Entity<QuestionProps> {
     super(props, id)
   }
 
+  get questionTitle() {
+    return this.props.questionTitle
+  }
+
+  set questionTitle(title: string) {
+    this.props.questionTitle = title
+    this.props.slug = Slug.createFromText(title)
+  }
+
+  get questionNum() {
+    return this.props.questionNum
+  }
+
+  set questionNum(num: number) {
+    this.props.questionNum = num
+  }
+
   static create(props: QuestionProps, id?: UniqueEntityID) {
     const question = new Question(
       {

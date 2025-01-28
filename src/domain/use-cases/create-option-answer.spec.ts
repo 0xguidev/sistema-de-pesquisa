@@ -3,7 +3,7 @@ import { CreateQuestion } from './create-question'
 import { CreateSurvey } from './create-survey'
 import { InMemoryQuestionsRepository } from '../../test/repositories/in-memory-questions-repository'
 import { InMemorSurveyRepository } from '../../test/repositories/in-memory-survey-repository'
-import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer'
+import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer-repository'
 import { CreateOptionAnswer } from './create-option-answer'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
