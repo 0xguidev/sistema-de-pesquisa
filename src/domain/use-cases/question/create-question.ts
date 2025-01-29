@@ -1,6 +1,6 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { Question } from '../entities/question'
-import { QuestionRepository } from '../repositories/question-repository'
+import { Question } from '../../entities/question'
+import { QuestionRepository } from '../../repositories/question-repository'
 import { Either, right } from 'src/core/types/either'
 
 interface CreateQuestionUseCaseRequest {
@@ -16,7 +16,7 @@ export type CreateQuestionUseCaseResponse = Either<
   }
 >
 
-export class CreateQuestion {
+export class CreateQuestionUseCase {
   constructor(private questionRepository: QuestionRepository) {}
 
   async execute({

@@ -1,11 +1,11 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Either, right } from 'src/core/types/either'
-import { OptionAnswerRepository } from '../repositories/option-answer-repository'
-import { OptionAnswer } from '../entities/option-answer'
+import { OptionAnswerRepository } from '../../repositories/option-answer-repository'
+import { OptionAnswer } from '../../entities/option-answer'
 
 interface CreateOptionAnswerUseCaseRequest {
   answerTitle: string
-  answerNum: string
+  answerNum: number
   questionId: UniqueEntityID
 }
 
@@ -16,7 +16,7 @@ type CreateOptionAnswerUseCaseResponse = Either<
   }
 >
 
-export class CreateOptionAnswer {
+export class CreateOptionAnswerUseCase {
   constructor(private optionanswerRepository: OptionAnswerRepository) {}
 
   async execute({

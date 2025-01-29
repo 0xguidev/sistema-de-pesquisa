@@ -1,15 +1,15 @@
-import { InMemorSurveyRepository } from 'src/test/repositories/in-memory-survey-repository'
-import { CreateSurvey } from './create-survey'
+import { InMemorySurveyRepository } from 'src/test/repositories/in-memory-survey-repository'
+import { CreateSurveyUseCase } from './create-survey'
 
-let inMemorySurveyRepository = new InMemorSurveyRepository()
+let inMemorySurveyRepository = new InMemorySurveyRepository()
 
 describe('CreateSurvey', () => {
   beforeEach(() => {
-    inMemorySurveyRepository = new InMemorSurveyRepository()
+    inMemorySurveyRepository = new InMemorySurveyRepository()
   })
 
   it('should create a survey', async () => {
-    const createSurvey = new CreateSurvey(inMemorySurveyRepository)
+    const createSurvey = new CreateSurveyUseCase(inMemorySurveyRepository)
 
     const createdSurvey = await createSurvey.execute({
       title: 'What is your favorite color?',

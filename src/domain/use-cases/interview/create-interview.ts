@@ -1,6 +1,6 @@
 import { Either, right } from 'src/core/types/either'
-import { Interview } from '../entities/interview'
-import { InterviewRepository } from '../repositories/interview-repository'
+import { Interview } from '../../entities/interview'
+import { InterviewRepository } from '../../repositories/interview-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
 interface CreateInterviewUseCaseRequest {
@@ -14,14 +14,14 @@ type CreateQuestionUseCaseResponse = Either<
   }
 >
 
-export class CreateInterview {
+export class CreateInterviewUseCase {
   constructor(private interviewRepository: InterviewRepository) {}
 
   async execute({
     surveyId,
   }: CreateInterviewUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const interview = Interview.create({
-      surveyId
+      surveyId,
     })
 
     await this.interviewRepository.create(interview)

@@ -6,5 +6,4 @@ export abstract class QuestionRepository {
   abstract findById(id: UniqueEntityID): Promise<Question | null>
   abstract delete(id: UniqueEntityID): Promise<void>
   abstract update(question: Question): Promise<void>
-  abstract save(question: Question): Promise<void>
 }

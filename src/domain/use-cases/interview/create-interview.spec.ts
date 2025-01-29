@@ -1,26 +1,28 @@
 import { expect, beforeEach } from 'vitest'
-import { CreateSurvey } from './create-survey'
-import { InMemorSurveyRepository } from '../../test/repositories/in-memory-survey-repository'
-import { CreateInterview } from './create-interview'
+import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-survey-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
+import { CreateInterviewUseCase } from './create-interview'
+import { CreateSurveyUseCase } from '../survey/create-survey'
 
-let inMemorySurveyRepository: InMemorSurveyRepository
+let inMemorySurveyRepository: InMemorySurveyRepository
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 
 describe('create an option answer', async () => {
   beforeEach(() => {
-    inMemorySurveyRepository = new InMemorSurveyRepository()
+    inMemorySurveyRepository = new InMemorySurveyRepository()
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
   })
 
   it('should create a option answer', async () => {
-    const createSurvey = new CreateSurvey(inMemorySurveyRepository)
+    const createSurvey = new CreateSurveyUseCase(inMemorySurveyRepository)
     const surveyTitle = 'any_title'
 
     const createdSurvey = await createSurvey.execute({ title: surveyTitle })
 
-    const createInterview = new CreateInterview(inMemoryInterviewRepository)
+    const createInterview = new CreateInterviewUseCase(
+      inMemoryInterviewRepository,
+    )
     const surveyId = createdSurvey.value?.survey.id as UniqueEntityID
     const createdInterview = await createInterview.execute({
       surveyId,

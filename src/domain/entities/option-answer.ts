@@ -2,9 +2,9 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
 
-interface OptionAnswerProps {
+export interface OptionAnswerProps {
   answerTitle: string
-  answerNum: string
+  answerNum: number
   questionId: UniqueEntityID
   slug?: Slug
   createdAt?: Date

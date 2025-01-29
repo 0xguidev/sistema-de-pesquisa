@@ -2,7 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Survey } from 'src/domain/entities/survey'
 import { SurveyRepository } from 'src/domain/repositories/survey-repository'
 
-export class InMemorSurveyRepository implements SurveyRepository {
+export class InMemorySurveyRepository implements SurveyRepository {
   public items: Survey[] = []
 
   constructor() {}

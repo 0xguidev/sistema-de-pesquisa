@@ -1,6 +1,6 @@
 import { Either, right } from 'src/core/types/either'
-import { Survey } from '../entities/survey'
-import { SurveyRepository } from '../repositories/survey-repository'
+import { Survey } from 'src/domain/entities/survey'
+import { SurveyRepository } from 'src/domain/repositories/survey-repository'
 
 interface CreateSurveyUseCaseRequest {
   title: string
@@ -13,7 +13,7 @@ type CreateQuestionUseCaseResponse = Either<
   }
 >
 
-export class CreateSurvey {
+export class CreateSurveyUseCase {
   constructor(private surveyRepository: SurveyRepository) {}
 
   async execute({

@@ -1,8 +1,8 @@
 import { Either, right } from 'src/core/types/either'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { AnswerQuestion } from '../entities/answer-question'
-import { AnswerQuestionRepository } from '../repositories/answer-question-repository'
-import { Slug } from '../entities/value-objects/slug'
+import { AnswerQuestion } from '../../entities/answer-question'
+import { AnswerQuestionRepository } from '../../repositories/answer-question-repository'
+import { Slug } from '../../entities/value-objects/slug'
 
 interface CreateAnswerQuestionUseCaseRequest {
   interviewId: UniqueEntityID
@@ -18,7 +18,7 @@ type CreateQuestionUseCaseResponse = Either<
   }
 >
 
-export class CreateAnswerQuestion {
+export class CreateAnswerQuestionUseCase {
   constructor(private answerquestionRepository: AnswerQuestionRepository) {}
 
   async execute({

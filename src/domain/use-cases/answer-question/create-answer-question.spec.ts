@@ -1,38 +1,38 @@
 import { expect, beforeEach } from 'vitest'
-import { CreateSurvey } from './create-survey'
-import { InMemorSurveyRepository } from '../../test/repositories/in-memory-survey-repository'
-import { CreateInterview } from './create-interview'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-survey-repository'
 import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
-import { CreateOptionAnswer } from './create-option-answer'
-import { CreateQuestion } from './create-question'
-import { CreateAnswerQuestion } from './create-answer-question'
 import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer-repository'
-import { InMemoryQuestionsRepository } from 'src/test/repositories/in-memory-questions-repository'
 import { InMemoryAnswerQuestionsRepository } from 'src/test/repositories/in-memory-answer-question-repository'
+import { InMemoryQuestionRepository } from 'src/test/repositories/in-memory-questions-repository'
+import { CreateQuestionUseCase } from '../question/create-question'
+import { CreateInterviewUseCase } from '../interview/create-interview'
+import { CreateOptionAnswerUseCase } from '../answer-option/create-option-answer'
+import { CreateAnswerQuestionUseCase } from './create-answer-question'
+import { CreateSurveyUseCase } from '../survey/create-survey'
 
-let inMemorySurveyRepository: InMemorSurveyRepository
+let inMemorySurveyRepository: InMemorySurveyRepository
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
-let inMemoryQuestionsRepository: InMemoryQuestionsRepository
+let inMemoryQuestionRepository: InMemoryQuestionRepository
 let inMemoryAnswerQuestionsRepository: InMemoryAnswerQuestionsRepository
 
 describe('create an answer question', async () => {
   beforeEach(() => {
-    inMemorySurveyRepository = new InMemorSurveyRepository()
+    inMemorySurveyRepository = new InMemorySurveyRepository()
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
     inMemoryOptionAnswersRepository = new InMemoryOptionAnswersRepository()
-    inMemoryQuestionsRepository = new InMemoryQuestionsRepository()
+    inMemoryQuestionRepository = new InMemoryQuestionRepository()
     inMemoryAnswerQuestionsRepository = new InMemoryAnswerQuestionsRepository()
   })
 
   it('should create a option answer', async () => {
-    const createSurvey = new CreateSurvey(inMemorySurveyRepository)
+    const createSurvey = new CreateSurveyUseCase(inMemorySurveyRepository)
     const surveyTitle = 'any_title'
 
     const createdSurvey = await createSurvey.execute({ title: surveyTitle })
 
-    const createQuestion = new CreateQuestion(inMemoryQuestionsRepository)
+    const createQuestion = new CreateQuestionUseCase(inMemoryQuestionRepository)
     const questionTitle = 'any_title'
     const questionNum = 1
     const surveyId = createdSurvey.value?.survey.id as UniqueEntityID
@@ -43,18 +43,20 @@ describe('create an answer question', async () => {
       surveyId,
     })
 
-    const createInterview = new CreateInterview(inMemoryInterviewRepository)
+    const createInterview = new CreateInterviewUseCase(
+      inMemoryInterviewRepository,
+    )
     const createdInterview = await createInterview.execute({
       surveyId,
     })
 
     const interviewId = createdInterview.value?.interview.id as UniqueEntityID
 
-    const createOptionAnswer = new CreateOptionAnswer(
+    const createOptionAnswer = new CreateOptionAnswerUseCase(
       inMemoryOptionAnswersRepository,
     )
     const answerTitle = 'any_title'
-    const answerNum = '1'
+    const answerNum = 1
     const questionId = createdQuestion.value?.question.id as UniqueEntityID
 
     const createdOptionAnswer = await createOptionAnswer.execute({
@@ -66,7 +68,7 @@ describe('create an answer question', async () => {
     const optionAnswerId = createdOptionAnswer.value?.optionAnswer
       .id as UniqueEntityID
 
-    const createAnswerQuestion = new CreateAnswerQuestion(
+    const createAnswerQuestion = new CreateAnswerQuestionUseCase(
       inMemoryAnswerQuestionsRepository,
     )
 
