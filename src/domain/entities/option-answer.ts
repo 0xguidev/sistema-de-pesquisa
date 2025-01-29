@@ -15,6 +15,22 @@ export class OptionAnswer extends Entity<OptionAnswerProps> {
     super(props, id)
   }
 
+  get answerTitle(): string {
+    return this.props.answerTitle
+  }
+
+  get answerNum(): number {
+    return this.props.answerNum
+  }
+
+  set answerNum(value: number) {
+    this.props.answerNum = value
+  }
+
+  set answerTitle(value: string) {
+    this.props.answerTitle = value
+  }
+
   static create(props: OptionAnswerProps, id?: UniqueEntityID) {
     const answer = new OptionAnswer(
       {

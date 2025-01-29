@@ -7,7 +7,7 @@ import { InMemoryAnswerQuestionsRepository } from 'src/test/repositories/in-memo
 import { InMemoryQuestionRepository } from 'src/test/repositories/in-memory-question-repository'
 import { CreateQuestionUseCase } from '../question/create-question'
 import { CreateInterviewUseCase } from '../interview/create-interview'
-import { CreateOptionAnswerUseCase } from '../answer-option/create-option-answer'
+import { CreateOptionAnswerUseCase } from '../option-answer/create-option-answer'
 import { CreateAnswerQuestionUseCase } from './create-answer-question'
 import { CreateSurveyUseCase } from '../survey/create-survey'
 
