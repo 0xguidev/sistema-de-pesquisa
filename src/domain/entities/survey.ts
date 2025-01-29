@@ -18,6 +18,10 @@ export class Survey extends Entity<SurveyProps> {
     return this.props.title
   }
 
+  set title(value: string) {
+    this.props.title = value
+  }
+
   static create(props: SurveyProps, id?: UniqueEntityID) {
     const survey = new Survey(
       {

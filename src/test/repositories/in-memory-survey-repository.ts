@@ -99,7 +99,7 @@ export class InMemorySurveyRepository implements SurveyRepository {
   async update(survey: Survey): Promise<void> {
     const result = this.findById(survey.id)
     if (!result) {
-      throw new Error('Question not found')
+      throw new Error('Survey not found')
     }
 
     this.save(survey)

@@ -4,7 +4,7 @@ import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-s
 import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
 import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer-repository'
 import { InMemoryAnswerQuestionsRepository } from 'src/test/repositories/in-memory-answer-question-repository'
-import { InMemoryQuestionRepository } from 'src/test/repositories/in-memory-questions-repository'
+import { InMemoryQuestionRepository } from 'src/test/repositories/in-memory-question-repository'
 import { CreateQuestionUseCase } from '../question/create-question'
 import { CreateInterviewUseCase } from '../interview/create-interview'
 import { CreateOptionAnswerUseCase } from '../answer-option/create-option-answer'

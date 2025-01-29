@@ -1,5 +1,5 @@
 import { expect, beforeEach } from 'vitest'
-import { InMemoryQuestionRepository } from '../../../test/repositories/in-memory-questions-repository'
+import { InMemoryQuestionRepository } from '../../../test/repositories/in-memory-question-repository'
 import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-survey-repository'
 import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
