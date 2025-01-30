@@ -2,7 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { AnswerQuestion } from 'src/domain/entities/answer-question'
 import { AnswerQuestionRepository } from 'src/domain/repositories/answer-question-repository'
 
-export class InMemoryAnswerQuestionsRepository
+export class InMemoryAnswerQuestionRepository
   implements AnswerQuestionRepository
 {
   public items: AnswerQuestion[] = []

@@ -15,9 +15,33 @@ export class AnswerQuestion extends Entity<AnswerQuestionProps> {
     super(props, id)
   }
 
-  static create(props: AnswerQuestionProps, id?: UniqueEntityID) {
-    const interview = new AnswerQuestion(props, id)
+  get interviewId(): UniqueEntityID {
+    return this.props.interviewId
+  }
 
-    return interview
+  get questionId(): UniqueEntityID {
+    return this.props.questionId
+  }
+
+  get optionAnswerId(): UniqueEntityID {
+    return this.props.optionAnswerId
+  }
+
+  set interviewId(value: UniqueEntityID) {
+    this.props.interviewId = value
+  }
+
+  set questionId(value: UniqueEntityID) {
+    this.props.questionId = value
+  }
+
+  set optionAnswerId(value: UniqueEntityID) {
+    this.props.optionAnswerId = value
+  }
+
+  static create(props: AnswerQuestionProps, id?: UniqueEntityID) {
+    const answerQuestion = new AnswerQuestion(props, id)
+
+    return answerQuestion
   }
 }

@@ -3,19 +3,19 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-survey-repository'
 import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
 import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer-repository'
-import { InMemoryAnswerQuestionsRepository } from 'src/test/repositories/in-memory-answer-question-repository'
 import { InMemoryQuestionRepository } from 'src/test/repositories/in-memory-question-repository'
 import { CreateQuestionUseCase } from '../question/create-question'
 import { CreateInterviewUseCase } from '../interview/create-interview'
 import { CreateOptionAnswerUseCase } from '../option-answer/create-option-answer'
 import { CreateAnswerQuestionUseCase } from './create-answer-question'
 import { CreateSurveyUseCase } from '../survey/create-survey'
+import { InMemoryAnswerQuestionRepository } from 'src/test/repositories/in-memory-answer-question-repository'
 
 let inMemorySurveyRepository: InMemorySurveyRepository
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
 let inMemoryQuestionRepository: InMemoryQuestionRepository
-let inMemoryAnswerQuestionsRepository: InMemoryAnswerQuestionsRepository
+let inMemoryAnswerQuestionsRepository: InMemoryAnswerQuestionRepository
 
 describe('create an answer question', async () => {
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe('create an answer question', async () => {
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
     inMemoryOptionAnswersRepository = new InMemoryOptionAnswersRepository()
     inMemoryQuestionRepository = new InMemoryQuestionRepository()
-    inMemoryAnswerQuestionsRepository = new InMemoryAnswerQuestionsRepository()
+    inMemoryAnswerQuestionsRepository = new InMemoryAnswerQuestionRepository()
   })
 
   it('should create a option answer', async () => {
