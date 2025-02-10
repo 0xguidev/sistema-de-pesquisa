@@ -1,15 +1,15 @@
 import { expect, beforeEach } from 'vitest'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-survey-repository'
-import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
-import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer-repository'
-import { InMemoryQuestionRepository } from 'src/test/repositories/in-memory-question-repository'
+import { InMemorySurveyRepository } from '../../../../test/repositories/in-memory-survey-repository'
+import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
+import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
+import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
 import { CreateQuestionUseCase } from '../question/create-question'
 import { CreateInterviewUseCase } from '../interview/create-interview'
 import { CreateOptionAnswerUseCase } from '../option-answer/create-option-answer'
 import { CreateAnswerQuestionUseCase } from './create-answer-question'
 import { CreateSurveyUseCase } from '../survey/create-survey'
-import { InMemoryAnswerQuestionRepository } from 'src/test/repositories/in-memory-answer-question-repository'
+import { InMemoryAnswerQuestionRepository } from 'test/repositories/in-memory-answer-question-repository'
 
 let inMemorySurveyRepository: InMemorySurveyRepository
 let inMemoryInterviewRepository: InMemoryInterviewRepository

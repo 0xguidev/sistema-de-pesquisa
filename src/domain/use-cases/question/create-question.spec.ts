@@ -1,6 +1,6 @@
 import { expect, beforeEach } from 'vitest'
-import { InMemoryQuestionRepository } from '../../../test/repositories/in-memory-question-repository'
-import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-survey-repository'
+import { InMemoryQuestionRepository } from '../../../../test/repositories/in-memory-question-repository'
+import { InMemorySurveyRepository } from '../../../../test/repositories/in-memory-survey-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { CreateQuestionUseCase } from './create-question'
 import { CreateSurveyUseCase } from '../survey/create-survey'

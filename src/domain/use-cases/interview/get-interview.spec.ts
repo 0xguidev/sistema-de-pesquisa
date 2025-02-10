@@ -1,5 +1,5 @@
-import { makeInterview } from 'src/test/factories/make-interview'
-import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
+import { makeInterview } from 'test/factories/make-interview'
+import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { GetInterviewUseCase } from './get-interview'
 

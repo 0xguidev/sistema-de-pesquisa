@@ -1,6 +1,6 @@
-import { makeSurvey } from 'src/test/factories/make-survey'
+import { makeSurvey } from 'test/factories/make-survey'
 import { EditSurveyUseCase } from './edit-survey'
-import { InMemorySurveyRepository } from 'src/test/repositories/in-memory-survey-repository'
+import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
 let inMemorySurveysRepository: InMemorySurveyRepository
@@ -13,10 +13,7 @@ describe('Edit Survey', () => {
   })
 
   it('Should be able to edit a survey', async () => {
-    const survey = makeSurvey(
-      { title: 'any_title' },
-      new UniqueEntityID(),
-    )
+    const survey = makeSurvey({ title: 'any_title' }, new UniqueEntityID())
 
     await inMemorySurveysRepository.create(survey)
 

@@ -1,6 +1,6 @@
-import { makeInterview } from 'src/test/factories/make-interview'
+import { makeInterview } from 'test/factories/make-interview'
 import { EditInterviewUseCase } from './edit-interview'
-import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
+import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
 let inMemoryInterviewsRepository: InMemoryInterviewRepository

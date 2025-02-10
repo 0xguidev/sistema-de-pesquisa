@@ -1,7 +1,7 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { InMemoryOptionAnswersRepository } from 'src/test/repositories/in-memory-option-answer-repository'
+import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { EditOptionAnswerUseCase } from './edit-option-answer'
-import { makeOptionAnswer } from 'src/test/factories/make-option-answer'
+import { makeOptionAnswer } from 'test/factories/make-option-answer'
 
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
 let sut: EditOptionAnswerUseCase

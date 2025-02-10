@@ -1,7 +1,7 @@
-import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
+import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
 import { DeleteInterviewUseCase } from './delete-interview'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { makeInterview } from 'src/test/factories/make-interview'
+import { makeInterview } from 'test/factories/make-interview'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let sut: DeleteInterviewUseCase

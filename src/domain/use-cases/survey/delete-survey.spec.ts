@@ -1,7 +1,7 @@
-import { InMemorySurveyRepository } from 'src/test/repositories/in-memory-survey-repository'
+import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
 import { DeleteSurveyUseCase } from './delete-survey'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { makeSurvey } from 'src/test/factories/make-survey'
+import { makeSurvey } from 'test/factories/make-survey'
 
 let inMemorySurveyRepository: InMemorySurveyRepository
 let sut: DeleteSurveyUseCase

@@ -1,7 +1,7 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { InMemoryAnswerQuestionRepository } from 'src/test/repositories/in-memory-answer-question-repository'
+import { InMemoryAnswerQuestionRepository } from 'test/repositories/in-memory-answer-question-repository'
 import { EditAnswerQuestionUseCase } from './edit-answer-question'
-import { makeAnswerQuestion } from 'src/test/factories/make-answer-question'
+import { makeAnswerQuestion } from 'test/factories/make-answer-question'
 
 let inMemoryAnswerQuestionsRepository: InMemoryAnswerQuestionRepository
 let sut: EditAnswerQuestionUseCase

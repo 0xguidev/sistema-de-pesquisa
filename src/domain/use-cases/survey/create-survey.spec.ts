@@ -1,4 +1,4 @@
-import { InMemorySurveyRepository } from 'src/test/repositories/in-memory-survey-repository'
+import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
 import { CreateSurveyUseCase } from './create-survey'
 
 let inMemorySurveyRepository = new InMemorySurveyRepository()

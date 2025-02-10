@@ -1,6 +1,6 @@
-import { InMemoryQuestionRepository } from 'src/test/repositories/in-memory-question-repository'
+import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { makeQuestion } from 'src/test/factories/make-question'
+import { makeQuestion } from 'test/factories/make-question'
 import { DeleteQuestionUseCase } from '../question/delete-question'
 
 let inMemoryQuestionRepository: InMemoryQuestionRepository

@@ -1,7 +1,7 @@
 import { expect, beforeEach } from 'vitest'
-import { InMemorySurveyRepository } from '../../../test/repositories/in-memory-survey-repository'
+import { InMemorySurveyRepository } from '../../../../test/repositories/in-memory-survey-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { InMemoryInterviewRepository } from 'src/test/repositories/in-memory-interview-repository'
+import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
 import { CreateInterviewUseCase } from './create-interview'
 import { CreateSurveyUseCase } from '../survey/create-survey'
 
