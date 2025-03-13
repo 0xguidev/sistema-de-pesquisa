@@ -10,7 +10,7 @@ interface AuthenticateStudentUseCaseRequest {
   password: string
 }
 
-type AuthenticateStudentUseCaseResponse = Either<
+type AuthenticateAccountUseCaseResponse = Either<
   WrongCredentialsError,
   {
     accessToken: string
@@ -28,16 +28,15 @@ export class AuthenticateAccountUseCase {
   async execute({
     email,
     password,
-  }: AuthenticateStudentUseCaseRequest): Promise<AuthenticateStudentUseCaseResponse> {
-    const student = await this.accountRepository.findByEmail(email)
-
-    if (!student) {
+  }: AuthenticateStudentUseCaseRequest): Promise<AuthenticateAccountUseCaseResponse> {
+    const account = await this.accountRepository.findByEmail(email)
+    if (!account) {
       return left(new WrongCredentialsError())
     }
 
     const isPasswordValid = await this.hashComparer.compare(
       password,
-      student.password,
+      account.password,
     )
 
     if (!isPasswordValid) {
@@ -45,9 +44,8 @@ export class AuthenticateAccountUseCase {
     }
 
     const accessToken = await this.encrypter.encrypt({
-      sub: student.id.toString(),
+      sub: account.id.toString(),
     })
-
     return right({
       accessToken,
     })
