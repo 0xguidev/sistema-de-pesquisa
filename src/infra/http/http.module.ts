@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { CreateAccountController } from './controllers/create-account.controller'
-import { RegisterAccountUseCase } from 'src/domain/use-cases/account/register-account'
+import { RegisterAccountUseCase } from '@/domain/use-cases/account/create-account'
 import { DatabaseModule } from '../database/database.module'
 import { CryptographyModule } from '../cryptography/cryptography.module'
 

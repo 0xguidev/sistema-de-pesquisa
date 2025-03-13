@@ -7,7 +7,7 @@ import {
   Post,
   UsePipes,
 } from '@nestjs/common'
-import { RegisterAccountUseCase } from 'src/domain/use-cases/account/register-account'
+import { RegisterAccountUseCase } from '@/domain/use-cases/account/create-account'
 import { Public } from 'src/infra/auth/public'
 import { ZodValidationPipe } from '../pipes/zod-validation-pipe'
 import { z } from 'zod'
