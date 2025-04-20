@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @unique @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  role      String    @default("user")
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  survey         Survey[]
+  Question       Question[]
+  OptionAnswer   OptionAnswer[]
+  Interview      Interview[]
+  AnswerQuestion AnswerQuestion[]
+
+  @@map("users")
+}
+
+model Survey {
+  id        String    @id @unique @default(uuid())
+  title     String
+  location  String
+  userId    String
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  question  Question[]
+  interview Interview[]
+
+  @@map("surveys")
+}
+
+model Question {
+  id        String    @id @unique @default(uuid())
+  title     String
+  number    Int
+  type      String
+  surveyId  String
+  userId    String
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  options   String[]
+
+  user            User             @relation(fields: [userId], references: [id])
+  survey          Survey           @relation(fields: [surveyId], references: [id])
+  option_answer   OptionAnswer[]
+  answer_question AnswerQuestion[]
+
+  @@map("questions")
+}
+
+model OptionAnswer {
+  id         String    @id @unique @default(uuid())
+  option     String
+  number     Int
+  questionId String
+  userId     String
+  slug       String    @unique
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
+
+  answer_question AnswerQuestion[]
+
+  @@map("option_answers")
+}
+
+model Interview {
+  id        String    @id @unique @default(uuid())
+  surveyId  String
+  userId    String
+  answers   String[]
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  survey          Survey           @relation(fields: [surveyId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  answer_question AnswerQuestion[]
+
+  @@map("interviews")
+}
+
+model AnswerQuestion {
+  id             String    @id @unique @default(uuid())
+  interviewId    String
+  questionId     String
+  optionAnswerId String
+  userId         String
+  slug           String    @unique
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id])
+  interview    Interview    @relation(fields: [interviewId], references: [id])
+  question     Question     @relation(fields: [questionId], references: [id])
+  optionAnswer OptionAnswer @relation(fields: [optionAnswerId], references: [id])
+
+  @@map("answer_questions")
+}

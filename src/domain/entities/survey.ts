@@ -2,7 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
 
-interface SurveyProps {
+export interface SurveyProps {
   title: string
   typeSurvey?: string
   slug?: Slug
@@ -16,6 +16,10 @@ export class Survey extends Entity<SurveyProps> {
 
   get title(): string {
     return this.props.title
+  }
+
+  set title(value: string) {
+    this.props.title = value
   }
 
   static create(props: SurveyProps, id?: UniqueEntityID) {

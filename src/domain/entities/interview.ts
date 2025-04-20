@@ -2,7 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
 
-interface InterviewProps {
+export interface InterviewProps {
   surveyId: UniqueEntityID
   slug?: Slug
   createdAt?: Date

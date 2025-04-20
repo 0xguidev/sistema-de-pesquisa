@@ -2,7 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
 
-interface QuestionProps {
+export interface QuestionProps {
   questionTitle: string
   questionNum: number
   surveyId: UniqueEntityID
