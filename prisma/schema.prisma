@@ -13,20 +13,30 @@ model User {
   password  String
   name      String
   role      String    @default("user")
+  slug      String    @unique
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  survey    Survey[]
+
+  survey         Survey[]
+  Question       Question[]
+  OptionAnswer   OptionAnswer[]
+  Interview      Interview[]
+  AnswerQuestion AnswerQuestion[]
 
   @@map("users")
 }
 
 model Survey {
-  id        String      @id @unique @default(uuid())
+  id        String    @id @unique @default(uuid())
   title     String
+  location  String
   userId    String
-  user      User        @relation(fields: [userId], references: [id])
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime?   @updatedAt @map("updated_at")
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
   question  Question[]
   interview Interview[]
 
@@ -34,14 +44,19 @@ model Survey {
 }
 
 model Question {
-  id              String           @id @unique @default(uuid())
-  surveyId        String
+  id        String    @id @unique @default(uuid())
+  title     String
+  number    Int
+  type      String
+  surveyId  String
+  userId    String
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  options   String[]
+
+  user            User             @relation(fields: [userId], references: [id])
   survey          Survey           @relation(fields: [surveyId], references: [id])
-  title           String
-  type            String
-  options         String[]
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime?        @updatedAt @map("updated_at")
   option_answer   OptionAnswer[]
   answer_question AnswerQuestion[]
 
@@ -49,40 +64,53 @@ model Question {
 }
 
 model OptionAnswer {
-  id              String           @id @unique @default(uuid())
-  questionId      String
-  question        Question         @relation(fields: [questionId], references: [id])
-  option          String
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime?        @updatedAt @map("updated_at")
+  id         String    @id @unique @default(uuid())
+  option     String
+  number     Int
+  questionId String
+  userId     String
+  slug       String    @unique
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
+
   answer_question AnswerQuestion[]
 
   @@map("option_answers")
 }
 
 model Interview {
-  id              String           @id @unique @default(uuid())
-  surveyId        String
+  id        String    @id @unique @default(uuid())
+  surveyId  String
+  userId    String
+  answers   String[]
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
   survey          Survey           @relation(fields: [surveyId], references: [id])
-  userId          String
-  answers         String[]
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime?        @updatedAt @map("updated_at")
+  user            User             @relation(fields: [userId], references: [id])
   answer_question AnswerQuestion[]
 
   @@map("interviews")
 }
 
 model AnswerQuestion {
-  id             String       @id @unique @default(uuid())
+  id             String    @id @unique @default(uuid())
   interviewId    String
-  interview      Interview    @relation(fields: [interviewId], references: [id])
   questionId     String
-  question       Question     @relation(fields: [questionId], references: [id])
   optionAnswerId String
-  optionAnswer   OptionAnswer @relation(fields: [optionAnswerId], references: [id])
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime?    @updatedAt @map("updated_at")
+  userId         String
+  slug           String    @unique
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id])
+  interview    Interview    @relation(fields: [interviewId], references: [id])
+  question     Question     @relation(fields: [questionId], references: [id])
+  optionAnswer OptionAnswer @relation(fields: [optionAnswerId], references: [id])
 
   @@map("answer_questions")
 }
