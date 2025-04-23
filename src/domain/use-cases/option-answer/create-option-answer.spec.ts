@@ -1,56 +1,37 @@
 import { expect, beforeEach } from 'vitest'
-import { InMemoryQuestionRepository } from '../../../../test/repositories/in-memory-question-repository'
-import { InMemorySurveyRepository } from '../../../../test/repositories/in-memory-survey-repository'
 import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { CreateQuestionUseCase } from '../question/create-question'
 import { CreateOptionAnswerUseCase } from './create-option-answer'
-import { CreateSurveyUseCase } from '../survey/create-survey'
 
-let inMemoryQuestionRepository: InMemoryQuestionRepository
-let inMemorySurveyRepository: InMemorySurveyRepository
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
+let sut: CreateOptionAnswerUseCase
 
 describe('create an option answer', async () => {
   beforeEach(() => {
-    inMemoryQuestionRepository = new InMemoryQuestionRepository()
-    inMemorySurveyRepository = new InMemorySurveyRepository()
     inMemoryOptionAnswersRepository = new InMemoryOptionAnswersRepository()
+
+    sut = new CreateOptionAnswerUseCase(inMemoryOptionAnswersRepository)
+  })
   })
 
   it('should create a option answer', async () => {
-    const createSurvey = new CreateSurveyUseCase(inMemorySurveyRepository)
-    const surveyTitle = 'any_title'
-
-    const createdSurvey = await createSurvey.execute({ title: surveyTitle })
-
-    const createQuestion = new CreateQuestionUseCase(inMemoryQuestionRepository)
-    const questionTitle = 'any_title'
-    const questionNum = 1
-    const surveyId = createdSurvey.value?.survey.id as UniqueEntityID
-
-    const createdQuestion = await createQuestion.execute({
-      questionTitle,
-      questionNum,
-      surveyId,
+    const result = await sut.execute({
+      optionTitle: 'any_title',
+      optionNum: 1,
+      accountId: 'any_account_id',
+      questionId: 'any_question_id',
     })
 
-    const createOptionAnswer = new CreateOptionAnswerUseCase(
-      inMemoryOptionAnswersRepository,
+    expect(result.isRight()).toBe(true)
+    expect(inMemoryOptionAnswersRepository.items[0]).toEqual(result.value?.optionAnswer)
+    expect(inMemoryOptionAnswersRepository.items[0].optionTitle).toEqual(
+      'any_title',
     )
-    const answerTitle = 'any_title'
-    const answerNum = 1
-    const questionId = createdQuestion.value?.question.id as UniqueEntityID
-
-    const createdOptionAnswer = await createOptionAnswer.execute({
-      answerTitle,
-      answerNum,
-      questionId,
-    })
-
-    expect(createdOptionAnswer.isRight()).toBe(true)
-    expect(inMemoryOptionAnswersRepository.items[0]).toEqual(
-      createdOptionAnswer.value?.optionAnswer,
+    expect(inMemoryOptionAnswersRepository.items[0].optionNum).toEqual(1)
+    expect(inMemoryOptionAnswersRepository.items[0].accountId).toEqual(
+      new UniqueEntityID('any_account_id'),
     )
-  })
+    expect(inMemoryOptionAnswersRepository.items[0].questionId).toEqual(
+      new UniqueEntityID('any_question_id'),
+    )
 })

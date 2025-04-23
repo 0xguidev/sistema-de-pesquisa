@@ -4,9 +4,10 @@ import { OptionAnswerRepository } from '../../repositories/option-answer-reposit
 import { OptionAnswer } from '../../entities/option-answer'
 
 interface CreateOptionAnswerUseCaseRequest {
-  answerTitle: string
-  answerNum: number
-  questionId: UniqueEntityID
+  optionTitle: string
+  optionNum: number
+  accountId: string
+  questionId: string
 }
 
 type CreateOptionAnswerUseCaseResponse = Either<
@@ -20,14 +21,16 @@ export class CreateOptionAnswerUseCase {
   constructor(private optionanswerRepository: OptionAnswerRepository) {}
 
   async execute({
-    answerTitle,
-    answerNum,
+    optionTitle,
+    optionNum,
+    accountId,
     questionId,
   }: CreateOptionAnswerUseCaseRequest): Promise<CreateOptionAnswerUseCaseResponse> {
     const optionAnswer = OptionAnswer.create({
-      answerTitle,
-      answerNum,
-      questionId,
+      optionTitle,
+      optionNum,
+      accountId: new UniqueEntityID(accountId),
+      questionId: new UniqueEntityID(questionId),
     })
 
     await this.optionanswerRepository.create(optionAnswer)
