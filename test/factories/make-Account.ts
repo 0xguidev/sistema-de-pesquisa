@@ -28,7 +28,7 @@ export function makeAccount(
 export class AccountFactory {
   constructor(private prisma: PrismaService) {}
 
-  async makePrismaStudent(data: Partial<AccountProps> = {}): Promise<Account> {
+  async makePrismaAccount(data: Partial<AccountProps> = {}): Promise<Account> {
     const account = makeAccount(data)
 
     await this.prisma.user.create({
