@@ -8,10 +8,10 @@ export class PrismaSurveyRepository implements SurveyRepository {
   create(survey: Survey): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  findById(id: UniqueEntityID): Promise<Survey | null> {
+  findById(id: string): Promise<Survey | null> {
     throw new Error('Method not implemented.')
   }
-  delete(id: UniqueEntityID): Promise<void> {
+  delete(id: string): Promise<void> {
     throw new Error('Method not implemented.')
   }
   update(question: Survey): Promise<void> {

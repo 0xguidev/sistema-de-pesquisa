@@ -3,10 +3,9 @@ import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from 'src/core/types/either'
 import { SurveyRepository } from '../../repositories/survey-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
 interface DeleteSurveyUseCaseRequest {
-  surveyId: UniqueEntityID
+  surveyId: string
 }
 
 type DeleteSurveyUseCaseResponse = Either<
@@ -27,7 +26,7 @@ export class DeleteSurveyUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    await this.surveysRepository.delete(survey.id)
+    await this.surveysRepository.delete(survey.id.toString())
 
     return right(null)
   }

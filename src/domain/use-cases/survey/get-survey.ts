@@ -1,10 +1,9 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Survey } from '../../entities/survey'
 import { SurveyRepository } from '../../repositories/survey-repository'
 import { Either, right, left } from 'src/core/types/either'
 
 interface GetSurveyUseCaseRequest {
-  surveyId: UniqueEntityID
+  surveyId: string
 }
 
 type GetSurveyUseCaseResponse = Either<

@@ -9,6 +9,8 @@ export function makeSurvey(
   const survey = Survey.create(
     {
       title: faker.lorem.sentence(),
+      type: faker.lorem.word(),
+      location: faker.lorem.word(),
       ...override,
     },
     id,

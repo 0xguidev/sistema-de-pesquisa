@@ -18,7 +18,7 @@ describe('Get Survey', () => {
     await inMemorySurveysRepository.create(survey)
 
     const existsSurvey = await sut.execute({
-      surveyId: survey.id,
+      surveyId: survey.id.toString(),
     })
 
     expect(existsSurvey.isRight()).toBe(true)

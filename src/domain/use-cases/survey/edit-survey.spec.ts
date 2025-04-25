@@ -18,7 +18,7 @@ describe('Edit Survey', () => {
     await inMemorySurveysRepository.create(survey)
 
     const editedSurvey = await sut.execute({
-      surveyId: survey.id,
+      surveyId: survey.id.toString(),
       surveyTitle: 'new_title',
     })
 

@@ -6,7 +6,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { SurveyRepository } from '../../repositories/survey-repository'
 
 interface EditSurveyUseCaseRequest {
-  surveyId: UniqueEntityID
+  surveyId: string
   surveyTitle: string
 }
 
@@ -29,6 +29,7 @@ export class EditSurveyUseCase {
     if (!survey) {
       return left(new ResourceNotFoundError())
     }
+
     survey.title = surveyTitle
 
     await this.surveysRepository.update(survey)

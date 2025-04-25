@@ -21,7 +21,7 @@ describe('Delete an survey', () => {
 
     await inMemorySurveyRepository.create(survey)
 
-    await sut.execute({ surveyId: survey.id })
+    await sut.execute({ surveyId: survey.id.toString() })
 
     expect(inMemorySurveyRepository.items).toHaveLength(0)
   })

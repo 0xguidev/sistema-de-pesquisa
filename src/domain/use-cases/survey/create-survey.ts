@@ -4,6 +4,8 @@ import { SurveyRepository } from 'src/domain/repositories/survey-repository'
 
 interface CreateSurveyUseCaseRequest {
   title: string
+  location: string
+  type: string
 }
 
 type CreateQuestionUseCaseResponse = Either<
@@ -18,9 +20,13 @@ export class CreateSurveyUseCase {
 
   async execute({
     title,
+    location,
+    type,
   }: CreateSurveyUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const survey = Survey.create({
       title,
+      location,
+      type,
     })
 
     await this.surveyRepository.create(survey)
