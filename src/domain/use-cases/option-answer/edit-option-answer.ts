@@ -1,4 +1,3 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from 'src/core/types/either'
@@ -6,7 +5,7 @@ import { OptionAnswer } from 'src/domain/entities/option-answer'
 import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-repository'
 
 interface EditOptionAnswerUseCaseRequest {
-  answerId: UniqueEntityID
+  answerId: string
   answerTitle: string
   answerNum: number
 }
@@ -30,10 +29,10 @@ export class EditOptionAnswerUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    optionAnswer.answerTitle = 'new_title'
-    optionAnswer.answerNum = 2
+    optionAnswer.optionTitle = 'new_title'
+    optionAnswer.optionNum = 2
 
-    await this.optionAnswersRepository.update(optionAnswer)
+    await this.optionAnswersRepository.save(optionAnswer)
 
     return right({
       optionAnswer,
