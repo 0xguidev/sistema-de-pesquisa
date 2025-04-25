@@ -7,6 +7,7 @@ import { PrismaQuestionRepository } from './prisma/repositories/prisma-question-
 import { PrismaOptionAnswerRepository } from './prisma/repositories/prisma-option-answer-repository'
 import { PrismaInterviewRepository } from './prisma/repositories/prisma-interview-repository'
 import { PrismaAnswerQuestionRepository } from './prisma/repositories/prisma-answer-question-repository'
+import { SurveyRepository } from '@/domain/repositories/survey-repository'
 
 @Module({
   providers: [
@@ -15,7 +16,10 @@ import { PrismaAnswerQuestionRepository } from './prisma/repositories/prisma-ans
       provide: AccountRepository,
       useClass: PrismaAccountRepository,
     },
-    PrismaSurveyRepository,
+    {
+      provide: SurveyRepository,
+      useClass: PrismaSurveyRepository,
+    },
     PrismaQuestionRepository,
     PrismaOptionAnswerRepository,
     PrismaInterviewRepository,
@@ -24,7 +28,7 @@ import { PrismaAnswerQuestionRepository } from './prisma/repositories/prisma-ans
   exports: [
     PrismaService,
     AccountRepository,
-    PrismaSurveyRepository,
+    SurveyRepository,
     PrismaQuestionRepository,
     PrismaOptionAnswerRepository,
     PrismaInterviewRepository,

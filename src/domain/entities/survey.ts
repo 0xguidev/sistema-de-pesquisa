@@ -7,8 +7,10 @@ export interface SurveyProps {
   title: string
   location: string
   type: string
-  slug?: Slug
+  accountId: UniqueEntityID
+  slug: Slug
   createdAt?: Date
+  updatedAt?: Date | null
 }
 
 export class Survey extends Entity<SurveyProps> {
@@ -38,6 +40,22 @@ export class Survey extends Entity<SurveyProps> {
 
   set type(type: string) {
     this.props.type = type
+  }
+
+  get accountId(): UniqueEntityID {
+    return this.props.accountId
+  }
+
+  get slug() {
+    return this.props.slug
+  }
+
+  get createdAt() {
+    return this.props.createdAt
+  }
+
+  get updatedAt() {
+    return this.props.updatedAt
   }
 
   static create(
