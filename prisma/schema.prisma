@@ -12,17 +12,12 @@ enum UserRole {
   ADMIN
 }
 
-enum TypeSurvey {
-  POLITICAL
-  ADMINISTRATIVE
-}
-
 model User {
   id        String    @id @unique @default(uuid())
   email     String    @unique
   password  String
   name      String
-  role      UserRole    @default(USER)
+  role      UserRole  @default(USER)
   slug      String    @unique
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -41,7 +36,7 @@ model Survey {
   title     String
   location  String
   userId    String
-  type      TypeSurvey @default(POLITICAL)
+  type      String
   slug      String    @unique
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
