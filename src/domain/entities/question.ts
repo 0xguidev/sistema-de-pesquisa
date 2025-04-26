@@ -1,13 +1,16 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
+import { Optional } from '@/core/types/optional'
 
 export interface QuestionProps {
   questionTitle: string
   questionNum: number
   surveyId: UniqueEntityID
-  slug?: Slug
+  accountId: UniqueEntityID
+  slug: Slug
   createdAt?: Date
+  updateAt?: Date | null
 }
 
 export class Question extends Entity<QuestionProps> {
@@ -32,7 +35,30 @@ export class Question extends Entity<QuestionProps> {
     this.props.questionNum = num
   }
 
-  static create(props: QuestionProps, id?: UniqueEntityID) {
+  get accountId() {
+    return this.props.accountId
+  }
+
+  get surveyId() {
+    return this.props.surveyId
+  }
+
+  get slug() {
+    return this.props.slug
+  }
+
+  get createdAt() {
+    return this.props.createdAt
+  }
+
+  get updateAt() {
+    return this.props.updateAt
+  }
+
+  static create(
+    props: Optional<QuestionProps, "slug" | "createdAt">,
+    id?: UniqueEntityID,
+  ) {
     const question = new Question(
       {
         ...props,

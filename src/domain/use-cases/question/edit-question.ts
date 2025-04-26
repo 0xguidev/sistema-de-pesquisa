@@ -6,7 +6,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { QuestionRepository } from '../../repositories/question-repository'
 
 interface EditQuestionUseCaseRequest {
-  questionId: UniqueEntityID
+  questionId: string
   questionTitle: string
   questionNum: number
 }

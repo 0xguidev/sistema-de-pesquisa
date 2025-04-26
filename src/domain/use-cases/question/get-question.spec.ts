@@ -21,7 +21,7 @@ describe('Get Question', () => {
     await inMemoryQuestionsRepository.create(question)
 
     const existsQuestion = await sut.execute({
-      questionId: question.id,
+      questionId: question.id.toString(),
     })
 
     expect(existsQuestion.isRight()).toBe(true)

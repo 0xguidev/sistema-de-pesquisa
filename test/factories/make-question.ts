@@ -9,6 +9,7 @@ export function makeQuestion(
   const question = Question.create(
     {
       surveyId: new UniqueEntityID(),
+      accountId: new UniqueEntityID('account-id'),
       questionTitle: faker.lorem.sentence(),
       questionNum: faker.number.int(),
       ...override,

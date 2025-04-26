@@ -3,10 +3,9 @@ import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from 'src/core/types/either'
 import { QuestionRepository } from '../../repositories/question-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
 interface DeleteQuestionUseCaseRequest {
-  questionId: UniqueEntityID
+  id: string
 }
 
 type DeleteQuestionUseCaseResponse = Either<
@@ -19,15 +18,15 @@ export class DeleteQuestionUseCase {
   constructor(private questionsRepository: QuestionRepository) {}
 
   async execute({
-    questionId,
+    id,
   }: DeleteQuestionUseCaseRequest): Promise<DeleteQuestionUseCaseResponse> {
-    const question = await this.questionsRepository.findById(questionId)
+    const isQuestion = await this.questionsRepository.findById(id)
 
-    if (!question) {
+    if (!isQuestion) {
       return left(new ResourceNotFoundError())
     }
 
-    await this.questionsRepository.delete(question.id)
+    await this.questionsRepository.delete(isQuestion.id.toString())
 
     return right(null)
   }

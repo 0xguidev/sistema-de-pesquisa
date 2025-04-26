@@ -6,7 +6,8 @@ import { Either, right } from 'src/core/types/either'
 interface CreateQuestionUseCaseRequest {
   questionTitle: string
   questionNum: number
-  surveyId: UniqueEntityID
+  surveyId: string
+  accountId: string
 }
 
 export type CreateQuestionUseCaseResponse = Either<
@@ -23,11 +24,13 @@ export class CreateQuestionUseCase {
     questionTitle,
     questionNum,
     surveyId,
+    accountId,
   }: CreateQuestionUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const question = Question.create({
       questionTitle,
       questionNum,
-      surveyId,
+      surveyId: new UniqueEntityID(surveyId),
+      accountId: new UniqueEntityID(accountId),
     })
 
     await this.questionRepository.create(question)
