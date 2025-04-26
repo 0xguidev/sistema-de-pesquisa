@@ -7,6 +7,8 @@ import { AuthenticateController } from './controllers/authenticate.controller'
 import { AuthenticateAccountUseCase } from '@/domain/use-cases/account/authenticate-account'
 import { CreateSurveyUseCase } from '@/domain/use-cases/survey/create-survey'
 import { CreateSurveyController } from './controllers/create-survey.controller'
+import { CreateQuestionUseCase } from '@/domain/use-cases/question/create-question'
+import { CreateQuestionController } from './controllers/create-question.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -14,11 +16,13 @@ import { CreateSurveyController } from './controllers/create-survey.controller'
     RegisterAccountUseCase,
     AuthenticateAccountUseCase,
     CreateSurveyUseCase,
+    CreateQuestionUseCase,
   ],
   controllers: [
     CreateAccountController,
     AuthenticateController,
     CreateSurveyController,
+    CreateQuestionController,
   ],
 })
 export class HttpModule {}

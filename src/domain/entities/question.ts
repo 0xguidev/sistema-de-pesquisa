@@ -10,7 +10,7 @@ export interface QuestionProps {
   accountId: UniqueEntityID
   slug: Slug
   createdAt?: Date
-  updateAt?: Date | null
+  updatedAt?: Date | null
 }
 
 export class Question extends Entity<QuestionProps> {
@@ -51,12 +51,12 @@ export class Question extends Entity<QuestionProps> {
     return this.props.createdAt
   }
 
-  get updateAt() {
-    return this.props.updateAt
+  get updatedAt() {
+    return this.props.updatedAt
   }
 
   static create(
-    props: Optional<QuestionProps, "slug" | "createdAt">,
+    props: Optional<QuestionProps, 'slug' | 'createdAt'>,
     id?: UniqueEntityID,
   ) {
     const question = new Question(

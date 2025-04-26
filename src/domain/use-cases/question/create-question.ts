@@ -2,6 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Question } from '../../entities/question'
 import { QuestionRepository } from '../../repositories/question-repository'
 import { Either, right } from 'src/core/types/either'
+import { Injectable } from '@nestjs/common'
 
 interface CreateQuestionUseCaseRequest {
   questionTitle: string
@@ -17,6 +18,7 @@ export type CreateQuestionUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class CreateQuestionUseCase {
   constructor(private questionRepository: QuestionRepository) {}
 
