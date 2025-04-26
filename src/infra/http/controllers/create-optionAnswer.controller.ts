@@ -4,7 +4,6 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { z } from 'zod'
 import { CreateOptionAnswerUseCase } from '@/domain/use-cases/option-answer/create-option-answer'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 const createOptionAnswerBodySchema = z.object({
   optionTitle: z.string(),
