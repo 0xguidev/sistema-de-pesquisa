@@ -11,6 +11,7 @@ export function makeSurvey(
       title: faker.lorem.sentence(),
       type: faker.lorem.word(),
       location: faker.lorem.word(),
+      accountId: new UniqueEntityID('account-id'),
       ...override,
     },
     id,
