@@ -2,6 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Either, right } from 'src/core/types/either'
 import { OptionAnswerRepository } from '../../repositories/option-answer-repository'
 import { OptionAnswer } from '../../entities/option-answer'
+import { Injectable } from '@nestjs/common'
 
 interface CreateOptionAnswerUseCaseRequest {
   optionTitle: string
@@ -17,6 +18,7 @@ type CreateOptionAnswerUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class CreateOptionAnswerUseCase {
   constructor(private optionanswerRepository: OptionAnswerRepository) {}
 

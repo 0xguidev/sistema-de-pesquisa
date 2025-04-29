@@ -12,7 +12,6 @@ describe('create an option answer', async () => {
 
     sut = new CreateOptionAnswerUseCase(inMemoryOptionAnswersRepository)
   })
-  })
 
   it('should create a option answer', async () => {
     const result = await sut.execute({
@@ -23,7 +22,9 @@ describe('create an option answer', async () => {
     })
 
     expect(result.isRight()).toBe(true)
-    expect(inMemoryOptionAnswersRepository.items[0]).toEqual(result.value?.optionAnswer)
+    expect(inMemoryOptionAnswersRepository.items[0]).toEqual(
+      result.value?.optionAnswer,
+    )
     expect(inMemoryOptionAnswersRepository.items[0].optionTitle).toEqual(
       'any_title',
     )
@@ -34,4 +35,5 @@ describe('create an option answer', async () => {
     expect(inMemoryOptionAnswersRepository.items[0].questionId).toEqual(
       new UniqueEntityID('any_question_id'),
     )
+  })
 })

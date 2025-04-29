@@ -1,4 +1,3 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { DeleteOptionAnswerUseCase } from './delete-option-answer'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
@@ -14,19 +13,12 @@ describe('Delete an optionanswer', () => {
   })
 
   it('should delete an optionanswer', async () => {
-    const optionAnswer = makeOptionAnswer(
-      {
-        questionId: new UniqueEntityID(),
-        answerTitle: 'any_title',
-        answerNum: 1,
-      },
-      new UniqueEntityID(),
-    )
+    const optionAnswer = makeOptionAnswer()
 
     await inMemoryOptionAnswersRepository.create(optionAnswer)
 
     await sut.execute({
-      optionAnswerId: optionAnswer.id,
+      optionAnswerId: optionAnswer.id.toString(),
     })
 
     expect(inMemoryOptionAnswersRepository.items).toHaveLength(0)
