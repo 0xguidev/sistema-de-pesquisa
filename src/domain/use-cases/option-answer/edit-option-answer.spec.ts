@@ -12,12 +12,12 @@ describe('Edit OptionAnswer', () => {
   })
 
   it('Should be able to edit a optionanswer', async () => {
-    const optionanswer = makeOptionAnswer()
+    const optionAnswer = makeOptionAnswer()
 
-    await inMemoryOptionAnswersRepository.create(optionanswer)
+    await inMemoryOptionAnswersRepository.create(optionAnswer)
 
     const editedOptionAnswer = await sut.execute({
-      answerId: optionanswer.id.toString(),
+      answerId: optionAnswer.id.toString(),
       answerTitle: 'new_title',
       answerNum: 2,
     })

@@ -1,4 +1,3 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { OptionAnswer } from 'src/domain/entities/option-answer'
 import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-repository'
 
@@ -6,7 +5,9 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
   public items: OptionAnswer[] = []
 
   constructor() {} // private survey: InMemorySurveyRepository,
-  async findManyByQuestionId(questionId: string): Promise<OptionAnswer[] | null> {
+  async findManyByQuestionId(
+    questionId: string,
+  ): Promise<OptionAnswer[] | null> {
     const options = this.items.filter(
       (item) => item.questionId.toString() === questionId,
     )
@@ -19,9 +20,7 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
   }
 
   async findById(id: string) {
-    const optionanswer = this.items.find(
-      (item) => item.id === new UniqueEntityID(id),
-    )
+    const optionanswer = this.items.find((item) => item.id.toString() === id)
 
     if (!optionanswer) {
       return null

@@ -22,6 +22,8 @@ export class EditOptionAnswerUseCase {
 
   async execute({
     answerId,
+    answerTitle,
+    answerNum,
   }: EditOptionAnswerUseCaseRequest): Promise<EditOptionAnswerUseCaseResponse> {
     const optionAnswer = await this.optionAnswersRepository.findById(answerId)
 
@@ -29,8 +31,8 @@ export class EditOptionAnswerUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    optionAnswer.optionTitle = 'new_title'
-    optionAnswer.optionNum = 2
+    optionAnswer.optionTitle = answerTitle
+    optionAnswer.optionNum = answerNum
 
     await this.optionAnswersRepository.save(optionAnswer)
 
