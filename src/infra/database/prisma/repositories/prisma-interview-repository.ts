@@ -1,20 +1,49 @@
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Interview } from '@/domain/entities/interview'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import { Injectable } from '@nestjs/common'
+import { PrismaService } from '../prisma.service'
+import { PrismaInterviewMapper } from '../mappers/prisma-interview-mapper'
 
 @Injectable()
 export class PrismaInterviewRepository implements InterviewRepository {
-  create(interview: Interview): Promise<void> {
-    throw new Error('Method not implemented.')
+  constructor(private prisma: PrismaService) {}
+
+  async create(interview: Interview): Promise<void> {
+    const data = PrismaInterviewMapper.toPrisma(interview)
+
+    await this.prisma.interview.create({
+      data,
+    })
   }
-  findById(id: UniqueEntityID): Promise<Interview | null> {
-    throw new Error('Method not implemented.')
+  async findById(id: string): Promise<Interview | null> {
+    const interview = await this.prisma.interview.findUnique({
+      where: {
+        id,
+      },
+    })
+
+    if (!interview) {
+      return null
+    }
+
+    return PrismaInterviewMapper.toDomain(interview)
   }
-  delete(id: UniqueEntityID): Promise<void> {
-    throw new Error('Method not implemented.')
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.interview.delete({
+      where: {
+        id,
+      },
+    })
   }
-  update(interview: Interview): Promise<void> {
-    throw new Error('Method not implemented.')
+  async update(interview: Interview): Promise<void> {
+      const data = PrismaInterviewMapper.toPrisma(interview)
+  
+      await this.prisma.interview.update({
+        where: {
+          id: interview.id.toString(),
+        },
+        data,
+      })
   }
 }

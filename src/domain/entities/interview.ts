@@ -4,8 +4,9 @@ import { Optional } from '@/core/types/optional'
 
 export interface InterviewProps {
   surveyId: UniqueEntityID
+  accountId: UniqueEntityID
   createdAt: Date
-  updateAt?: Date | null
+  updatedAt?: Date | null
 }
 
 export class Interview extends Entity<InterviewProps> {
@@ -13,12 +14,20 @@ export class Interview extends Entity<InterviewProps> {
     super(props, id)
   }
 
-  get surveyId(): UniqueEntityID {
+  get surveyId() {
     return this.props.surveyId
   }
 
-  get createdAt(): Date | undefined {
+  get createdAt() {
     return this.props.createdAt
+  }
+
+  get updatedAt() {
+    return this.props.updatedAt
+  }
+
+  get accountId() {
+    return this.props.accountId
   }
 
   static create(

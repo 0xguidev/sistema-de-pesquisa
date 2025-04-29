@@ -10,6 +10,7 @@ import { PrismaAnswerQuestionRepository } from './prisma/repositories/prisma-ans
 import { SurveyRepository } from '@/domain/repositories/survey-repository'
 import { QuestionRepository } from '@/domain/repositories/question-repository'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
+import { InterviewRepository } from '@/domain/repositories/interview-repository'
 
 @Module({
   providers: [
@@ -30,7 +31,10 @@ import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repo
       provide: OptionAnswerRepository,
       useClass: PrismaOptionAnswerRepository,
     },
-    PrismaInterviewRepository,
+    {
+      provide: InterviewRepository,
+      useClass: PrismaInterviewRepository,
+    },
     PrismaAnswerQuestionRepository,
   ],
   exports: [
@@ -39,7 +43,7 @@ import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repo
     SurveyRepository,
     QuestionRepository,
     OptionAnswerRepository,
-    PrismaInterviewRepository,
+    InterviewRepository,
     PrismaAnswerQuestionRepository,
   ],
 })

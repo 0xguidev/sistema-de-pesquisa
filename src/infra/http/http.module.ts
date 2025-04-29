@@ -11,6 +11,8 @@ import { CreateQuestionUseCase } from '@/domain/use-cases/question/create-questi
 import { CreateQuestionController } from './controllers/create-question.controller'
 import { CreateOptionAnswerUseCase } from '@/domain/use-cases/option-answer/create-option-answer'
 import { CreateOptionAnswerController } from './controllers/create-option-answer.controller'
+import { CreateInterviewUseCase } from '@/domain/use-cases/interview/create-interview'
+import { CreateInterviewController } from './controllers/create-interview.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -20,6 +22,7 @@ import { CreateOptionAnswerController } from './controllers/create-option-answer
     CreateSurveyUseCase,
     CreateQuestionUseCase,
     CreateOptionAnswerUseCase,
+    CreateInterviewUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -27,6 +30,7 @@ import { CreateOptionAnswerController } from './controllers/create-option-answer
     CreateSurveyController,
     CreateQuestionController,
     CreateOptionAnswerController,
+    CreateInterviewController,
   ],
 })
 export class HttpModule {}

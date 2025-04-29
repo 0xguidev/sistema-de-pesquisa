@@ -6,6 +6,7 @@ import { Injectable } from '@nestjs/common'
 
 interface CreateInterviewUseCaseRequest {
   surveyId: string
+  accountId: string
 }
 
 type CreateQuestionUseCaseResponse = Either<
@@ -21,9 +22,11 @@ export class CreateInterviewUseCase {
 
   async execute({
     surveyId,
+    accountId,
   }: CreateInterviewUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const interview = Interview.create({
       surveyId: new UniqueEntityID(surveyId),
+      accountId: new UniqueEntityID(accountId),
     })
 
     await this.interviewRepository.create(interview)

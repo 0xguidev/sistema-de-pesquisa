@@ -6,49 +6,53 @@ import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
+import { SurveyFactory } from 'test/factories/make-survey'
 
-describe('Create survey (E2E)', () => {
+describe('Create interview (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let jwt: JwtService
   let accountFactory: AccountFactory
+  let surveyFactory: SurveyFactory
 
   beforeAll(async () => {
     const modularRef = await Test.createTestingModule({
       imports: [AppModule, DatabaseModule],
-      providers: [AccountFactory],
+      providers: [AccountFactory, SurveyFactory],
     }).compile()
 
     app = modularRef.createNestApplication()
     prisma = modularRef.get(PrismaService)
     jwt = modularRef.get(JwtService)
     accountFactory = modularRef.get(AccountFactory)
+    surveyFactory = modularRef.get(SurveyFactory)
 
     await app.init()
   })
 
-  test('[POST] /surveys', async () => {
+  test('[POST] /interviews', async () => {
     const user = await accountFactory.makePrismaAccount()
+    const survey = await surveyFactory.makePrismaSurvey({
+      accountId: user.id,
+    })
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const response = await request(app.getHttpServer())
-      .post('/surveys')
+      .post('/interviews')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        title: 'New survey',
-        location: 'survey location',
-        type: 'survey',
+        surveyId: survey.id.toString(),
       })
 
     expect(response.statusCode).toBe(201)
 
-    const surveyOnDatabase = await prisma.survey.findFirst({
+    const interviewOnDatabase = await prisma.interview.findFirst({
       where: {
-        title: 'New survey',
+        surveyId: survey.id.toString(),
       },
     })
 
-    expect(surveyOnDatabase).toBeTruthy()
+    expect(interviewOnDatabase).toBeTruthy()
   })
 })

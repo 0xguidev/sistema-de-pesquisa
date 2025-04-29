@@ -37,12 +37,12 @@ export class PrismaSurveyRepository implements SurveyRepository {
       },
     })
   }
-  async update(question: Survey): Promise<void> {
-    const data = PrismaSurveyMapper.toPrisma(question)
+  async update(survey: Survey): Promise<void> {
+    const data = PrismaSurveyMapper.toPrisma(survey)
 
     await this.prisma.survey.update({
       where: {
-        id: question.id.toString(),
+        id: survey.id.toString(),
       },
       data,
     })
