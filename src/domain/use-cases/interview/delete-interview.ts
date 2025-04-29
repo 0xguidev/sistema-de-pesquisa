@@ -3,10 +3,9 @@ import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from 'src/core/types/either'
 import { InterviewRepository } from '../../repositories/interview-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
 interface DeleteInterviewUseCaseRequest {
-  interviewId: UniqueEntityID
+  interviewId: string
 }
 
 type DeleteInterviewUseCaseResponse = Either<
@@ -27,7 +26,7 @@ export class DeleteInterviewUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    await this.interviewsRepository.delete(interview.id)
+    await this.interviewsRepository.delete(interview.id.toString())
 
     return right(null)
   }
