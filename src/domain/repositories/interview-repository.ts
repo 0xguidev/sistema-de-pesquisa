@@ -1,4 +1,3 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Interview } from '../entities/interview'
 
 export abstract class InterviewRepository {
