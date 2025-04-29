@@ -1,4 +1,3 @@
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Question } from '@/domain/entities/question'
 import { QuestionRepository } from '@/domain/repositories/question-repository'
 import { Injectable } from '@nestjs/common'
