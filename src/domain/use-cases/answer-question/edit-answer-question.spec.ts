@@ -13,22 +13,15 @@ describe('Edit AnswerQuestion', () => {
   })
 
   it('Should be able to edit a answerquestion', async () => {
-    const answerquestion = makeAnswerQuestion(
-      {
-        questionId: new UniqueEntityID(),
-        interviewId: new UniqueEntityID(),
-        optionAnswerId: new UniqueEntityID(),
-      },
-      new UniqueEntityID(),
-    )
+    const answerQuestion = makeAnswerQuestion()
 
-    await inMemoryAnswerQuestionsRepository.create(answerquestion)
+    await inMemoryAnswerQuestionsRepository.create(answerQuestion)
+
+    answerQuestion.optionAnswerId = new UniqueEntityID('new_title')
 
     const editedAnswerQuestion = await sut.execute({
-      questionId: new UniqueEntityID('newQuestionId'),
-      interviewId: new UniqueEntityID('newinterViewId'),
-      optionAnswerId: new UniqueEntityID('newOptionAnswerId'),
-      id: answerquestion.id,
+      id: answerQuestion.id.toString(),
+      optionAnswerId: answerQuestion.optionAnswerId.toString(),
     })
 
     expect(editedAnswerQuestion.isRight()).toBe(true)
