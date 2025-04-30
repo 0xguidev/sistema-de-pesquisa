@@ -13,9 +13,9 @@ export function makeOptionAnswer(
 ) {
   const optionanswer = OptionAnswer.create(
     {
-      accountId: new UniqueEntityID(),
       optionTitle: faker.lorem.sentence(),
-      optionNum: faker.number.int(),
+      optionNum: faker.number.int({ min: 1, max: 50 }),
+      accountId: new UniqueEntityID(),
       questionId: new UniqueEntityID(),
       createdAt: new Date(),
       ...override,

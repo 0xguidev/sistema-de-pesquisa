@@ -11,6 +11,7 @@ import { SurveyRepository } from '@/domain/repositories/survey-repository'
 import { QuestionRepository } from '@/domain/repositories/question-repository'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
+import { AnswerQuestionRepository } from '@/domain/repositories/answer-question-repository'
 
 @Module({
   providers: [
@@ -35,7 +36,10 @@ import { InterviewRepository } from '@/domain/repositories/interview-repository'
       provide: InterviewRepository,
       useClass: PrismaInterviewRepository,
     },
-    PrismaAnswerQuestionRepository,
+    {
+      provide: AnswerQuestionRepository,
+      useClass: PrismaAnswerQuestionRepository,
+    },
   ],
   exports: [
     PrismaService,
@@ -44,7 +48,7 @@ import { InterviewRepository } from '@/domain/repositories/interview-repository'
     QuestionRepository,
     OptionAnswerRepository,
     InterviewRepository,
-    PrismaAnswerQuestionRepository,
+    AnswerQuestionRepository,
   ],
 })
 export class DatabaseModule {}

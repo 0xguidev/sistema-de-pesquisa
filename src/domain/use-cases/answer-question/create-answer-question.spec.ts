@@ -22,10 +22,10 @@ describe('create an answer question', async () => {
     const account = makeAccount()
 
     const createdAnswerQuestion = await sut.execute({
-      interviewId: interview.id,
-      questionId: question.id,
-      optionAnswerId: option.id,
-      accountId: account.id,
+      interviewId: interview.id.toString(),
+      questionId: question.id.toString(),
+      optionAnswerId: option.id.toString(),
+      accountId: account.id.toString(),
     })
 
     expect(createdAnswerQuestion.isRight()).toBe(true)
