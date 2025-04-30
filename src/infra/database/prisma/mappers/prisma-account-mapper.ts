@@ -18,6 +18,7 @@ export class PrismaAccountMapper {
       name: account.name,
       email: account.email,
       password: account.password,
+      slug: account.slug.value,
     }
   }
 }

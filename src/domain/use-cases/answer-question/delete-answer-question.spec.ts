@@ -1,28 +1,31 @@
-import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { makeQuestion } from 'test/factories/make-question'
-import { DeleteQuestionUseCase } from '../question/delete-question'
+import { InMemoryAnswerQuestionRepository } from 'test/repositories/in-memory-answer-question-repository'
+import { DeleteAnswerQuestionUseCase } from './delete-answer-question'
+import { makeAnswerQuestion } from 'test/factories/make-answer-question'
+import { makeAccount } from 'test/factories/make-Account'
 
-let inMemoryQuestionRepository: InMemoryQuestionRepository
-let sut: DeleteQuestionUseCase
+let inMemoryAnswerQuestionRepository: InMemoryAnswerQuestionRepository
+let sut: DeleteAnswerQuestionUseCase
 
-describe('Delete an question', () => {
+describe('Delete an answer answerquestion', () => {
   beforeAll(() => {
-    inMemoryQuestionRepository = new InMemoryQuestionRepository()
+    inMemoryAnswerQuestionRepository = new InMemoryAnswerQuestionRepository()
 
-    sut = new DeleteQuestionUseCase(inMemoryQuestionRepository)
+    sut = new DeleteAnswerQuestionUseCase(inMemoryAnswerQuestionRepository)
   })
 
-  it('should delete an question', async () => {
-    const question = makeQuestion(
-      { questionTitle: 'any_title', questionNum: 1 },
-      new UniqueEntityID('question_id'),
-    )
+  it('should delete an answerquestion', async () => {
+    const account = makeAccount()
+    const answerQuestion = makeAnswerQuestion({
+      accountId: account.id,
+    })
 
-    await inMemoryQuestionRepository.create(question)
+    await inMemoryAnswerQuestionRepository.create(answerQuestion)
 
-    await sut.execute({ questionId: question.id })
+    await sut.execute({
+      answerQuestionId: answerQuestion.id.toString(),
+      accountId: account.id.toString(),
+    })
 
-    expect(inMemoryQuestionRepository.items).toHaveLength(0)
+    expect(inMemoryAnswerQuestionRepository.items).toHaveLength(0)
   })
 })

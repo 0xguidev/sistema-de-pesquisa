@@ -21,7 +21,7 @@ describe('Delete an question', () => {
 
     await inMemoryQuestionRepository.create(question)
 
-    await sut.execute({ questionId: question.id })
+    await sut.execute({ id: question.id.toString() })
 
     expect(inMemoryQuestionRepository.items).toHaveLength(0)
   })

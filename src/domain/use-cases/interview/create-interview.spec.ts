@@ -1,31 +1,22 @@
 import { expect, beforeEach } from 'vitest'
-import { InMemorySurveyRepository } from '../../../../test/repositories/in-memory-survey-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
 import { CreateInterviewUseCase } from './create-interview'
-import { CreateSurveyUseCase } from '../survey/create-survey'
+import { makeSurvey } from 'test/factories/make-survey'
 
-let inMemorySurveyRepository: InMemorySurveyRepository
 let inMemoryInterviewRepository: InMemoryInterviewRepository
+let sut: CreateInterviewUseCase
 
-describe('create an option answer', async () => {
+describe('create an interview', async () => {
   beforeEach(() => {
-    inMemorySurveyRepository = new InMemorySurveyRepository()
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
+    sut = new CreateInterviewUseCase(inMemoryInterviewRepository)
   })
 
-  it('should create a option answer', async () => {
-    const createSurvey = new CreateSurveyUseCase(inMemorySurveyRepository)
-    const surveyTitle = 'any_title'
-
-    const createdSurvey = await createSurvey.execute({ title: surveyTitle })
-
-    const createInterview = new CreateInterviewUseCase(
-      inMemoryInterviewRepository,
-    )
-    const surveyId = createdSurvey.value?.survey.id as UniqueEntityID
-    const createdInterview = await createInterview.execute({
-      surveyId,
+  it('should create a interview', async () => {
+    const survey = makeSurvey()
+    
+    const createdInterview = await sut.execute({
+      surveyId: survey.id.toString(),
     })
 
     expect(createdInterview.isRight()).toBe(true)

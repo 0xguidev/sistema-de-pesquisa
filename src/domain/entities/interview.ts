@@ -1,11 +1,12 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
+import { Optional } from '@/core/types/optional'
 
 export interface InterviewProps {
   surveyId: UniqueEntityID
-  slug?: Slug
-  createdAt?: Date
+  accountId: UniqueEntityID
+  createdAt: Date
+  updatedAt?: Date | null
 }
 
 export class Interview extends Entity<InterviewProps> {
@@ -13,8 +14,33 @@ export class Interview extends Entity<InterviewProps> {
     super(props, id)
   }
 
-  static create(props: InterviewProps, id?: UniqueEntityID) {
-    const interview = new Interview(props, id)
+  get surveyId() {
+    return this.props.surveyId
+  }
+
+  get createdAt() {
+    return this.props.createdAt
+  }
+
+  get updatedAt() {
+    return this.props.updatedAt
+  }
+
+  get accountId() {
+    return this.props.accountId
+  }
+
+  static create(
+    props: Optional<InterviewProps, 'createdAt'>,
+    id?: UniqueEntityID,
+  ) {
+    const interview = new Interview(
+      {
+        ...props,
+        createdAt: props.createdAt ?? new Date(),
+      },
+      id,
+    )
 
     return interview
   }

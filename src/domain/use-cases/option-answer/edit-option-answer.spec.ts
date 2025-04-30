@@ -1,4 +1,3 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { EditOptionAnswerUseCase } from './edit-option-answer'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
@@ -13,19 +12,12 @@ describe('Edit OptionAnswer', () => {
   })
 
   it('Should be able to edit a optionanswer', async () => {
-    const optionanswer = makeOptionAnswer(
-      {
-        questionId: new UniqueEntityID(),
-        answerTitle: 'any_title',
-        answerNum: 1,
-      },
-      new UniqueEntityID(),
-    )
+    const optionAnswer = makeOptionAnswer()
 
-    await inMemoryOptionAnswersRepository.create(optionanswer)
+    await inMemoryOptionAnswersRepository.create(optionAnswer)
 
     const editedOptionAnswer = await sut.execute({
-      answerId: optionanswer.id,
+      answerId: optionAnswer.id.toString(),
       answerTitle: 'new_title',
       answerNum: 2,
     })

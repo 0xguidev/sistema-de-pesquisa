@@ -1,10 +1,9 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Either, right, left } from 'src/core/types/either'
 import { AnswerQuestion } from 'src/domain/entities/answer-question'
 import { AnswerQuestionRepository } from 'src/domain/repositories/answer-question-repository'
 
 interface GetAnswerQuestionUseCaseRequest {
-  answerQuestionId: UniqueEntityID
+  answerQuestionId: string
 }
 
 type GetAnswerQuestionUseCaseResponse = Either<

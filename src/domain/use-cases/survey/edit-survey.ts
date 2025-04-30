@@ -2,11 +2,10 @@ import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from 'src/core/types/either'
 import { Survey } from '../../entities/survey'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { SurveyRepository } from '../../repositories/survey-repository'
 
 interface EditSurveyUseCaseRequest {
-  surveyId: UniqueEntityID
+  surveyId: string
   surveyTitle: string
 }
 
@@ -29,6 +28,7 @@ export class EditSurveyUseCase {
     if (!survey) {
       return left(new ResourceNotFoundError())
     }
+
     survey.title = surveyTitle
 
     await this.surveysRepository.update(survey)

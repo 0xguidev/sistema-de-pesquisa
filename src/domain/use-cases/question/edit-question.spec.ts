@@ -21,7 +21,7 @@ describe('Edit Question', () => {
     await inMemoryQuestionsRepository.create(question)
 
     const editedQuestion = await sut.execute({
-      questionId: question.id,
+      questionId: question.id.toString(),
       questionTitle: 'new_title',
       questionNum: 2,
     })

@@ -2,11 +2,10 @@ import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from 'src/core/types/either'
 import { Question } from '../../entities/question'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { QuestionRepository } from '../../repositories/question-repository'
 
 interface EditQuestionUseCaseRequest {
-  questionId: UniqueEntityID
+  questionId: string
   questionTitle: string
   questionNum: number
 }

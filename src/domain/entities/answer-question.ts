@@ -1,13 +1,14 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
+import { Optional } from '@/core/types/optional'
 
 export interface AnswerQuestionProps {
   interviewId: UniqueEntityID
   questionId: UniqueEntityID
   optionAnswerId: UniqueEntityID
-  slug?: Slug
-  createdAt?: Date
+  accountId: UniqueEntityID
+  createdAt: Date
+  updatedAt?: Date | null
 }
 
 export class AnswerQuestion extends Entity<AnswerQuestionProps> {
@@ -15,33 +16,46 @@ export class AnswerQuestion extends Entity<AnswerQuestionProps> {
     super(props, id)
   }
 
-  get interviewId(): UniqueEntityID {
+  get interviewId() {
     return this.props.interviewId
   }
 
-  get questionId(): UniqueEntityID {
+  get questionId() {
     return this.props.questionId
   }
 
-  get optionAnswerId(): UniqueEntityID {
+  get optionAnswerId() {
     return this.props.optionAnswerId
   }
-
-  set interviewId(value: UniqueEntityID) {
-    this.props.interviewId = value
+  
+  get accountId() {
+    return this.props.accountId
   }
 
-  set questionId(value: UniqueEntityID) {
-    this.props.questionId = value
+  get createdAt() {
+    return this.props.createdAt
   }
 
-  set optionAnswerId(value: UniqueEntityID) {
+  get updatedAt() {
+    return this.props.updatedAt
+  }
+
+  set optionAnswerId(value) {
     this.props.optionAnswerId = value
   }
 
-  static create(props: AnswerQuestionProps, id?: UniqueEntityID) {
-    const answerQuestion = new AnswerQuestion(props, id)
+  static create(
+    props: Optional<AnswerQuestionProps, 'createdAt'>,
+    id?: UniqueEntityID,
+  ) {
+    const answer = new AnswerQuestion(
+      {
+        ...props,
+        createdAt: props.createdAt ?? new Date(),
+      },
+      id,
+    )
 
-    return answerQuestion
+    return answer
   }
 }

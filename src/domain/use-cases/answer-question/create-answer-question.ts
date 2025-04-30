@@ -1,14 +1,14 @@
 import { Either, right } from 'src/core/types/either'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { AnswerQuestion } from '../../entities/answer-question'
 import { AnswerQuestionRepository } from '../../repositories/answer-question-repository'
-import { Slug } from '../../entities/value-objects/slug'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { Injectable } from '@nestjs/common'
 
 interface CreateAnswerQuestionUseCaseRequest {
-  interviewId: UniqueEntityID
-  questionId: UniqueEntityID
-  optionAnswerId: UniqueEntityID
-  slug?: Slug
+  interviewId: string
+  questionId: string
+  optionAnswerId: string
+  accountId: string
 }
 
 type CreateQuestionUseCaseResponse = Either<
@@ -18,6 +18,7 @@ type CreateQuestionUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class CreateAnswerQuestionUseCase {
   constructor(private answerquestionRepository: AnswerQuestionRepository) {}
 
@@ -25,11 +26,13 @@ export class CreateAnswerQuestionUseCase {
     interviewId,
     questionId,
     optionAnswerId,
+    accountId,
   }: CreateAnswerQuestionUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const answerQuestion = AnswerQuestion.create({
-      interviewId,
-      questionId,
-      optionAnswerId,
+      interviewId: new UniqueEntityID(interviewId),
+      questionId: new UniqueEntityID(questionId),
+      optionAnswerId: new UniqueEntityID(optionAnswerId),
+      accountId: new UniqueEntityID(accountId),
     })
 
     await this.answerquestionRepository.create(answerQuestion)

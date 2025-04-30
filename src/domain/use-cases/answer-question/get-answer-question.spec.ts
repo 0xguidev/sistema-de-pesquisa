@@ -13,15 +13,12 @@ describe('Get AnswerQuestion', () => {
   })
 
   it('Should be able to get a answerquestion', async () => {
-    const answerquestion = makeAnswerQuestion(
-      { questionId: new UniqueEntityID() },
-      new UniqueEntityID(),
-    )
+    const answerquestion = makeAnswerQuestion()
 
     await inMemoryAnswerQuestionRepository.create(answerquestion)
-
+    
     const existsAnswerQuestion = await sut.execute({
-      answerQuestionId: answerquestion.id,
+      answerQuestionId: answerquestion.id.toString(),
     })
 
     expect(existsAnswerQuestion.isRight()).toBe(true)
