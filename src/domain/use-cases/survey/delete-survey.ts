@@ -6,6 +6,7 @@ import { SurveyRepository } from '../../repositories/survey-repository'
 
 interface DeleteSurveyUseCaseRequest {
   surveyId: string
+  accountId: string
 }
 
 type DeleteSurveyUseCaseResponse = Either<
@@ -19,11 +20,16 @@ export class DeleteSurveyUseCase {
 
   async execute({
     surveyId,
+    accountId,
   }: DeleteSurveyUseCaseRequest): Promise<DeleteSurveyUseCaseResponse> {
     const survey = await this.surveysRepository.findById(surveyId)
 
     if (!survey) {
       return left(new ResourceNotFoundError())
+    }
+
+    if (survey.accountId.toString() !== accountId) {
+      return left(new NotAllowedError())
     }
 
     await this.surveysRepository.delete(survey.id.toString())
