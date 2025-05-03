@@ -5,7 +5,8 @@ import { Either, left, right } from 'src/core/types/either'
 import { QuestionRepository } from '../../repositories/question-repository'
 
 interface DeleteQuestionUseCaseRequest {
-  id: string
+  questionId: string
+  accountId: string
 }
 
 type DeleteQuestionUseCaseResponse = Either<
@@ -18,12 +19,17 @@ export class DeleteQuestionUseCase {
   constructor(private questionsRepository: QuestionRepository) {}
 
   async execute({
-    id,
+    questionId,
+    accountId,
   }: DeleteQuestionUseCaseRequest): Promise<DeleteQuestionUseCaseResponse> {
-    const isQuestion = await this.questionsRepository.findById(id)
+    const isQuestion = await this.questionsRepository.findById(questionId)
 
     if (!isQuestion) {
       return left(new ResourceNotFoundError())
+    }
+
+    if (accountId !== isQuestion.accountId.toString()) {
+      return left(new NotAllowedError())
     }
 
     await this.questionsRepository.delete(isQuestion.id.toString())
