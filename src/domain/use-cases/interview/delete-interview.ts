@@ -6,6 +6,7 @@ import { InterviewRepository } from '../../repositories/interview-repository'
 
 interface DeleteInterviewUseCaseRequest {
   interviewId: string
+  accountId: string
 }
 
 type DeleteInterviewUseCaseResponse = Either<
@@ -19,11 +20,16 @@ export class DeleteInterviewUseCase {
 
   async execute({
     interviewId,
+    accountId,
   }: DeleteInterviewUseCaseRequest): Promise<DeleteInterviewUseCaseResponse> {
     const interview = await this.interviewsRepository.findById(interviewId)
 
     if (!interview) {
       return left(new ResourceNotFoundError())
+    }
+
+    if (accountId !== interview.accountId.toString()) {
+      return left(new NotAllowedError())
     }
 
     await this.interviewsRepository.delete(interview.id.toString())

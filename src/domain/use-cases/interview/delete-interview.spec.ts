@@ -21,7 +21,10 @@ describe('Delete an interview', () => {
 
     await inMemoryInterviewRepository.create(interview)
 
-    await sut.execute({ interviewId: interview.id.toString() })
+    await sut.execute({
+      interviewId: interview.id.toString(),
+      accountId: interview.accountId.toString(),
+    })
 
     expect(inMemoryInterviewRepository.items).toHaveLength(0)
   })
