@@ -19,6 +19,7 @@ describe('Delete an optionanswer', () => {
 
     await sut.execute({
       optionAnswerId: optionAnswer.id.toString(),
+      accountId: optionAnswer.accountId.toString(),
     })
 
     expect(inMemoryOptionAnswersRepository.items).toHaveLength(0)

@@ -6,6 +6,7 @@ import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-re
 
 interface DeleteOptionAnswerUseCaseRequest {
   optionAnswerId: string
+  accountId: string
 }
 
 type DeleteOptionAnswerUseCaseResponse = Either<
@@ -19,12 +20,18 @@ export class DeleteOptionAnswerUseCase {
 
   async execute({
     optionAnswerId,
+    accountId
   }: DeleteOptionAnswerUseCaseRequest): Promise<DeleteOptionAnswerUseCaseResponse> {
     const optionAnswer =
       await this.optionanswersRepository.findById(optionAnswerId)
 
     if (!optionAnswer) {
       return left(new ResourceNotFoundError())
+    }
+    
+
+    if (accountId !== optionAnswer.accountId.toString()) {
+      return left(new NotAllowedError())
     }
 
     await this.optionanswersRepository.delete(optionAnswer)
