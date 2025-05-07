@@ -2,6 +2,8 @@ import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question
 import { DeleteQuestionUseCase } from './delete-question'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { makeQuestion } from 'test/factories/make-question'
+import { makeAccount } from 'test/factories/make-Account'
+import { makeSurvey } from 'test/factories/make-survey'
 
 let inMemoryQuestionRepository: InMemoryQuestionRepository
 let sut: DeleteQuestionUseCase
@@ -21,7 +23,10 @@ describe('Delete an question', () => {
 
     await inMemoryQuestionRepository.create(question)
 
-    await sut.execute({ id: question.id.toString() })
+    await sut.execute({
+      questionId: question.id.toString(),
+      accountId: question.accountId.toString(),
+    })
 
     expect(inMemoryQuestionRepository.items).toHaveLength(0)
   })
