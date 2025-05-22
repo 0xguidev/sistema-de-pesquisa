@@ -35,7 +35,7 @@ export class EditQuestionController {
     const { title, num } = body
     const accountId = user.sub
 
-    if (!title && !location) {
+    if (!title && !num) {
       throw new BadRequestException()
     }
 
