@@ -3,11 +3,13 @@ import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found
 import { Either, left, right } from 'src/core/types/either'
 import { Question } from '../../entities/question'
 import { QuestionRepository } from '../../repositories/question-repository'
+import { Injectable } from '@nestjs/common'
 
 interface EditQuestionUseCaseRequest {
   questionId: string
-  questionTitle: string
-  questionNum: number
+  accountId: string
+  questionTitle?: string
+  questionNum?: number
 }
 
 type EditQuestionUseCaseResponse = Either<
@@ -17,11 +19,13 @@ type EditQuestionUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class EditQuestionUseCase {
   constructor(private questionsRepository: QuestionRepository) {}
 
   async execute({
     questionId,
+    accountId,
     questionTitle,
     questionNum,
   }: EditQuestionUseCaseRequest): Promise<EditQuestionUseCaseResponse> {
@@ -30,8 +34,13 @@ export class EditQuestionUseCase {
     if (!question) {
       return left(new ResourceNotFoundError())
     }
-    question.questionTitle = questionTitle
-    question.questionNum = questionNum
+
+    if (question.accountId.toString() !== accountId) {
+      return left(new NotAllowedError())
+    }
+    
+    question.questionTitle = questionTitle ?? question.questionTitle
+    question.questionNum = questionNum ?? question.questionNum
 
     await this.questionsRepository.update(question)
 

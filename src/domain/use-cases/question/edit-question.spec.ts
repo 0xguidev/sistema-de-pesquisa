@@ -22,6 +22,7 @@ describe('Edit Question', () => {
 
     const editedQuestion = await sut.execute({
       questionId: question.id.toString(),
+      accountId: question.accountId.toString(),
       questionTitle: 'new_title',
       questionNum: 2,
     })
