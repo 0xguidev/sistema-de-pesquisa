@@ -17,9 +17,10 @@ describe('Edit OptionAnswer', () => {
     await inMemoryOptionAnswersRepository.create(optionAnswer)
 
     const editedOptionAnswer = await sut.execute({
-      answerId: optionAnswer.id.toString(),
-      answerTitle: 'new_title',
-      answerNum: 2,
+      optionId: optionAnswer.id.toString(),
+      accountId: optionAnswer.accountId.toString(),
+      optionTitle: 'new_title',
+      optionNum: 2,
     })
 
     expect(editedOptionAnswer.isRight()).toBe(true)
