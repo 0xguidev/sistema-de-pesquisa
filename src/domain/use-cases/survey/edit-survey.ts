@@ -3,10 +3,13 @@ import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found
 import { Either, left, right } from 'src/core/types/either'
 import { Survey } from '../../entities/survey'
 import { SurveyRepository } from '../../repositories/survey-repository'
+import { Injectable } from '@nestjs/common'
 
 interface EditSurveyUseCaseRequest {
   surveyId: string
-  surveyTitle: string
+  accountId: string
+  surveyTitle?: string
+  surveyLocation?: string
 }
 
 type EditSurveyUseCaseResponse = Either<
@@ -16,12 +19,15 @@ type EditSurveyUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class EditSurveyUseCase {
   constructor(private surveysRepository: SurveyRepository) {}
 
   async execute({
     surveyId,
+    accountId,
     surveyTitle,
+    surveyLocation,
   }: EditSurveyUseCaseRequest): Promise<EditSurveyUseCaseResponse> {
     const survey = await this.surveysRepository.findById(surveyId)
 
@@ -29,7 +35,12 @@ export class EditSurveyUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    survey.title = surveyTitle
+    if (survey.accountId.toString() !== accountId) {
+      return left(new NotAllowedError())
+    }
+
+    survey.title = surveyTitle ?? survey.title
+    survey.location = surveyLocation ?? survey.location
 
     await this.surveysRepository.update(survey)
 

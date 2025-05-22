@@ -25,6 +25,8 @@ import { DeleteInterviewUseCase } from '@/domain/use-cases/interview/delete-inte
 import { DeleteInterviewController } from './controllers/intterview/delete-interview.controller'
 import { DeleteAnswerQuestionController } from './controllers/answer/delete-answer-question.controller'
 import { DeleteAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/delete-answer-question'
+import { EditSurveyUseCase } from '@/domain/use-cases/survey/edit-survey'
+import { EditSurveyController } from './controllers/survey/edit-survey.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -41,6 +43,7 @@ import { DeleteAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/
     DeleteOptionAnswerUseCase,
     DeleteInterviewUseCase,
     DeleteAnswerQuestionUseCase,
+    EditSurveyUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -55,6 +58,7 @@ import { DeleteAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/
     DeleteOptionAnswerController,
     DeleteInterviewController,
     DeleteAnswerQuestionController,
+    EditSurveyController,
   ],
 })
 export class HttpModule {}

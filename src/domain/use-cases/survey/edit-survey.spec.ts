@@ -19,7 +19,9 @@ describe('Edit Survey', () => {
 
     const editedSurvey = await sut.execute({
       surveyId: survey.id.toString(),
+      accountId: survey.accountId.toString(),
       surveyTitle: 'new_title',
+      surveyLocation: 'new location',
     })
 
     expect(editedSurvey.isRight()).toBe(true)
