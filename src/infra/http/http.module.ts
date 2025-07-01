@@ -31,6 +31,8 @@ import { EditQuestionUseCase } from '@/domain/use-cases/question/edit-question'
 import { EditQuestionController } from './controllers/question/edit-question.controller'
 import { EditOptionAnswerUseCase } from '@/domain/use-cases/option-answer/edit-option-answer'
 import { EditOptionAnswerController } from './controllers/option/edit-option.controller'
+import { EditAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/edit-answer-question'
+import { EditAnswerQuestionController } from './controllers/answer/edit-answer-question.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -50,6 +52,7 @@ import { EditOptionAnswerController } from './controllers/option/edit-option.con
     EditSurveyUseCase,
     EditQuestionUseCase,
     EditOptionAnswerUseCase,
+    EditAnswerQuestionUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -67,6 +70,7 @@ import { EditOptionAnswerController } from './controllers/option/edit-option.con
     EditSurveyController,
     EditQuestionController,
     EditOptionAnswerController,
+    EditAnswerQuestionController,
   ],
 })
 export class HttpModule {}

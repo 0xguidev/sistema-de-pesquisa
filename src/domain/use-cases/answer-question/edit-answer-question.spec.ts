@@ -20,8 +20,10 @@ describe('Edit AnswerQuestion', () => {
     answerQuestion.optionAnswerId = new UniqueEntityID('new_title')
 
     const editedAnswerQuestion = await sut.execute({
-      id: answerQuestion.id.toString(),
+      answerQuestionId: answerQuestion.id.toString(),
       optionAnswerId: answerQuestion.optionAnswerId.toString(),
+      accountId: answerQuestion.accountId.toString(),
+      questionId: answerQuestion.questionId.toString(),
     })
 
     expect(editedAnswerQuestion.isRight()).toBe(true)

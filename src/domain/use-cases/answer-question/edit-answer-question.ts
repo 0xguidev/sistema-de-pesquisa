@@ -1,4 +1,5 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { Injectable } from '@nestjs/common'
 import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from 'src/core/types/either'
@@ -6,8 +7,10 @@ import { AnswerQuestion } from 'src/domain/entities/answer-question'
 import { AnswerQuestionRepository } from 'src/domain/repositories/answer-question-repository'
 
 interface EditAnswerQuestionUseCaseRequest {
-  id: string
-  optionAnswerId: string
+  accountId: string
+  answerQuestionId: string
+  questionId?: string
+  optionAnswerId?: string
 }
 
 type EditAnswerQuestionUseCaseResponse = Either<
@@ -17,20 +20,33 @@ type EditAnswerQuestionUseCaseResponse = Either<
   }
 >
 
+@Injectable()
 export class EditAnswerQuestionUseCase {
   constructor(private answerquestionsRepository: AnswerQuestionRepository) {}
 
   async execute({
-    id,
+    accountId,
+    answerQuestionId,
+    questionId,
     optionAnswerId,
   }: EditAnswerQuestionUseCaseRequest): Promise<EditAnswerQuestionUseCaseResponse> {
-    const answerquestion = await this.answerquestionsRepository.findById(id)
+    const answerquestion =
+      await this.answerquestionsRepository.findById(answerQuestionId)
 
     if (!answerquestion) {
       return left(new ResourceNotFoundError())
     }
 
-    answerquestion.optionAnswerId = new UniqueEntityID(optionAnswerId)
+    if (answerquestion.accountId.toString() !== accountId) {
+      return left(new NotAllowedError())
+    }
+
+    answerquestion.optionAnswerId = optionAnswerId
+      ? new UniqueEntityID(optionAnswerId)
+      : answerquestion.optionAnswerId
+    answerquestion.questionId = questionId
+      ? new UniqueEntityID(questionId)
+      : answerquestion.questionId
 
     await this.answerquestionsRepository.update(answerquestion)
 

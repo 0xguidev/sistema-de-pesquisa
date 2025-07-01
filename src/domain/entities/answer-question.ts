@@ -24,10 +24,14 @@ export class AnswerQuestion extends Entity<AnswerQuestionProps> {
     return this.props.questionId
   }
 
+  set questionId(value) {
+    this.props.questionId = value
+  }
+
   get optionAnswerId() {
     return this.props.optionAnswerId
   }
-  
+
   get accountId() {
     return this.props.accountId
   }
