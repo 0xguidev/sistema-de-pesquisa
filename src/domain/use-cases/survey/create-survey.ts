@@ -1,4 +1,5 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { QuestionProps } from '@/domain/entities/question'
 import { Injectable } from '@nestjs/common'
 import { Either, right } from 'src/core/types/either'
 import { Survey } from 'src/domain/entities/survey'
@@ -9,6 +10,7 @@ interface CreateSurveyUseCaseRequest {
   location: string
   type: string
   accountId: string
+  questions: QuestionProps[]
 }
 
 type CreateQuestionUseCaseResponse = Either<
@@ -27,12 +29,14 @@ export class CreateSurveyUseCase {
     location,
     type,
     accountId,
+    questions
   }: CreateSurveyUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const survey = Survey.create({
       title,
       location,
       type,
       accountId: new UniqueEntityID(accountId),
+      questions
     })
 
     await this.surveyRepository.create(survey)

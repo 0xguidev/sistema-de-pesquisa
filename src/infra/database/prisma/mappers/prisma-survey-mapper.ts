@@ -14,6 +14,7 @@ export class PrismaSurveyMapper {
         slug: Slug.create(raw.slug),
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
+        questions: raw.questions
       },
       new UniqueEntityID(raw.id),
     )
@@ -23,12 +24,13 @@ export class PrismaSurveyMapper {
     return {
       id: survey.id.toString(),
       userId: survey.accountId.toString(),
-      title: survey.title,
-      location: survey.location,
-      type: survey.type,
       slug: survey.slug.value,
       createdAt: survey.createdAt,
       updatedAt: survey.updatedAt,
+      title: survey.title,
+      location: survey.location,
+      type: survey.type,
+      questions: survey.questions
     }
   }
 }
