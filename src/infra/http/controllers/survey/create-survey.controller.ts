@@ -9,6 +9,18 @@ const surveyBodySchema = z.object({
   title: z.string(),
   location: z.string(),
   type: z.string(),
+  questions: z.array(
+    z.object({
+      questionTitle: z.string(),
+      questionNum: z.number(),
+      options: z.array(
+        z.object({
+          optionTitle: z.string(),
+          optionNum: z.number(),
+        }),
+      ),
+    }),
+  ),
 })
 
 type SurveyBodySchema = z.infer<typeof surveyBodySchema>
@@ -23,7 +35,7 @@ export class CreateSurveyController {
     @Body(new ZodValidationPipe(surveyBodySchema))
     body: SurveyBodySchema,
   ) {
-    const { title, location, type } = body
+    const { title, location, type, questions } = body
     const userId = user.sub
 
     const result = await this.survey.execute({
@@ -31,6 +43,7 @@ export class CreateSurveyController {
       location,
       type,
       accountId: userId,
+      questions,
     })
 
     if (result.isLeft()) {

@@ -27,28 +27,65 @@ describe('Create survey (E2E)', () => {
     await app.init()
   })
 
-  test('[POST] /surveys', async () => {
-    const user = await accountFactory.makePrismaAccount()
+  afterAll(async () => {
+    await app.close()
+  })
 
+  test('[POST] /surveys - should create survey with questions and options', async () => {
+    const user = await accountFactory.makePrismaAccount()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
     const response = await request(app.getHttpServer())
       .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        title: 'New survey',
-        location: 'survey location',
-        type: 'survey',
+        title: 'Pesquisa Eleitoral 2025',
+        location: 'Santa Catarina',
+        type: 'Opinião Pública',
+        questions: [
+          {
+            questionTitle: 'Qual sua avaliação do governo federal?',
+            questionNum: 1,
+            options: [
+              { optionTitle: 'Ótimo', optionNum: 1 },
+              { optionTitle: 'Bom', optionNum: 2 },
+              { optionTitle: 'Regular', optionNum: 3 },
+              { optionTitle: 'Ruim', optionNum: 4 },
+              { optionTitle: 'Péssimo', optionNum: 5 },
+            ],
+          },
+          {
+            questionTitle: 'Qual sua avaliação do governo estadual?',
+            questionNum: 2,
+            options: [
+              { optionTitle: 'Ótimo', optionNum: 1 },
+              { optionTitle: 'Bom', optionNum: 2 },
+              { optionTitle: 'Regular', optionNum: 3 },
+              { optionTitle: 'Ruim', optionNum: 4 },
+              { optionTitle: 'Péssimo', optionNum: 5 },
+            ],
+          },
+        ],
       })
 
     expect(response.statusCode).toBe(201)
 
-    const surveyOnDatabase = await prisma.survey.findFirst({
-      where: {
-        title: 'New survey',
-      },
+    const survey = await prisma.survey.findFirst({
+      where: { title: 'Pesquisa Eleitoral 2025' },
     })
 
-    expect(surveyOnDatabase).toBeTruthy()
+    expect(survey).toBeTruthy()
+
+    const questions = await prisma.question.findMany({
+      where: { surveyId: survey?.id },
+    })
+
+    expect(questions.length).toBe(2)
+
+    const options = await prisma.optionAnswer.findMany({
+      where: { questionId: questions[0].id },
+    })
+
+    expect(options.length).toBe(5)
   })
 })

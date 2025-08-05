@@ -1,13 +1,13 @@
 services:
   postgres:
     image: postgres:latest
-    container_name: sistema-de-pesquisa-postgres
+    container_name: sistema-de-pesquisa
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: toor
-      POSTGRES_DB: sistema-pesquisa
+      POSTGRES_DB: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped

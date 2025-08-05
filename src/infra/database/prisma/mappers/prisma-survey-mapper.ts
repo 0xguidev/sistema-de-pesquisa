@@ -1,4 +1,4 @@
-import { Prisma, Survey as PrismaSurvey } from '@prisma/client'
+import { Survey as PrismaSurvey, Prisma } from '@prisma/client'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Survey } from '@/domain/entities/survey'
 import { Slug } from '@/domain/entities/value-objects/slug'
@@ -22,10 +22,10 @@ export class PrismaSurveyMapper {
   static toPrisma(survey: Survey): Prisma.SurveyUncheckedCreateInput {
     return {
       id: survey.id.toString(),
-      userId: survey.accountId.toString(),
       title: survey.title,
       location: survey.location,
       type: survey.type,
+      userId: survey.accountId.toString(),
       slug: survey.slug.value,
       createdAt: survey.createdAt,
       updatedAt: survey.updatedAt,
