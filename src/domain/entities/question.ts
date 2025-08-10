@@ -2,7 +2,6 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
 import { Optional } from '@/core/types/optional'
-import { OptionAnswerProps } from './option-answer'
 
 export interface QuestionProps {
   questionTitle: string
@@ -10,7 +9,6 @@ export interface QuestionProps {
   surveyId: UniqueEntityID
   accountId: UniqueEntityID
   slug: Slug
-  options: OptionAnswerProps[]
   createdAt?: Date
   updatedAt?: Date | null
 }
@@ -55,10 +53,6 @@ export class Question extends Entity<QuestionProps> {
 
   get updatedAt() {
     return this.props.updatedAt
-  }
-
-  get options() {
-    return this.props.options
   }
 
   static create(
