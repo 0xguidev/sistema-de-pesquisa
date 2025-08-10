@@ -33,6 +33,7 @@ describe('Create survey (E2E)', () => {
 
   test('[POST] /surveys', async () => {
     const user = await accountFactory.makePrismaAccount()
+  })
 
   test('[POST] /surveys - should create survey with questions and options', async () => {
     const user = await accountFactory.makePrismaAccount()
