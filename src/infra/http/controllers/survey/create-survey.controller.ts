@@ -42,7 +42,8 @@ export class CreateSurveyController {
 
   @Post()
   async handle(
-    @CurrentUser() user: UserPayload,
+    @CurrentUser()
+    user: UserPayload,
     @Body(new ZodValidationPipe(surveyBodySchema))
     body: SurveyBodySchema,
   ) {

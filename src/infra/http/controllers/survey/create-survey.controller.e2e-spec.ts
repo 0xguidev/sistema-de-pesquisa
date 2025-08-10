@@ -31,42 +31,34 @@ describe('Create survey (E2E)', () => {
     await app.close()
   })
 
+  test('[POST] /surveys', async () => {
+    const user = await accountFactory.makePrismaAccount()
+
   test('[POST] /surveys - should create survey with questions and options', async () => {
     const user = await accountFactory.makePrismaAccount()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // Payload com perguntas válidas para passar validação Zod
+    const payload = {
+      title: 'New survey',
+      location: 'survey location',
+      type: 'survey',
+      questions: [
+        {
+          questionTitle: 'First question',
+          questionNum: 1,
+          answers: [
+            { optionTitle: 'Option 1', optionNum: 1 },
+            { optionTitle: 'Option 2', optionNum: 2 },
+          ],
+        },
+      ],
+    }
+
     const response = await request(app.getHttpServer())
       .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        title: 'Pesquisa Eleitoral 2025',
-        location: 'Santa Catarina',
-        type: 'Opinião Pública',
-        questions: [
-          {
-            questionTitle: 'Qual sua avaliação do governo federal?',
-            questionNum: 1,
-            options: [
-              { optionTitle: 'Ótimo', optionNum: 1 },
-              { optionTitle: 'Bom', optionNum: 2 },
-              { optionTitle: 'Regular', optionNum: 3 },
-              { optionTitle: 'Ruim', optionNum: 4 },
-              { optionTitle: 'Péssimo', optionNum: 5 },
-            ],
-          },
-          {
-            questionTitle: 'Qual sua avaliação do governo estadual?',
-            questionNum: 2,
-            options: [
-              { optionTitle: 'Ótimo', optionNum: 1 },
-              { optionTitle: 'Bom', optionNum: 2 },
-              { optionTitle: 'Regular', optionNum: 3 },
-              { optionTitle: 'Ruim', optionNum: 4 },
-              { optionTitle: 'Péssimo', optionNum: 5 },
-            ],
-          },
-        ],
-      })
+      .send(payload)
 
     expect(response.statusCode).toBe(201)
 

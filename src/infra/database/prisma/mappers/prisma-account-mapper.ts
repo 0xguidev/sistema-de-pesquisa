@@ -1,6 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Account } from '@/domain/entities/account'
-import { User as PrismaUser, Prisma } from 'prisma'
+import { User as PrismaUser, Prisma } from '@prisma/client'
 export class PrismaAccountMapper {
   static toDomain(raw: PrismaUser): Account {
     return Account.create(
@@ -12,7 +12,7 @@ export class PrismaAccountMapper {
       new UniqueEntityID(raw.id),
     )
   }
-  static toPrisma(account: Account): Prisma.UserUncheckendCreateInput {
+  static toPrisma(account: Account): Prisma.UserUncheckedCreateInput {
     return {
       id: account.id.toString(),
       name: account.name,
