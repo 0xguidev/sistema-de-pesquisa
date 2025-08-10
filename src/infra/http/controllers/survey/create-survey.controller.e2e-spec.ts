@@ -27,19 +27,36 @@ describe('Create survey (E2E)', () => {
     await app.init()
   })
 
+  afterAll(async () => {
+    await app.close()
+  })
+
   test('[POST] /surveys', async () => {
     const user = await accountFactory.makePrismaAccount()
 
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
+    // Payload com perguntas válidas para passar validação Zod
+    const payload = {
+      title: 'New survey',
+      location: 'survey location',
+      type: 'survey',
+      questions: [
+        {
+          questionTitle: 'First question',
+          questionNum: 1,
+          answers: [
+            { optionTitle: 'Option 1', optionNum: 1 },
+            { optionTitle: 'Option 2', optionNum: 2 },
+          ],
+        },
+      ],
+    }
+
     const response = await request(app.getHttpServer())
       .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        title: 'New survey',
-        location: 'survey location',
-        type: 'survey',
-      })
+      .send(payload)
 
     expect(response.statusCode).toBe(201)
 
