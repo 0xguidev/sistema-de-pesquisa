@@ -7,13 +7,13 @@ export class PrismaQuestionMapper {
   static toDomain(raw: PrismaQuestion): Question {
     return Question.create(
       {
-        questionTitle: raw.title,
-        questionNum: raw.number,
-        surveyId: new UniqueEntityID(raw.surveyId),
         accountId: new UniqueEntityID(raw.userId),
+        surveyId: new UniqueEntityID(raw.surveyId),
         slug: Slug.create(raw.slug),
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
+        questionTitle: raw.title,
+        questionNum: raw.number,
       },
       new UniqueEntityID(raw.id),
     )

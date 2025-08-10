@@ -22,13 +22,13 @@ export class PrismaSurveyMapper {
   static toPrisma(survey: Survey): Prisma.SurveyUncheckedCreateInput {
     return {
       id: survey.id.toString(),
-      title: survey.title,
-      location: survey.location,
-      type: survey.type,
       userId: survey.accountId.toString(),
       slug: survey.slug.value,
       createdAt: survey.createdAt,
       updatedAt: survey.updatedAt,
+      title: survey.title,
+      location: survey.location,
+      type: survey.type,
     }
   }
 }

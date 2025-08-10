@@ -2,7 +2,7 @@ import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-rep
 import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
 import { CreateSurveyUseCase } from './create-survey'
 import { makeAccount } from 'test/factories/make-Account'
-import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
+import { makeQuestion } from 'test/factories/make-question'
 
 let inMemorySurveyRepository: InMemorySurveyRepository
 let inMemoryQuestionRepository: InMemoryQuestionRepository
@@ -24,6 +24,9 @@ describe('CreateSurveyUseCase', () => {
 
   it('should create a survey with questions and options', async () => {
     const account = makeAccount()
+    const question1 =makeQuestion({questionNum: 1})
+    const question2 =makeQuestion({questionNum: 2})
+    const question3 =makeQuestion({questionNum: 3})
 
     const result = await sut.execute({
       title: 'Favorite programming language?',
@@ -31,16 +34,10 @@ describe('CreateSurveyUseCase', () => {
       type: 'multiple-choice',
       accountId: account.id.toString(),
       questions: [
-        {
-          questionTitle: 'Which language do you prefer?',
-          questionNum: 1,
-          options: [
-            { optionTitle: 'JavaScript', optionNum: 1 },
-            { optionTitle: 'TypeScript', optionNum: 2 },
-            { optionTitle: 'Python', optionNum: 3 },
-          ],
-        },
-      ],
+        question1,
+        question2,
+        question3
+      ]
     })
 
     expect(result.isRight()).toBe(true)

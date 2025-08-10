@@ -27,6 +27,9 @@ export class Slug {
       .replace(/--+/g, '-')
       .replace(/-$/g, '')
 
-    return new Slug(slugText)
+    const randomNumber = Math.floor(100 + Math.random() * 900) // gera um número aleatório entre 100 e 999
+    const slugWithRandomNumber = `${slugText}-${randomNumber}`
+
+    return new Slug(slugWithRandomNumber)
   }
 }

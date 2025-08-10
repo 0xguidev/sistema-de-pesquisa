@@ -4,16 +4,22 @@ import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Survey, SurveyProps } from 'src/domain/entities/survey'
+import { makeQuestion } from './make-question'
 
 export function makeSurvey(
   override: Partial<SurveyProps> = {},
   id?: UniqueEntityID,
 ) {
+  const question1 = makeQuestion({ questionNum: 1 })
+  const question2 = makeQuestion({ questionNum: 2 })
+  const question3 = makeQuestion({ questionNum: 3 })
+
   const survey = Survey.create(
     {
       title: faker.lorem.sentence(),
       type: faker.lorem.word(),
       location: faker.lorem.word(),
+      questions: [question1, question2, question3],
       accountId: new UniqueEntityID(),
       ...override,
     },

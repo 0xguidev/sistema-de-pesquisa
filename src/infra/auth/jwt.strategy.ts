@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { z } from 'zod'
 import { EnvService } from '../env/env.service'
+import { Request } from 'express'
 
 const tokenPayloadSchema = z.object({
   sub: z.string().uuid(),
@@ -16,7 +17,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const publicKey = config.get('JWT_PUBLIC_KEY')
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => {
+          return req?.cookies?.token || null // pega token do cookie chamado 'token'
+        },
+        ExtractJwt.fromAuthHeaderAsBearerToken(), // fallback header
+      ]),
       secretOrKey: Buffer.from(publicKey, 'base64'),
       algorithms: ['RS256'],
     })

@@ -44,17 +44,15 @@ export class CreateSurveyUseCase {
     title,
     location,
     type,
-    accountId,
-    questions,
-  }: CreateSurveyUseCaseRequest): Promise<CreateSurveyUseCaseResponse> {
-    const accountIdUnique = new UniqueEntityID(accountId)
-
+    accountId
+  }: CreateSurveyUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
     const survey = Survey.create({
       title,
       location,
       type,
       accountId: accountIdUnique,
     })
+
 
     await this.surveyRepository.create(survey)
 

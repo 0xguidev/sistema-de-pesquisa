@@ -22,11 +22,11 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  survey         Survey[]
-  Question       Question[]
-  OptionAnswer   OptionAnswer[]
-  Interview      Interview[]
-  AnswerQuestion AnswerQuestion[]
+  surveys         Survey[]
+  Questions       Question[]
+  OptionAnswers   OptionAnswer[]
+  Interviews      Interview[]
+  AnswerQuestions AnswerQuestion[]
 
   @@map("users")
 }
@@ -43,8 +43,8 @@ model Survey {
 
   user User @relation(fields: [userId], references: [id])
 
-  question  Question[]
-  interview Interview[]
+  questions  Question[]
+  interviews Interview[]
 
   @@map("surveys")
 }
@@ -58,12 +58,11 @@ model Question {
   slug      String    @unique
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  options   String[]
 
   user            User             @relation(fields: [userId], references: [id])
   survey          Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  option_answer   OptionAnswer[]
-  answer_question AnswerQuestion[]
+  option_answers   OptionAnswer[]
+  answer_questions AnswerQuestion[]
 
   @@map("questions")
 }
@@ -81,7 +80,7 @@ model OptionAnswer {
   user     User     @relation(fields: [userId], references: [id])
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
-  answer_question AnswerQuestion[]
+  answer_questions AnswerQuestion[]
 
   @@map("option_answers")
 }
@@ -96,7 +95,7 @@ model Interview {
 
   survey          Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   user            User             @relation(fields: [userId], references: [id])
-  answer_question AnswerQuestion[]
+  answer_questions AnswerQuestion[]
 
   @@map("interviews")
 }
