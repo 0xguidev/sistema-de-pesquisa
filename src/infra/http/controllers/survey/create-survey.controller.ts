@@ -1,12 +1,7 @@
 import { CreateSurveyUseCase } from '@/domain/use-cases/survey/create-survey'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Post,
-} from '@nestjs/common'
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { CreateQuestionUseCase } from '@/domain/use-cases/question/create-question'
@@ -55,7 +50,6 @@ export class CreateSurveyController {
       location,
       type,
       accountId: userId,
-      questions,
     })
 
     if (result.isLeft()) {
