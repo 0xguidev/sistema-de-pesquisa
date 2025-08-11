@@ -30,6 +30,31 @@ export class PrismaSurveyRepository implements SurveyRepository {
     return PrismaSurveyMapper.toDomain(survey)
   }
 
+  async findManyWithPagination(
+    page: number,
+    accountId: string
+  ): Promise<{ id: string; title: string }[]> {
+    const skip = (page - 1) * 10
+    const take = 10
+
+    const surveys = await this.prisma.survey.findMany({
+      skip,
+      take,
+      select: {
+        id: true,
+        title: true,
+      },
+      where: {
+        userId: accountId,
+      },
+    })
+
+    return surveys.map((survey) => ({
+      id: survey.id,
+      title: survey.title,
+    }))
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.survey.delete({
       where: {
@@ -37,6 +62,7 @@ export class PrismaSurveyRepository implements SurveyRepository {
       },
     })
   }
+  
   async update(survey: Survey): Promise<void> {
     const data = PrismaSurveyMapper.toPrisma(survey)
 
