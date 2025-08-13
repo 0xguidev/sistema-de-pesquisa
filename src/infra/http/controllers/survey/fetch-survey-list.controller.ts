@@ -25,8 +25,6 @@ export class FetchSurveyListController {
     const { page } = query
     const userId = user.sub
 
-    console.log('userId', userId)
-
     const result = await this.fetchSurveyListUseCase.execute({
       page,
       accountId: userId,
