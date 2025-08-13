@@ -31,10 +31,6 @@ describe('Create survey (E2E)', () => {
     await app.close()
   })
 
-  test('[POST] /surveys', async () => {
-    const user = await accountFactory.makePrismaAccount()
-  })
-
   test('[POST] /surveys - should create survey with questions and options', async () => {
     const user = await accountFactory.makePrismaAccount()
     const accessToken = jwt.sign({ sub: user.id.toString() })
@@ -53,6 +49,14 @@ describe('Create survey (E2E)', () => {
             { optionTitle: 'Option 2', optionNum: 2 },
           ],
         },
+        {
+          questionTitle: 'second question',
+          questionNum: 1,
+          answers: [
+            { optionTitle: 'Option 1', optionNum: 1 },
+            { optionTitle: 'Option 2', optionNum: 2 },
+          ],
+        },
       ],
     }
 
@@ -64,7 +68,7 @@ describe('Create survey (E2E)', () => {
     expect(response.statusCode).toBe(201)
 
     const survey = await prisma.survey.findFirst({
-      where: { title: 'Pesquisa Eleitoral 2025' },
+      where: { title: 'New survey' },
     })
 
     expect(survey).toBeTruthy()
@@ -79,6 +83,6 @@ describe('Create survey (E2E)', () => {
       where: { questionId: questions[0].id },
     })
 
-    expect(options.length).toBe(5)
+    expect(options.length).toBe(2)
   })
 })
