@@ -35,6 +35,8 @@ import { EditAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/ed
 import { EditAnswerQuestionController } from './controllers/answer/edit-answer-question.controller'
 import { FetchSurveyListController } from './controllers/survey/fetch-survey-list.controller'
 import { FetchSurveyListUseCase } from '@/domain/use-cases/survey/fetch-survey-list'
+import { FetchSurveyIdUseCase } from '@/domain/use-cases/survey/fetch-survey-id'
+import { FetchSurveyByIdController } from './controllers/survey/fetch-survey-id.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -56,6 +58,7 @@ import { FetchSurveyListUseCase } from '@/domain/use-cases/survey/fetch-survey-l
     EditOptionAnswerUseCase,
     EditAnswerQuestionUseCase,
     FetchSurveyListUseCase,
+    FetchSurveyIdUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -75,6 +78,7 @@ import { FetchSurveyListUseCase } from '@/domain/use-cases/survey/fetch-survey-l
     EditOptionAnswerController,
     EditAnswerQuestionController,
     FetchSurveyListController,
+    FetchSurveyByIdController,
   ],
 })
 export class HttpModule {}

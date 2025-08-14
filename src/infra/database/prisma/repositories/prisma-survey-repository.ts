@@ -3,6 +3,8 @@ import { SurveyRepository } from '@/domain/repositories/survey-repository'
 import { Injectable } from '@nestjs/common'
 import { PrismaSurveyMapper } from '../mappers/prisma-survey-mapper'
 import { PrismaService } from '../prisma.service'
+import { PrismaSurveyDetailsMapper } from '../mappers/PrismaSurveyDetailsMapper'
+import { SurveyDetails } from '@/domain/use-cases/survey/interfaces/survey.interface'
 
 @Injectable()
 export class PrismaSurveyRepository implements SurveyRepository {
@@ -30,9 +32,34 @@ export class PrismaSurveyRepository implements SurveyRepository {
     return PrismaSurveyMapper.toDomain(survey)
   }
 
+  async findSurveydetails(
+    id: string,
+    accountId: string,
+  ): Promise<SurveyDetails | null> {
+    const survey = await this.prisma.survey.findUnique({
+      where: {
+        id,
+        userId: accountId,
+      },
+      include: {
+        questions: {
+          include: {
+            option_answers: true,
+          },
+        },
+      },
+    })
+
+    if (!survey) {
+      return null
+    }
+
+    return PrismaSurveyDetailsMapper.toDomain(survey)
+  }
+
   async findManyWithPagination(
     page: number,
-    accountId: string
+    accountId: string,
   ): Promise<{ id: string; title: string }[]> {
     const skip = (page - 1) * 10
     const take = 10
@@ -62,7 +89,7 @@ export class PrismaSurveyRepository implements SurveyRepository {
       },
     })
   }
-  
+
   async update(survey: Survey): Promise<void> {
     const data = PrismaSurveyMapper.toPrisma(survey)
 

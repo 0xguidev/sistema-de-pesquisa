@@ -1,5 +1,6 @@
 import { Survey } from 'src/domain/entities/survey'
 import { SurveyRepository } from 'src/domain/repositories/survey-repository'
+import { InMemoryQuestionRepository } from './in-memory-question-repository'
 
 export class InMemorySurveyRepository implements SurveyRepository {
   public items: Survey[] = []
@@ -36,6 +37,27 @@ export class InMemorySurveyRepository implements SurveyRepository {
     const itemIndex = this.items.findIndex((item) => item.id === survey.id)
 
     this.items[itemIndex] = survey
+  }
+
+  async findSurveydetails(id: string, accountId: string): Promise<any> {
+    const survey = this.items.find(
+      (item) =>
+        item.id.toString() === id && item.accountId.toString() === accountId,
+    )
+
+    if (!survey) {
+      return null
+    }
+
+    const questionRepository = new InMemoryQuestionRepository()
+    const questions = await questionRepository.findQuestionsBySurveyId(id)
+
+    const surveyWithQuestions = {
+      ...survey,
+      questions,
+    }
+
+    return surveyWithQuestions
   }
 
   async update(survey: Survey): Promise<void> {
