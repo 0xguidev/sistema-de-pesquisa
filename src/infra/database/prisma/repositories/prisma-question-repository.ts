@@ -30,6 +30,20 @@ export class PrismaQuestionRepository implements QuestionRepository {
     return PrismaQuestionMapper.toDomain(question)
   }
 
+  async findQuestionsBySurveyId(surveyId: string): Promise<Question[]> {
+    const questions = await this.prisma.question.findMany({
+      where: {
+        surveyId,
+      },
+    })
+
+    if (!questions) {
+      return []
+    } 
+
+    return questions.map(PrismaQuestionMapper.toDomain)
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.question.delete({
       where: {

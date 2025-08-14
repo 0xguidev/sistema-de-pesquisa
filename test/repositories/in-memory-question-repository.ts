@@ -16,6 +16,10 @@ export class InMemoryQuestionRepository implements QuestionRepository {
     return question
   }
 
+  async findQuestionsBySurveyId(surveyId: string): Promise<Question[]> {
+    return this.items.filter((item) => item.surveyId.toString() === surveyId)
+  }
+
   async create(question: Question) {
     this.items.push(question)
   }
