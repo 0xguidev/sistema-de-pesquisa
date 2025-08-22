@@ -89,7 +89,6 @@ model Interview {
   id        String    @id @unique @default(uuid())
   surveyId  String
   userId    String
-  answers   String[]
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
