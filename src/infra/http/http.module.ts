@@ -37,6 +37,9 @@ import { FetchSurveyListController } from './controllers/survey/fetch-survey-lis
 import { FetchSurveyListUseCase } from '@/domain/use-cases/survey/fetch-survey-list'
 import { FetchSurveyIdUseCase } from '@/domain/use-cases/survey/fetch-survey-id'
 import { FetchSurveyByIdController } from './controllers/survey/fetch-survey-id.controller'
+import { FetchInterviewUseCase } from '@/domain/use-cases/interview/fetch-interview-by-id'
+import { FetchInterviewsController } from './controllers/interview/fetch-interviews.controller'
+import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/fetch-interview-by-survey-id'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -59,6 +62,7 @@ import { FetchSurveyByIdController } from './controllers/survey/fetch-survey-id.
     EditAnswerQuestionUseCase,
     FetchSurveyListUseCase,
     FetchSurveyIdUseCase,
+    FetchInterviewsBySurveyIdUseCase
   ],
   controllers: [
     CreateAccountController,
@@ -79,6 +83,7 @@ import { FetchSurveyByIdController } from './controllers/survey/fetch-survey-id.
     EditAnswerQuestionController,
     FetchSurveyListController,
     FetchSurveyByIdController,
+    FetchInterviewsController
   ],
 })
 export class HttpModule {}

@@ -6,6 +6,49 @@ export class InMemoryInterviewRepository implements InterviewRepository {
 
   constructor() {} // private survey: InMemorySurveyRepository,
 
+  async findBySurveyId(
+    surveyId: string,
+    accountId: string,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: {
+      id: string
+      surveyId: string
+      accountId: string
+      createdAt: Date
+      updatedAt: Date
+      answers: { id: string; question: string; answer: string }[]
+    }[]
+    total: number
+  }> {
+    // Filtra entrevistas pelo surveyId e accountId
+    const filtered = this.items.filter(
+      (item) =>
+        item.surveyId.toString() === surveyId &&
+        item.accountId.toString() === accountId,
+    )
+
+    const total = filtered.length
+
+    // Aplica paginação
+    const start = (page - 1) * limit
+    const end = start + limit
+    const paginated = filtered.slice(start, end)
+
+    // Converte para InterviewDetails no formato esperado
+    const data = paginated.map((interview) => ({
+      id: interview.id.toString(),
+      surveyId: interview.surveyId.toString(),
+      accountId: interview.accountId.toString(),
+      createdAt: interview.createdAt,
+      updatedAt: interview.updatedAt ?? interview.createdAt,
+      answers: [], // Placeholder até integrar respostas
+    }))
+
+    return { data, total }
+  }
+
   async findById(id: string) {
     const interview = this.items.find((item) => item.id.toString() === id)
 
