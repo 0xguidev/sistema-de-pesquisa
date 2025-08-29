@@ -1,14 +1,14 @@
 import { makeInterview } from 'test/factories/make-interview'
 import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
-import { GetInterviewUseCase } from './get-interview'
+import { FetchInterviewUseCase } from './fetch-interview-by-id'
 
 let inMemoryInterviewsRepository: InMemoryInterviewRepository
-let sut: GetInterviewUseCase
+let sut: FetchInterviewUseCase
 
 describe('Get Interview', () => {
   beforeEach(() => {
     inMemoryInterviewsRepository = new InMemoryInterviewRepository()
-    sut = new GetInterviewUseCase(inMemoryInterviewsRepository)
+    sut = new FetchInterviewUseCase(inMemoryInterviewsRepository)
   })
 
   it('Should be able to get a interview', async () => {

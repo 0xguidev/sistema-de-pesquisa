@@ -2,23 +2,23 @@ import { Interview } from '../../entities/interview'
 import { InterviewRepository } from '../../repositories/interview-repository'
 import { Either, right, left } from 'src/core/types/either'
 
-interface GetInterviewUseCaseRequest {
+interface FetchInterviewUseCaseRequest {
   interviewId: string
 }
 
-type GetInterviewUseCaseResponse = Either<
+type FetchInterviewUseCaseResponse = Either<
   Error,
   {
     interview: Interview
   }
 >
 
-export class GetInterviewUseCase {
+export class FetchInterviewUseCase {
   constructor(private interviewRepository: InterviewRepository) {}
 
   async execute({
     interviewId,
-  }: GetInterviewUseCaseRequest): Promise<GetInterviewUseCaseResponse> {
+  }: FetchInterviewUseCaseRequest): Promise<FetchInterviewUseCaseResponse> {
     const interview = await this.interviewRepository.findById(interviewId)
 
     if (!interview) {
