@@ -32,7 +32,6 @@ export class CreateInterviewController {
   ) {
     const { surveyId, answers } = body
     const userId = user.sub
-    console.log(body)
 
     const result = await this.interview.execute({
       surveyId,
