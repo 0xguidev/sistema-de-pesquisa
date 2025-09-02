@@ -20,31 +20,28 @@ export class PrismaSurveyDetailsMapper {
   }): any {
     return {
       survey: {
-        id: new UniqueEntityID(raw.id),
+        id: new UniqueEntityID(raw.id).toValue(),
         title: raw.title,
         location: raw.location,
         type: raw.type,
-        accountId: new UniqueEntityID(raw.userId),
         slug: Slug.create(raw.slug),
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
         questions: raw.questions.map((question) => {
           return {
-            id: new UniqueEntityID(question.id),
+            id: new UniqueEntityID(question.id).toValue(),
             questionTitle: question.title,
             questionNum: question.number,
-            accountId: new UniqueEntityID(question.userId),
-            surveyId: new UniqueEntityID(question.surveyId),
+            surveyId: new UniqueEntityID(question.surveyId).toValue(),
             slug: Slug.create(question.slug),
             createdAt: question.createdAt,
             updatedAt: question.updatedAt,
             option_answers: question.option_answers.map((option) => {
               return {
-                id: new UniqueEntityID(option.id),
+                id: new UniqueEntityID(option.id).toValue(),
                 optionTitle: option.option,
                 optionNum: option.number,
-                questionId: new UniqueEntityID(option.questionId),
-                accountId: new UniqueEntityID(option.userId),
+                questionId: new UniqueEntityID(option.questionId).toValue(),
                 slug: Slug.create(option.slug),
                 createdAt: option.createdAt,
                 updatedAt: option.updatedAt,

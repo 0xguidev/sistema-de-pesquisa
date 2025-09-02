@@ -43,6 +43,7 @@ describe('Create interview (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         surveyId: survey.id.toString(),
+        answers: [],
       })
 
     expect(response.statusCode).toBe(201)

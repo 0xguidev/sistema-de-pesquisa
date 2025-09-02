@@ -3,7 +3,7 @@ import { SurveyRepository } from '@/domain/repositories/survey-repository'
 import { Injectable } from '@nestjs/common'
 import { PrismaSurveyMapper } from '../mappers/prisma-survey-mapper'
 import { PrismaService } from '../prisma.service'
-import { PrismaSurveyDetailsMapper } from '../mappers/PrismaSurveyDetailsMapper'
+import { PrismaSurveyDetailsMapper } from '../mappers/prisma-survey-detailsMapper'
 import { SurveyDetails } from '@/domain/use-cases/survey/interfaces/survey.interface'
 
 @Injectable()
