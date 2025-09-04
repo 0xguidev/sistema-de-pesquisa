@@ -12,7 +12,6 @@ describe('create an question', async () => {
     inMemoryQuestionRepository = new InMemoryQuestionRepository()
 
     sut = new CreateQuestionUseCase(inMemoryQuestionRepository)
-
   })
 
   it('should create a question', async () => {
@@ -31,5 +30,31 @@ describe('create an question', async () => {
     expect(inMemoryQuestionRepository.items[0]).toEqual(
       createdQuestion.value?.question,
     )
+  })
+
+  it('should create a question with conditional rules', async () => {
+    const account = makeAccount()
+
+    const survey = makeSurvey()
+
+    const createdQuestion = await sut.execute({
+      questionTitle: 'What is your favorite color?',
+      questionNum: 1,
+      accountId: account.id.toString(),
+      surveyId: survey.id.toString(),
+      conditionalRules: [
+        {
+          dependsOnQuestionId: 'some-question-id',
+          dependsOnOptionId: 'some-option-id',
+          operator: 'EQUAL',
+        },
+      ],
+    })
+
+    expect(createdQuestion.isRight()).toBe(true)
+    expect(inMemoryQuestionRepository.items[0]).toEqual(
+      createdQuestion.value?.question,
+    )
+    expect(inMemoryQuestionRepository.conditionalRules.length).toBe(1)
   })
 })

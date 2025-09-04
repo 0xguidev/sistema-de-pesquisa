@@ -3,6 +3,8 @@ import { QuestionRepository } from '@/domain/repositories/question-repository'
 import { Injectable } from '@nestjs/common'
 import { PrismaQuestionMapper } from '../mappers/prisma-question-mapper'
 import { PrismaService } from '../prisma.service'
+import { ConditionalRule } from '@/domain/entities/conditional-rule'
+import { PrismaConditionalRuleMapper } from '../mappers/prisma-conditional-rule-mapper'
 
 @Injectable()
 export class PrismaQuestionRepository implements QuestionRepository {
@@ -39,7 +41,7 @@ export class PrismaQuestionRepository implements QuestionRepository {
 
     if (!questions) {
       return []
-    } 
+    }
 
     return questions.map(PrismaQuestionMapper.toDomain)
   }
@@ -58,6 +60,45 @@ export class PrismaQuestionRepository implements QuestionRepository {
     await this.prisma.question.update({
       where: {
         id: question.id.toString(),
+      },
+      data,
+    })
+  }
+
+  async createConditionalRule(rule: ConditionalRule): Promise<void> {
+    const data = PrismaConditionalRuleMapper.toPrisma(rule)
+
+    await this.prisma.conditionalRule.create({
+      data,
+    })
+  }
+
+  async findConditionalRulesByQuestionId(
+    questionId: string,
+  ): Promise<ConditionalRule[]> {
+    const rules = await this.prisma.conditionalRule.findMany({
+      where: {
+        questionId,
+      },
+    })
+
+    return rules.map(PrismaConditionalRuleMapper.toDomain)
+  }
+
+  async deleteConditionalRule(id: string): Promise<void> {
+    await this.prisma.conditionalRule.delete({
+      where: {
+        id,
+      },
+    })
+  }
+
+  async updateConditionalRule(rule: ConditionalRule): Promise<void> {
+    const data = PrismaConditionalRuleMapper.toPrisma(rule)
+
+    await this.prisma.conditionalRule.update({
+      where: {
+        id: rule.id.toString(),
       },
       data,
     })

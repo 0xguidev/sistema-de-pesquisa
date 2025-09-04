@@ -2,6 +2,7 @@ import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
 import { Entity } from 'src/core/entities/entity'
 import { Optional } from '@/core/types/optional'
+import { ConditionalRule } from '@prisma/client'
 
 export interface QuestionProps {
   questionTitle: string
@@ -11,6 +12,7 @@ export interface QuestionProps {
   slug: Slug
   createdAt?: Date
   updatedAt?: Date | null
+  conditionalRules?: ConditionalRule[]
 }
 
 export class Question extends Entity<QuestionProps> {
@@ -20,6 +22,14 @@ export class Question extends Entity<QuestionProps> {
 
   get questionTitle() {
     return this.props.questionTitle
+  }
+
+  get conditionalRules() {
+    return this.props.conditionalRules || []
+  }
+  
+  set conditionalRules(rules: ConditionalRule[]) {
+    this.props.conditionalRules = rules
   }
 
   set questionTitle(title: string) {
@@ -53,6 +63,15 @@ export class Question extends Entity<QuestionProps> {
 
   get updatedAt() {
     return this.props.updatedAt
+  }
+  addConditionalRule(rule: ConditionalRule) {
+    this.props.conditionalRules = this.props.conditionalRules || []
+    this.props.conditionalRules.push(rule)
+  }
+
+  removeConditionalRule(ruleId: UniqueEntityID) {
+    this.props.conditionalRules = this.props.conditionalRules || []
+    this.props.conditionalRules.filter((rule) => rule.id !== ruleId.toString())
   }
 
   static create(
