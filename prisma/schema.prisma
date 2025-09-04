@@ -59,8 +59,11 @@ model Question {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  user             User             @relation(fields: [userId], references: [id])
-  survey           Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  conditionalRules ConditionalRule[] @relation("QuestionToConditionalRule")
+  dependsOnConditionalRules ConditionalRule[] @relation("dependsOnQuestion")
+
+  user             User              @relation(fields: [userId], references: [id])
+  survey           Survey            @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   option_answers   OptionAnswer[]
   answer_questions AnswerQuestion[]
 
@@ -81,6 +84,7 @@ model OptionAnswer {
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   answer_questions AnswerQuestion[]
+  dependsOnConditionalRules ConditionalRule[] @relation("dependsOnOption")
 
   @@map("option_answers")
 }
@@ -114,4 +118,17 @@ model AnswerQuestion {
   optionAnswer OptionAnswer @relation(fields: [optionAnswerId], references: [id])
 
   @@map("answer_questions")
+}
+
+model ConditionalRule {
+  id            String      @id @unique @default(uuid())
+  questionId String
+  question   Question @relation("QuestionToConditionalRule", fields: [questionId], references: [id])
+
+  dependsOnQuestionId String
+  dependsOnQuestion   Question     @relation("dependsOnQuestion", fields: [dependsOnQuestionId], references: [id])
+  dependsOnOptionId   String
+  dependsOnOption     OptionAnswer @relation("dependsOnOption", fields: [dependsOnOptionId], references: [id])
+
+  operator String
 }
