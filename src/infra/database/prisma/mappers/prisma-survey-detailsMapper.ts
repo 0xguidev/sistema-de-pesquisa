@@ -24,7 +24,7 @@ export class PrismaSurveyDetailsMapper {
         title: raw.title,
         location: raw.location,
         type: raw.type,
-        slug: Slug.create(raw.slug),
+        slug: Slug.create(raw.slug).value,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
         questions: raw.questions.map((question) => {
@@ -33,7 +33,7 @@ export class PrismaSurveyDetailsMapper {
             questionTitle: question.title,
             questionNum: question.number,
             surveyId: new UniqueEntityID(question.surveyId).toValue(),
-            slug: Slug.create(question.slug),
+            slug: Slug.create(question.slug).value,
             createdAt: question.createdAt,
             updatedAt: question.updatedAt,
             option_answers: question.option_answers.map((option) => {
@@ -42,7 +42,7 @@ export class PrismaSurveyDetailsMapper {
                 optionTitle: option.option,
                 optionNum: option.number,
                 questionId: new UniqueEntityID(option.questionId).toValue(),
-                slug: Slug.create(option.slug),
+                slug: Slug.create(option.slug).value,
                 createdAt: option.createdAt,
                 updatedAt: option.updatedAt,
               }
