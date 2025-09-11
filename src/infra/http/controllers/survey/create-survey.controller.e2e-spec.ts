@@ -51,7 +51,7 @@ describe('Create survey (E2E)', () => {
         },
         {
           questionTitle: 'second question',
-          questionNum: 1,
+          questionNum: 2,
           answers: [
             { optionTitle: 'Option 1', optionNum: 1 },
             { optionTitle: 'Option 2', optionNum: 2 },

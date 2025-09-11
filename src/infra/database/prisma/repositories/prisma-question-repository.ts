@@ -5,10 +5,14 @@ import { PrismaQuestionMapper } from '../mappers/prisma-question-mapper'
 import { PrismaService } from '../prisma.service'
 import { ConditionalRule } from '@/domain/entities/conditional-rule'
 import { PrismaConditionalRuleMapper } from '../mappers/prisma-conditional-rule-mapper'
+import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 
 @Injectable()
 export class PrismaQuestionRepository implements QuestionRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private optionRepository: OptionAnswerRepository,
+  ) {}
 
   async create(question: Question): Promise<void> {
     const data = PrismaQuestionMapper.toPrisma(question)
@@ -22,6 +26,24 @@ export class PrismaQuestionRepository implements QuestionRepository {
     const question = await this.prisma.question.findUnique({
       where: {
         id,
+      },
+    })
+
+    if (!question) {
+      return null
+    }
+
+    return PrismaQuestionMapper.toDomain(question)
+  }
+
+  async findByQuestionNum(
+    surveyId: string,
+    questionNum: number,
+  ): Promise<Question | null> {
+    const question = await this.prisma.question.findFirst({
+      where: {
+        number: questionNum,
+        surveyId,
       },
     })
 
@@ -66,7 +88,29 @@ export class PrismaQuestionRepository implements QuestionRepository {
   }
 
   async createConditionalRule(rule: ConditionalRule): Promise<void> {
-    const data = PrismaConditionalRuleMapper.toPrisma(rule)
+    const dependsOnQuestion = await this.findByQuestionNum(
+      rule.surveyId.toString(),
+      rule.dependsOnQuestionNumber,
+    )
+
+    if (!dependsOnQuestion) {
+      throw new Error('Pergunta dependente não encontrada')
+    }
+
+    const dependsOnOption =
+      await this.optionRepository.findOptionByQuestionIdAndOptionNum(
+        dependsOnQuestion.id.toString(),
+        rule.dependsOnOptionNumber,
+      )
+
+    if (!dependsOnOption) {
+      throw new Error('Opção dependente não encontrada')
+    }
+
+    const data = PrismaConditionalRuleMapper.toPrisma(
+      rule,
+      dependsOnOption.id.toString(),
+    )
 
     await this.prisma.conditionalRule.create({
       data,
@@ -94,7 +138,29 @@ export class PrismaQuestionRepository implements QuestionRepository {
   }
 
   async updateConditionalRule(rule: ConditionalRule): Promise<void> {
-    const data = PrismaConditionalRuleMapper.toPrisma(rule)
+    const dependsOnQuestion = await this.findByQuestionNum(
+      rule.surveyId.toString(),
+      rule.dependsOnQuestionNumber,
+    )
+
+    if (!dependsOnQuestion) {
+      throw new Error('Pergunta dependente não encontrada')
+    }
+
+    const dependsOnOption =
+      await this.optionRepository.findOptionByQuestionIdAndOptionNum(
+        dependsOnQuestion.id.toString(),
+        rule.dependsOnOptionNumber,
+      )
+
+    if (!dependsOnOption) {
+      throw new Error('Opção dependente não encontrada')
+    }
+
+    const data = PrismaConditionalRuleMapper.toPrisma(
+      rule,
+      dependsOnOption.id.toString(),
+    )
 
     await this.prisma.conditionalRule.update({
       where: {

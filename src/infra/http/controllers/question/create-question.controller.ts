@@ -18,9 +18,8 @@ const questionBodySchema = z.object({
   conditionalRules: z
     .array(
       z.object({
-        dependsOnQuestionId: z.string(),
-        dependsOnOptionId: z.string(),
-        operator: z.string(),
+        dependsOnQuestionNumber: z.number(),
+        dependsOnOptionNumber: z.number(),
       }),
     )
     .optional(),
@@ -48,9 +47,8 @@ export class CreateQuestionController {
       surveyId,
       accountId: userId,
       conditionalRules: conditionalRules?.map((rule) => ({
-        dependsOnQuestionId: rule.dependsOnQuestionId,
-        dependsOnOptionId: rule.dependsOnOptionId,
-        operator: rule.operator,
+        dependsOnQuestionNumber: rule.dependsOnQuestionNumber,
+        dependsOnOptionNumber: rule.dependsOnOptionNumber,
       })),
     })
 

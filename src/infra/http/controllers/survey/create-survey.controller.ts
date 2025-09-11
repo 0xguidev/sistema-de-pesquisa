@@ -15,6 +15,13 @@ const surveyBodySchema = z.object({
     .object({
       questionTitle: z.string(),
       questionNum: z.number(),
+      conditionalRules: z
+        .object({
+          dependsOnQuestionNumber: z.number(),
+          dependsOnOptionNumber: z.number(),
+        })
+        .array()
+        .optional(),
       answers: z
         .object({
           optionTitle: z.string(),
@@ -58,12 +65,13 @@ export class CreateSurveyController {
 
     await Promise.all(
       questions.map(async (question) => {
-        const { questionNum, questionTitle } = question
+        const { questionNum, questionTitle, conditionalRules } = question
         const questionResponse = await this.questionUseCase.execute({
           questionTitle,
           questionNum,
           surveyId: result.value.survey.id.toString(),
           accountId: userId,
+          conditionalRules,
         })
 
         if (questionResponse.isLeft()) {

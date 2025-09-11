@@ -1,11 +1,12 @@
-import { Entity } from "@/core/entities/entity"
-import { UniqueEntityID } from "@/core/entities/unique-entity-id"
+import { Entity } from '@/core/entities/entity'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 export interface ConditionalRuleProps {
   questionId: UniqueEntityID
   dependsOnQuestionId: UniqueEntityID
-  dependsOnOptionId: UniqueEntityID
-  operator: string
+  dependsOnQuestionNumber: number
+  dependsOnOptionNumber: number
+  surveyId: UniqueEntityID
 }
 
 export class ConditionalRule extends Entity<ConditionalRuleProps> {
@@ -29,20 +30,28 @@ export class ConditionalRule extends Entity<ConditionalRuleProps> {
     this.props.dependsOnQuestionId = id
   }
 
-  get dependsOnOptionId() {
-    return this.props.dependsOnOptionId
+  get dependsOnQuestionNumber() {
+    return this.props.dependsOnQuestionNumber
   }
 
-  set dependsOnOptionId(id: UniqueEntityID) {
-    this.props.dependsOnOptionId = id
+  set dependsOnQuestionNumber(number: number) {
+    this.props.dependsOnQuestionNumber = number
   }
 
-  get operator() {
-    return this.props.operator
+  get dependsOnOptionNumber() {
+    return this.props.dependsOnOptionNumber
   }
 
-  set operator(operator: string) {
-    this.props.operator = operator
+  set dependsOnOptionNumber(number: number) {
+    this.props.dependsOnOptionNumber = number
+  }
+
+  get surveyId() {
+    return this.props.surveyId
+  }
+
+  set surveyId(id: UniqueEntityID) {
+    this.props.surveyId = id
   }
 
   static create(props: ConditionalRuleProps, id?: UniqueEntityID) {

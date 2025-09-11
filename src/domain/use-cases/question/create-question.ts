@@ -1,7 +1,7 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Question } from '../../entities/question'
 import { QuestionRepository } from '../../repositories/question-repository'
-import { Either, right } from 'src/core/types/either'
+import { Either, left, right } from 'src/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { ConditionalRule } from '../../entities/conditional-rule'
 
@@ -11,14 +11,13 @@ interface CreateQuestionUseCaseRequest {
   surveyId: string
   accountId: string
   conditionalRules?: {
-    dependsOnQuestionId: string
-    dependsOnOptionId: string
-    operator: string
+    dependsOnQuestionNumber: number
+    dependsOnOptionNumber: number
   }[]
 }
 
 export type CreateQuestionUseCaseResponse = Either<
-  null,
+  Error,
   {
     question: Question
   }
@@ -46,11 +45,22 @@ export class CreateQuestionUseCase {
 
     if (conditionalRules) {
       for (const rule of conditionalRules) {
+        const dependsOnQuestion =
+          await this.questionRepository.findByQuestionNum(
+            surveyId,
+            rule.dependsOnQuestionNumber,
+          )
+
+        if (!dependsOnQuestion) {
+          return left(new Error('Pergunta dependente não encontrada'))
+        }
+
         const conditionalRule = ConditionalRule.create({
           questionId: question.id,
-          dependsOnQuestionId: new UniqueEntityID(rule.dependsOnQuestionId),
-          dependsOnOptionId: new UniqueEntityID(rule.dependsOnOptionId),
-          operator: rule.operator,
+          surveyId: new UniqueEntityID(surveyId),
+          dependsOnQuestionId: dependsOnQuestion.id,
+          dependsOnQuestionNumber: rule.dependsOnQuestionNumber,
+          dependsOnOptionNumber: rule.dependsOnOptionNumber,
         })
 
         await this.questionRepository.createConditionalRule(conditionalRule)
