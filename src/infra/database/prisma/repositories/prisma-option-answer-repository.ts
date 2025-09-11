@@ -36,6 +36,24 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
     return options.map(PrismaOptionAnswerMapper.toDomain)
   }
 
+  async findOptionByQuestionIdAndOptionNum(
+    questionId: string,
+    optionNum: number,
+  ): Promise<OptionAnswer | null> {
+    const option = await this.prisma.optionAnswer.findFirst({
+      where: {
+        questionId,
+        number: optionNum,
+      },
+    })
+
+    if (!option) {
+      return null
+    }
+
+    return PrismaOptionAnswerMapper.toDomain(option)
+  }
+
   async create(optionanswer: OptionAnswer): Promise<void> {
     const data = PrismaOptionAnswerMapper.toPrisma(optionanswer)
 

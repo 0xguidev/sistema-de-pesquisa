@@ -8,21 +8,29 @@ export class PrismaConditionalRuleMapper {
       {
         questionId: new UniqueEntityID(raw.questionId),
         dependsOnQuestionId: new UniqueEntityID(raw.dependsOnQuestionId),
-        dependsOnOptionId: new UniqueEntityID(raw.dependsOnOptionId),
-        operator: raw.operator,
+        dependsOnQuestionNumber: raw.dependsOnQuestionNumber,
+        dependsOnOptionNumber: raw.dependsOnOptionNumber,
+        surveyId: new UniqueEntityID(raw.surveyId),
       },
       new UniqueEntityID(raw.id),
     )
   }
-  static toPrisma(rule: ConditionalRule): Prisma.ConditionalRuleCreateInput {
+
+  static toPrisma(rule: ConditionalRule, dependsOnOptionId: string): any {
     return {
       id: rule.id.toString(),
       question: { connect: { id: rule.questionId.toString() } },
       dependsOnQuestion: {
         connect: { id: rule.dependsOnQuestionId.toString() },
       },
-      dependsOnOption: { connect: { id: rule.dependsOnOptionId.toString() } },
-      operator: rule.operator,
+      dependsOnQuestionNumber: rule.dependsOnQuestionNumber,
+      dependsOnOptionNumber: rule.dependsOnOptionNumber,
+      survey: { connect: { id: rule.surveyId.toString() } },
+      dependsOnOption: {
+        connect: {
+          id: dependsOnOptionId,
+        },
+      },
     }
   }
 }

@@ -1,4 +1,5 @@
 import { PrismaQuestionMapper } from '@/infra/database/prisma/mappers/prisma-question-mapper'
+import { PrismaConditionalRuleMapper } from '@/infra/database/prisma/mappers/prisma-conditional-rule-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
@@ -29,15 +30,18 @@ export function makeQuestion(
 
 export function makeConditionalRule(
   questionId: UniqueEntityID,
+  surveyId: UniqueEntityID,
+  dependsOnQuestion: Question,
   override: Partial<ConditionalRuleProps> = {},
   id?: UniqueEntityID,
 ) {
   const conditionalRule = ConditionalRule.create(
     {
       questionId,
-      dependsOnQuestionId: new UniqueEntityID(),
-      dependsOnOptionId: new UniqueEntityID(),
-      operator: 'EQUAL',
+      surveyId,
+      dependsOnQuestionId: dependsOnQuestion.id,
+      dependsOnQuestionNumber: dependsOnQuestion.questionNum,
+      dependsOnOptionNumber: faker.number.int({ min: 1, max: 10 }),
       ...override,
     },
     id,
@@ -63,20 +67,25 @@ export class QuestionFactory {
   async makePrismaQuestionWithConditionalRule(
     data: Partial<Question> = {},
   ): Promise<Question> {
-    const question = makeQuestion(data)
-    const conditionalRule = makeConditionalRule(question.id)
+    const dependsOnQuestion = await this.makePrismaQuestion({
+      surveyId: data.surveyId,
+    })
+    const question = makeQuestion({
+      surveyId: dependsOnQuestion.surveyId,
+      ...data,
+    })
+    const conditionalRule = makeConditionalRule(
+      question.id,
+      question.surveyId,
+      dependsOnQuestion,
+    )
 
     await this.prisma.question.create({
       data: PrismaQuestionMapper.toPrisma(question),
     })
 
     await this.prisma.conditionalRule.create({
-      data: {
-        questionId: question.id.toString(),
-        dependsOnQuestionId: conditionalRule.dependsOnQuestionId.toString(),
-        dependsOnOptionId: conditionalRule.dependsOnOptionId.toString(),
-        operator: conditionalRule.operator,
-      },
+      data: PrismaConditionalRuleMapper.toPrisma(conditionalRule),
     })
 
     return question

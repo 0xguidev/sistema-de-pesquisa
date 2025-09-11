@@ -45,6 +45,7 @@ model Survey {
 
   questions  Question[]
   interviews Interview[]
+  conditionalRules ConditionalRule[]
 
   @@map("surveys")
 }
@@ -125,10 +126,16 @@ model ConditionalRule {
   questionId String
   question   Question @relation("QuestionToConditionalRule", fields: [questionId], references: [id])
 
+  dependsOnQuestionNumber Int
   dependsOnQuestionId String
   dependsOnQuestion   Question     @relation("dependsOnQuestion", fields: [dependsOnQuestionId], references: [id])
+
+  dependsOnOptionNumber Int
   dependsOnOptionId   String
   dependsOnOption     OptionAnswer @relation("dependsOnOption", fields: [dependsOnOptionId], references: [id])
 
-  operator String
+  surveyId String
+  survey Survey @relation(fields: [surveyId], references: [id])
+
+  @@map("conditional_rules")
 }

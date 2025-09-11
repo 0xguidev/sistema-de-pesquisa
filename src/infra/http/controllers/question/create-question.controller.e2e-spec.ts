@@ -82,9 +82,10 @@ describe('Create question (E2E)', () => {
       surveyId: survey.id,
       accountId: user.id,
     })
-    const fakeOption = await optionFactory.makePrismaOptionAnswer({
+    await optionFactory.makePrismaOptionAnswer({
       questionId: fakeQuestion.id,
       accountId: user.id,
+      optionNum: 1,
     })
 
     const response = await request(app.getHttpServer())
@@ -96,9 +97,8 @@ describe('Create question (E2E)', () => {
         surveyId: survey.id.toString(),
         conditionalRules: [
           {
-            dependsOnQuestionId: fakeQuestion.id.toString(),
-            dependsOnOptionId: fakeOption.id.toString(),
-            operator: 'EQUAL',
+            dependsOnQuestionNumber: fakeQuestion.questionNum,
+            dependsOnOptionNumber: 1,
           },
         ],
       })
