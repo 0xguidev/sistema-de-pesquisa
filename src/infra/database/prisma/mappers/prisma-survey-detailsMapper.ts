@@ -1,7 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Slug } from '@/domain/entities/value-objects/slug'
 import {
-  Survey as SurveyDetails,
   Question as PrismaQuestion,
   OptionAnswer as PrismaOptionAnswer,
 } from '@prisma/client'
@@ -36,7 +35,7 @@ export class PrismaSurveyDetailsMapper {
             slug: Slug.create(question.slug),
             createdAt: question.createdAt,
             updatedAt: question.updatedAt,
-            option_answers: question.option_answers.map((option) => {
+            optionAnswers: question.option_answers.map((option) => {
               return {
                 id: new UniqueEntityID(option.id).toValue(),
                 optionTitle: option.option,

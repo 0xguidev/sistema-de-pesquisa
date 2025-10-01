@@ -34,6 +34,9 @@ export class DeleteOptionAnswerUseCase {
       return left(new NotAllowedError())
     }
 
+    // Delete conditional rules that depend on this option
+    await this.optionanswersRepository.deleteConditionalRulesByDependsOnOptionId(optionAnswer.id.toString())
+
     await this.optionanswersRepository.delete(optionAnswer)
 
     return right(null)

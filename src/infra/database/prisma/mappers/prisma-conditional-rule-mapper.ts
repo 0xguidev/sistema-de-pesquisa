@@ -1,6 +1,6 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ConditionalRule } from '@/domain/entities/conditional-rule'
-import { ConditionalRule as PrismaConditional, Prisma } from '@prisma/client'
+import { ConditionalRule as PrismaConditional } from '@prisma/client'
 
 export class PrismaConditionalRuleMapper {
   static toDomain(raw: PrismaConditional): ConditionalRule {
@@ -9,6 +9,7 @@ export class PrismaConditionalRuleMapper {
         questionId: new UniqueEntityID(raw.questionId),
         dependsOnQuestionId: new UniqueEntityID(raw.dependsOnQuestionId),
         dependsOnQuestionNumber: raw.dependsOnQuestionNumber,
+        dependsOnOptionId: new UniqueEntityID(raw.dependsOnOptionId),
         dependsOnOptionNumber: raw.dependsOnOptionNumber,
         surveyId: new UniqueEntityID(raw.surveyId),
       },

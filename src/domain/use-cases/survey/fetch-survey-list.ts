@@ -31,7 +31,7 @@ export class FetchSurveyListUseCase {
       return right({
         surveys,
       })
-    } catch (error) {
+    } catch {
       return left(new Error('Failed to fetch surveys'))
     }
   }

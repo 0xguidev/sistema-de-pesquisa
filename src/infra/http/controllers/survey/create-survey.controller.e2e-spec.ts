@@ -44,7 +44,7 @@ describe('Create survey (E2E)', () => {
         {
           questionTitle: 'First question',
           questionNum: 1,
-          answers: [
+          options: [
             { optionTitle: 'Option 1', optionNum: 1 },
             { optionTitle: 'Option 2', optionNum: 2 },
           ],
@@ -52,7 +52,7 @@ describe('Create survey (E2E)', () => {
         {
           questionTitle: 'second question',
           questionNum: 2,
-          answers: [
+          options: [
             { optionTitle: 'Option 1', optionNum: 1 },
             { optionTitle: 'Option 2', optionNum: 2 },
           ],
@@ -66,6 +66,8 @@ describe('Create survey (E2E)', () => {
       .send(payload)
 
     expect(response.statusCode).toBe(201)
+    expect(response.body).toHaveProperty('message', 'Pesquisa criada com sucesso.')
+    expect(response.body).toHaveProperty('surveyId')
 
     const survey = await prisma.survey.findFirst({
       where: { title: 'New survey' },
@@ -84,5 +86,70 @@ describe('Create survey (E2E)', () => {
     })
 
     expect(options.length).toBe(2)
+  })
+
+  test('[POST] /surveys - should create survey with conditional rules', async () => {
+    const user = await accountFactory.makePrismaAccount()
+    const accessToken = jwt.sign({ sub: user.id.toString() })
+
+    const payload = {
+      title: 'Survey with conditional rules',
+      location: 'survey location',
+      type: 'survey',
+      questions: [
+        {
+          questionTitle: 'First question',
+          questionNum: 1,
+          options: [
+            { optionTitle: 'Option 1', optionNum: 1 },
+            { optionTitle: 'Option 2', optionNum: 2 },
+          ],
+        },
+        {
+          questionTitle: 'Conditional question',
+          questionNum: 2,
+          conditionalRules: [
+            {
+              questionNum: 1,
+              optionNum: 1,
+            },
+          ],
+          options: [
+            { optionTitle: 'Option 1', optionNum: 1 },
+            { optionTitle: 'Option 2', optionNum: 2 },
+          ],
+        },
+      ],
+    }
+
+    const response = await request(app.getHttpServer())
+      .post('/surveys')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(payload)
+
+    expect(response.statusCode).toBe(201)
+    expect(response.body).toHaveProperty('message', 'Pesquisa criada com sucesso.')
+    expect(response.body).toHaveProperty('surveyId')
+
+    const survey = await prisma.survey.findFirst({
+      where: { title: 'Survey with conditional rules' },
+    })
+
+    expect(survey).toBeTruthy()
+
+    const questions = await prisma.question.findMany({
+      where: { surveyId: survey?.id },
+      orderBy: [{ number: 'asc' }],
+    })
+
+    expect(questions.length).toBe(2)
+
+    const conditionalRules = await prisma.conditionalRule.findMany({
+      where: { surveyId: survey?.id },
+    })
+
+    expect(conditionalRules.length).toBe(1)
+    expect(conditionalRules[0].dependsOnQuestionNumber).toBe(1)
+    expect(conditionalRules[0].dependsOnOptionNumber).toBe(1)
   })
 })

@@ -1,4 +1,3 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { InMemoryAnswerQuestionRepository } from 'test/repositories/in-memory-answer-question-repository'
 import { GetAnswerQuestionUseCase } from './get-answer-question'
 import { makeAnswerQuestion } from 'test/factories/make-answer-question'

@@ -1,6 +1,7 @@
 import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 import { Question } from '../../entities/question'
 import { QuestionRepository } from '../../repositories/question-repository'
+import { OptionAnswerRepository } from '../../repositories/option-answer-repository'
 import { Either, left, right } from 'src/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { ConditionalRule } from '../../entities/conditional-rule'
@@ -25,7 +26,10 @@ export type CreateQuestionUseCaseResponse = Either<
 
 @Injectable()
 export class CreateQuestionUseCase {
-  constructor(private questionRepository: QuestionRepository) {}
+  constructor(
+    private questionRepository: QuestionRepository,
+    private optionAnswerRepository: OptionAnswerRepository,
+  ) {}
 
   async execute({
     questionTitle,
@@ -45,22 +49,31 @@ export class CreateQuestionUseCase {
 
     if (conditionalRules) {
       for (const rule of conditionalRules) {
-        const dependsOnQuestion =
-          await this.questionRepository.findByQuestionNum(
-            surveyId,
-            rule.dependsOnQuestionNumber,
-          )
+        const dependsOnQuestion = await this.questionRepository.findByQuestionNum(
+          surveyId,
+          rule.dependsOnQuestionNumber,
+        )
 
         if (!dependsOnQuestion) {
-          return left(new Error('Pergunta dependente não encontrada'))
+          return left(new Error('Depends on question not found'))
+        }
+
+        const optionAnswer = await this.optionAnswerRepository.findOptionByQuestionIdAndOptionNum(
+          dependsOnQuestion.id.toString(),
+          rule.dependsOnOptionNumber,
+        )
+
+        if (!optionAnswer) {
+          return left(new Error('Depends on option not found'))
         }
 
         const conditionalRule = ConditionalRule.create({
           questionId: question.id,
-          surveyId: new UniqueEntityID(surveyId),
           dependsOnQuestionId: dependsOnQuestion.id,
           dependsOnQuestionNumber: rule.dependsOnQuestionNumber,
+          dependsOnOptionId: optionAnswer.id,
           dependsOnOptionNumber: rule.dependsOnOptionNumber,
+          surveyId: new UniqueEntityID(surveyId),
         })
 
         await this.questionRepository.createConditionalRule(conditionalRule)

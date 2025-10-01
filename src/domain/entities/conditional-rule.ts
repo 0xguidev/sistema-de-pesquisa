@@ -5,6 +5,7 @@ export interface ConditionalRuleProps {
   questionId: UniqueEntityID
   dependsOnQuestionId: UniqueEntityID
   dependsOnQuestionNumber: number
+  dependsOnOptionId: UniqueEntityID
   dependsOnOptionNumber: number
   surveyId: UniqueEntityID
 }

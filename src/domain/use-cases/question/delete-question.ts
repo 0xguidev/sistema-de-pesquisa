@@ -32,6 +32,10 @@ export class DeleteQuestionUseCase {
       return left(new NotAllowedError())
     }
 
+    // Delete conditional rules related to this question
+    await this.questionsRepository.deleteConditionalRulesByQuestionId(isQuestion.id.toString())
+    await this.questionsRepository.deleteConditionalRulesByDependsOnQuestionId(isQuestion.id.toString())
+
     await this.questionsRepository.delete(isQuestion.id.toString())
 
     return right(null)

@@ -1,19 +1,13 @@
 import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
-import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
 import { CreateSurveyUseCase } from './create-survey'
 import { makeAccount } from 'test/factories/make-Account'
-import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 
 let inMemorySurveyRepository: InMemorySurveyRepository
-let inMemoryQuestionRepository: InMemoryQuestionRepository
-let inMemoryOptionAnswerRepository: InMemoryOptionAnswersRepository
 let sut: CreateSurveyUseCase
 
 describe('CreateSurveyUseCase', () => {
   beforeEach(() => {
     inMemorySurveyRepository = new InMemorySurveyRepository()
-    inMemoryQuestionRepository = new InMemoryQuestionRepository()
-    inMemoryOptionAnswerRepository = new InMemoryOptionAnswersRepository()
 
     sut = new CreateSurveyUseCase(inMemorySurveyRepository)
   })
