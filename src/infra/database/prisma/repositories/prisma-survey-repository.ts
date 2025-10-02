@@ -45,6 +45,12 @@ export class PrismaSurveyRepository implements SurveyRepository {
         questions: {
           include: {
             option_answers: true,
+            conditionalRules: {
+              include: {
+                dependsOnQuestion: true,
+                dependsOnOption: true,
+              },
+            },
           },
         },
       },

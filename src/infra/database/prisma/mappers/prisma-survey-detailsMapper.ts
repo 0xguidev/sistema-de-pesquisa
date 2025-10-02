@@ -3,6 +3,7 @@ import { Slug } from '@/domain/entities/value-objects/slug'
 import {
   Question as PrismaQuestion,
   OptionAnswer as PrismaOptionAnswer,
+  ConditionalRule as PrismaConditionalRule,
 } from '@prisma/client'
 
 export class PrismaSurveyDetailsMapper {
@@ -15,7 +16,13 @@ export class PrismaSurveyDetailsMapper {
     slug: string
     createdAt: Date
     updatedAt: Date | null
-    questions: (PrismaQuestion & { option_answers: PrismaOptionAnswer[] })[]
+    questions: (PrismaQuestion & {
+      option_answers: PrismaOptionAnswer[]
+      conditionalRules: (PrismaConditionalRule & {
+        dependsOnQuestion: PrismaQuestion
+        dependsOnOption: PrismaOptionAnswer
+      })[]
+    })[]
   }): any {
     return {
       survey: {
@@ -35,15 +42,16 @@ export class PrismaSurveyDetailsMapper {
             slug: Slug.create(question.slug),
             createdAt: question.createdAt,
             updatedAt: question.updatedAt,
-            optionAnswers: question.option_answers.map((option) => {
+            options: question.option_answers.map((option) => {
               return {
-                id: new UniqueEntityID(option.id).toValue(),
                 optionTitle: option.option,
                 optionNum: option.number,
-                questionId: new UniqueEntityID(option.questionId).toValue(),
-                slug: Slug.create(option.slug),
-                createdAt: option.createdAt,
-                updatedAt: option.updatedAt,
+              }
+            }),
+            conditionalRules: question.conditionalRules.map((rule) => {
+              return {
+                questionNum: rule.dependsOnQuestion.number,
+                optionNum: rule.dependsOnOption.number,
               }
             }),
           }
