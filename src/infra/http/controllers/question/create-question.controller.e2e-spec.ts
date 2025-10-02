@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing'
 import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
 import { AppModule } from '@/app.module'
+import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { AccountFactory } from 'test/factories/make-Account'
 import { QuestionFactory } from 'test/factories/make-question'
@@ -20,16 +21,16 @@ describe('Create Question Controller (E2E)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-      providers: [AccountFactory, QuestionFactory, OptionAnswerFactory],
     }).compile()
 
     app = moduleRef.createNestApplication()
     await app.init()
 
     jwt = moduleRef.get(JwtService)
-    accountFactory = moduleRef.get(AccountFactory)
-    questionFactory = moduleRef.get(QuestionFactory)
-    optionAnswerFactory = moduleRef.get(OptionAnswerFactory)
+    const prisma = moduleRef.get(PrismaService)
+    accountFactory = new AccountFactory(prisma)
+    questionFactory = new QuestionFactory(prisma)
+    optionAnswerFactory = new OptionAnswerFactory(prisma)
 
     // Create a user and generate token
     const user = await accountFactory.makePrismaAccount()

@@ -13,5 +13,5 @@ export abstract class SurveyRepository {
   abstract findManyWithPagination(
     page: number,
     accountId: string,
-  ): Promise<{ id: string; title: string }[]>
+  ): Promise<{ surveys: { id: string; title: string }[]; total: number }>
 }
