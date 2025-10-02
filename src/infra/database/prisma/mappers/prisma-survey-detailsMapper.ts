@@ -44,6 +44,7 @@ export class PrismaSurveyDetailsMapper {
             updatedAt: question.updatedAt,
             options: question.option_answers.map((option) => {
               return {
+                id: new UniqueEntityID(option.id).toValue(),
                 optionTitle: option.option,
                 optionNum: option.number,
               }

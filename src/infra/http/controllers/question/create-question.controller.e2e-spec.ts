@@ -77,15 +77,16 @@ describe('Create Question Controller (E2E)', () => {
       })
 
     // Create the question that will be depended on
-    const dependsOnQuestion = await questionFactory.makePrismaQuestion({
+    const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(survey.body.survey.id),
       questionNum: 1,
       accountId: new UniqueEntityID(userId),
     })
 
     // Create an option answer for the dependsOnQuestion
-    const optionAnswer = await optionAnswerFactory.makePrismaOptionAnswer({
-      questionId: dependsOnQuestion.id,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _optionAnswer = await optionAnswerFactory.makePrismaOptionAnswer({
+      questionId: _dependsOnQuestion.id,
       optionNum: 1,
       accountId: new UniqueEntityID(userId),
     })
@@ -149,7 +150,8 @@ describe('Create Question Controller (E2E)', () => {
       })
 
     // Create the question that will be depended on
-    const dependsOnQuestion = await questionFactory.makePrismaQuestion({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(survey.body.survey.id),
       questionNum: 1,
       accountId: new UniqueEntityID(userId),
