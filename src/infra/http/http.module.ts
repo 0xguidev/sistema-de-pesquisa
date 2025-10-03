@@ -39,6 +39,10 @@ import { FetchSurveyIdUseCase } from '@/domain/use-cases/survey/fetch-survey-id'
 import { FetchSurveyByIdController } from './controllers/survey/fetch-survey-id.controller'
 import { FetchInterviewsController } from './controllers/interview/fetch-interviews.controller'
 import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/fetch-interview-by-survey-id'
+import { GenerateSimpleReportUseCase } from '@/domain/use-cases/report/generate-simple-report'
+import { GenerateSimpleReportController } from './controllers/report/generate-simple-report.controller'
+import { GenerateCrossTabulationUseCase } from '@/domain/use-cases/report/generate-cross-tabulation'
+import { GenerateCrossTabulationController } from './controllers/report/generate-cross-tabulation.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -61,7 +65,9 @@ import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/f
     EditAnswerQuestionUseCase,
     FetchSurveyListUseCase,
     FetchSurveyIdUseCase,
-    FetchInterviewsBySurveyIdUseCase
+    FetchInterviewsBySurveyIdUseCase,
+    GenerateSimpleReportUseCase,
+    GenerateCrossTabulationUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -82,7 +88,9 @@ import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/f
     EditAnswerQuestionController,
     FetchSurveyListController,
     FetchSurveyByIdController,
-    FetchInterviewsController
+    FetchInterviewsController,
+    GenerateSimpleReportController,
+    GenerateCrossTabulationController,
   ],
 })
 export class HttpModule {}

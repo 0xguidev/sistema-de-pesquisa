@@ -16,9 +16,17 @@ export abstract class InterviewRepository {
       createdAt: Date
       updatedAt: Date
       answers: {
-        id: string
-        question: string
-        answer: string
+        answerId: string
+        question: {
+          questionId: string
+          title: string
+          number: number
+        }
+        option: {
+          optionId: string
+          title: string
+          number: number
+        }
       }[]
     }[]
     total: number

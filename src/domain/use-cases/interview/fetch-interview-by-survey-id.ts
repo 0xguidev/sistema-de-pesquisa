@@ -56,9 +56,9 @@ export class FetchInterviewsBySurveyIdUseCase {
       updatedAt: interview.updatedAt,
       answers: interview.answers, // include the answers property as required by InterviewResponse
       questions: interview.answers.map((answer) => ({
-        id: answer.id,
-        question: answer.question,
-        answer: answer.answer,
+        id: answer.question.questionId,
+        question: answer.question.title,
+        answer: answer.option.title,
       })),
     }))
 
