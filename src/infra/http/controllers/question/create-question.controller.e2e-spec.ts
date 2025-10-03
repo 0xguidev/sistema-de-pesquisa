@@ -58,7 +58,7 @@ describe('Create Question Controller (E2E)', () => {
       .send({
         questionTitle: 'Question 1',
         questionNum: 1,
-        surveyId: survey.body.survey.id,
+        surveyId: survey.body.surveyId,
       })
 
     expect(response.status).toBe(201)
@@ -78,7 +78,7 @@ describe('Create Question Controller (E2E)', () => {
 
     // Create the question that will be depended on
     const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
-      surveyId: new UniqueEntityID(survey.body.survey.id),
+      surveyId: new UniqueEntityID(survey.body.surveyId),
       questionNum: 1,
       accountId: new UniqueEntityID(userId),
     })
@@ -97,7 +97,7 @@ describe('Create Question Controller (E2E)', () => {
       .send({
         questionTitle: 'Question 2',
         questionNum: 2,
-        surveyId: survey.body.survey.id,
+        surveyId: survey.body.surveyId,
         conditionalRules: [
           {
             dependsOnQuestionNumber: 1,
@@ -127,7 +127,7 @@ describe('Create Question Controller (E2E)', () => {
       .send({
         questionTitle: 'Question 3',
         questionNum: 3,
-        surveyId: survey.body.survey.id,
+        surveyId: survey.body.surveyId,
         conditionalRules: [
           {
             dependsOnQuestionNumber: 9999,
@@ -152,7 +152,7 @@ describe('Create Question Controller (E2E)', () => {
     // Create the question that will be depended on
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
-      surveyId: new UniqueEntityID(survey.body.survey.id),
+      surveyId: new UniqueEntityID(survey.body.surveyId),
       questionNum: 1,
       accountId: new UniqueEntityID(userId),
     })
@@ -163,7 +163,7 @@ describe('Create Question Controller (E2E)', () => {
       .send({
         questionTitle: 'Question 4',
         questionNum: 4,
-        surveyId: survey.body.survey.id,
+        surveyId: survey.body.surveyId,
         conditionalRules: [
           {
             dependsOnQuestionNumber: 1,

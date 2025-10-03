@@ -57,7 +57,16 @@ export class CreateQuestionController {
     }
 
     return {
-      question: result.value.question,
+      question: {
+        id: result.value.question.id.toString(),
+        questionTitle: result.value.question.questionTitle,
+        questionNum: result.value.question.questionNum,
+        surveyId: result.value.question.surveyId.toString(),
+        accountId: result.value.question.accountId.toString(),
+        slug: result.value.question.slug.value,
+        createdAt: result.value.question.createdAt,
+        updatedAt: result.value.question.updatedAt,
+      },
     }
   }
 }

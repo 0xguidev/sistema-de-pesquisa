@@ -1,18 +1,25 @@
 import { expect, beforeEach } from 'vitest'
 import { InMemoryQuestionRepository } from '../../../../test/repositories/in-memory-question-repository'
+import { InMemoryOptionAnswersRepository } from '../../../../test/repositories/in-memory-option-answer-repository'
 import { CreateQuestionUseCase } from './create-question'
 import { makeAccount } from 'test/factories/make-Account'
 import { makeSurvey } from 'test/factories/make-survey'
 import { makeQuestion } from 'test/factories/make-question'
+import { makeOptionAnswer } from 'test/factories/make-option-answer'
 
 let inMemoryQuestionRepository: InMemoryQuestionRepository
+let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
 let sut: CreateQuestionUseCase
 
 describe('create an question', async () => {
   beforeEach(() => {
     inMemoryQuestionRepository = new InMemoryQuestionRepository()
+    inMemoryOptionAnswersRepository = new InMemoryOptionAnswersRepository()
 
-    sut = new CreateQuestionUseCase(inMemoryQuestionRepository)
+    sut = new CreateQuestionUseCase(
+      inMemoryQuestionRepository,
+      inMemoryOptionAnswersRepository,
+    )
   })
 
   it('should create a question', async () => {
@@ -51,9 +58,18 @@ describe('create an question', async () => {
     const dependsOnQuestion = makeQuestion({
       surveyId: survey.id,
       questionNum: 1,
+      accountId: account.id,
     })
 
     await inMemoryQuestionRepository.create(dependsOnQuestion)
+
+    const optionAnswer = makeOptionAnswer({
+      questionId: dependsOnQuestion.id,
+      optionNum: 1,
+      accountId: account.id,
+    })
+
+    await inMemoryOptionAnswersRepository.create(optionAnswer)
 
     const createdQuestion = await sut.execute({
       questionTitle: 'What is your favorite color?',

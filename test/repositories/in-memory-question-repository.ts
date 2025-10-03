@@ -93,4 +93,18 @@ export class InMemoryQuestionRepository implements QuestionRepository {
     )
     this.conditionalRules[itemIndex] = rule
   }
+
+  async deleteConditionalRulesByQuestionId(questionId: string): Promise<void> {
+    this.conditionalRules = this.conditionalRules.filter(
+      (rule) => rule.questionId.toString() !== questionId,
+    )
+  }
+
+  async deleteConditionalRulesByDependsOnQuestionId(
+    dependsOnQuestionId: string,
+  ): Promise<void> {
+    this.conditionalRules = this.conditionalRules.filter(
+      (rule) => rule.dependsOnQuestionId.toString() !== dependsOnQuestionId,
+    )
+  }
 }

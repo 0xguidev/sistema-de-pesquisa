@@ -29,7 +29,8 @@ const surveyBodySchema = z.object({
         })
         .array(),
     })
-    .array(),
+    .array()
+    .optional(),
 })
 
 type SurveyBodySchema = z.infer<typeof surveyBodySchema>
@@ -60,41 +61,50 @@ export class CreateSurveyController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException('Falha ao criar pesquisa. Verifique os dados fornecidos.')
+      throw new BadRequestException(
+        'Falha ao criar pesquisa. Verifique os dados fornecidos.',
+      )
     }
 
-    for (const question of questions) {
-      const { questionNum, questionTitle, options, conditionalRules } = question
-      const mappedConditionalRules = conditionalRules
-        ?.filter(rule => rule.questionNum !== undefined && rule.optionNum !== undefined)
-        .map(rule => ({
-          dependsOnQuestionNumber: rule.questionNum!,
-          dependsOnOptionNumber: rule.optionNum!,
-        }))
-      const questionResponse = await this.questionUseCase.execute({
-        questionTitle,
-        questionNum,
-        surveyId: result.value.survey.id.toString(),
-        accountId: userId,
-        conditionalRules: mappedConditionalRules,
-      })
-
-      if (questionResponse.isLeft()) {
-        throw new BadRequestException('Falha ao criar pergunta. Verifique os dados da pergunta e regras condicionais.')
-      }
-
-      const createdQuestion = questionResponse.value.question
-
-      for (const answer of options) {
-        const { optionTitle, optionNum } = answer
-        const createOption = await this.createOptionAnswer.execute({
-          optionTitle,
-          optionNum,
+    if (questions) {
+      for (const question of questions) {
+        const { questionNum, questionTitle, options, conditionalRules } = question
+        const mappedConditionalRules = conditionalRules
+          ?.filter(
+            (rule) =>
+              rule.questionNum !== undefined && rule.optionNum !== undefined,
+          )
+          .map((rule) => ({
+            dependsOnQuestionNumber: rule.questionNum!,
+            dependsOnOptionNumber: rule.optionNum!,
+          }))
+        const questionResponse = await this.questionUseCase.execute({
+          questionTitle,
+          questionNum,
+          surveyId: result.value.survey.id.toString(),
           accountId: userId,
-          questionId: createdQuestion.id.toString(),
+          conditionalRules: mappedConditionalRules,
         })
-        if (createOption.isLeft()) {
-          throw new BadRequestException('Falha ao criar opção de resposta.')
+
+        if (questionResponse.isLeft()) {
+          throw new BadRequestException(
+            'Falha ao criar pergunta. Verifique os dados da pergunta e regras condicionais.',
+          )
+        }
+
+        const createdQuestion = questionResponse.value.question
+
+        for (const answer of options) {
+          const { optionTitle, optionNum } = answer
+          const createOption = await this.createOptionAnswer.execute({
+            optionTitle,
+            optionNum,
+            accountId: userId,
+            questionId: createdQuestion.id.toString(),
+          })
+          if (createOption.isLeft()) {
+            throw new BadRequestException('Falha ao criar opção de resposta.')
+          }
         }
       }
     }
