@@ -45,6 +45,12 @@ export class PrismaSurveyRepository implements SurveyRepository {
         questions: {
           include: {
             option_answers: true,
+            conditionalRules: {
+              include: {
+                dependsOnQuestion: true,
+                dependsOnOption: true,
+              },
+            },
           },
         },
       },
@@ -60,26 +66,36 @@ export class PrismaSurveyRepository implements SurveyRepository {
   async findManyWithPagination(
     page: number,
     accountId: string,
-  ): Promise<{ id: string; title: string }[]> {
+  ): Promise<{ surveys: { id: string; title: string }[]; total: number }> {
     const skip = (page - 1) * 10
     const take = 10
 
-    const surveys = await this.prisma.survey.findMany({
-      skip,
-      take,
-      select: {
-        id: true,
-        title: true,
-      },
-      where: {
-        userId: accountId,
-      },
-    })
+    const [surveys, total] = await Promise.all([
+      this.prisma.survey.findMany({
+        skip,
+        take,
+        select: {
+          id: true,
+          title: true,
+        },
+        where: {
+          userId: accountId,
+        },
+      }),
+      this.prisma.survey.count({
+        where: {
+          userId: accountId,
+        },
+      }),
+    ])
 
-    return surveys.map((survey) => ({
-      id: survey.id,
-      title: survey.title,
-    }))
+    return {
+      surveys: surveys.map((survey) => ({
+        id: survey.id,
+        title: survey.title,
+      })),
+      total,
+    }
   }
 
   async delete(id: string): Promise<void> {

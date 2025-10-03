@@ -17,5 +17,7 @@ export abstract class QuestionRepository {
     questionId: string,
   ): Promise<ConditionalRule[]>
   abstract deleteConditionalRule(id: string): Promise<void>
+  abstract deleteConditionalRulesByQuestionId(questionId: string): Promise<void>
+  abstract deleteConditionalRulesByDependsOnQuestionId(dependsOnQuestionId: string): Promise<void>
   abstract updateConditionalRule(rule: ConditionalRule): Promise<void>
 }

@@ -12,4 +12,5 @@ export abstract class OptionAnswerRepository {
   abstract create(optionanswer: OptionAnswer): Promise<void>
   abstract save(optionanswer: OptionAnswer): Promise<void>
   abstract delete(optionAnswer: OptionAnswer): Promise<void>
+  abstract deleteConditionalRulesByDependsOnOptionId(dependsOnOptionId: string): Promise<void>
 }

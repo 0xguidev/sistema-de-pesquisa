@@ -37,7 +37,6 @@ import { FetchSurveyListController } from './controllers/survey/fetch-survey-lis
 import { FetchSurveyListUseCase } from '@/domain/use-cases/survey/fetch-survey-list'
 import { FetchSurveyIdUseCase } from '@/domain/use-cases/survey/fetch-survey-id'
 import { FetchSurveyByIdController } from './controllers/survey/fetch-survey-id.controller'
-import { FetchInterviewUseCase } from '@/domain/use-cases/interview/fetch-interview-by-id'
 import { FetchInterviewsController } from './controllers/interview/fetch-interviews.controller'
 import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/fetch-interview-by-survey-id'
 

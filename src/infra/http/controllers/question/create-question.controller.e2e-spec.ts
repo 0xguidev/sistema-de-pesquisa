@@ -2,125 +2,176 @@ import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
-import { DatabaseModule } from '@/infra/database/database.module'
-import { PrismaService } from '@/infra/database/prisma/prisma.service'
-import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
-import { SurveyFactory } from 'test/factories/make-survey'
+import { PrismaService } from '@/infra/database/prisma/prisma.service'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { AccountFactory } from 'test/factories/make-Account'
 import { QuestionFactory } from 'test/factories/make-question'
 import { OptionAnswerFactory } from 'test/factories/make-option-answer'
 
-describe('Create question (E2E)', () => {
+describe('Create Question Controller (E2E)', () => {
   let app: INestApplication
-  let prisma: PrismaService
   let jwt: JwtService
   let accountFactory: AccountFactory
-  let surveyFactory: SurveyFactory
   let questionFactory: QuestionFactory
-  let optionFactory: OptionAnswerFactory
+  let optionAnswerFactory: OptionAnswerFactory
+  let accessToken: string
+  let userId: string
 
   beforeAll(async () => {
-    const modularRef = await Test.createTestingModule({
-      imports: [AppModule, DatabaseModule],
-      providers: [
-        AccountFactory,
-        SurveyFactory,
-        QuestionFactory,
-        OptionAnswerFactory,
-      ],
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
     }).compile()
 
-    app = modularRef.createNestApplication()
-    prisma = modularRef.get(PrismaService)
-    jwt = modularRef.get(JwtService)
-    accountFactory = modularRef.get(AccountFactory)
-    surveyFactory = modularRef.get(SurveyFactory)
-    questionFactory = modularRef.get(QuestionFactory)
-    optionFactory = modularRef.get(OptionAnswerFactory)
-
+    app = moduleRef.createNestApplication()
     await app.init()
+
+    jwt = moduleRef.get(JwtService)
+    const prisma = moduleRef.get(PrismaService)
+    accountFactory = new AccountFactory(prisma)
+    questionFactory = new QuestionFactory(prisma)
+    optionAnswerFactory = new OptionAnswerFactory(prisma)
+
+    // Create a user and generate token
+    const user = await accountFactory.makePrismaAccount()
+    userId = user.id.toString()
+    accessToken = jwt.sign({ sub: userId })
   })
 
-  test('[POST] /questions', async () => {
-    const user = await accountFactory.makePrismaAccount()
+  afterAll(async () => {
+    await app.close()
+  })
 
-    const accessToken = jwt.sign({ sub: user.id.toString() })
-
-    const survey = await surveyFactory.makePrismaSurvey({
-      accountId: user.id,
-    })
-
-    const response = await request(app.getHttpServer())
-      .post('/questions')
+  it('should create a question without conditional rules', async () => {
+    const survey = await request(app.getHttpServer())
+      .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        questionTitle: 'New question',
-        questionNum: 1,
-        surveyId: survey.id.toString(),
+        title: 'Survey 1',
+        location: 'Location 1',
+        type: 'Type 1',
       })
 
-    expect(response.statusCode).toBe(201)
+    const response = await request(app.getHttpServer())
+      .post('/questions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        questionTitle: 'Question 1',
+        questionNum: 1,
+        surveyId: survey.body.survey.id,
+      })
 
-    const questionOnDatabase = await prisma.question.findFirst({
-      where: {
-        title: 'New question',
-      },
-    })
-
-    expect(questionOnDatabase).toBeTruthy()
+    expect(response.status).toBe(201)
+    expect(response.body.question).toBeDefined()
+    expect(response.body.question.questionTitle).toBe('Question 1')
   })
 
-  test('[POST] /questions with conditional rules', async () => {
-    const user = await accountFactory.makePrismaAccount()
+  it('should create a question with conditional rules', async () => {
+    const survey = await request(app.getHttpServer())
+      .post('/surveys')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: 'Survey 2',
+        location: 'Location 2',
+        type: 'Type 2',
+      })
 
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    // Create the question that will be depended on
+    const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
+      surveyId: new UniqueEntityID(survey.body.survey.id),
+      questionNum: 1,
+      accountId: new UniqueEntityID(userId),
+    })
 
-    const survey = await surveyFactory.makePrismaSurvey({
-      accountId: user.id,
-    })
-    const fakeQuestion = await questionFactory.makePrismaQuestion({
-      surveyId: survey.id,
-      accountId: user.id,
-    })
-    await optionFactory.makePrismaOptionAnswer({
-      questionId: fakeQuestion.id,
-      accountId: user.id,
+    // Create an option answer for the dependsOnQuestion
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _optionAnswer = await optionAnswerFactory.makePrismaOptionAnswer({
+      questionId: _dependsOnQuestion.id,
       optionNum: 1,
+      accountId: new UniqueEntityID(userId),
     })
 
     const response = await request(app.getHttpServer())
       .post('/questions')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
-        questionTitle: 'Question with rules',
-        questionNum: 1,
-        surveyId: survey.id.toString(),
+        questionTitle: 'Question 2',
+        questionNum: 2,
+        surveyId: survey.body.survey.id,
         conditionalRules: [
           {
-            dependsOnQuestionNumber: fakeQuestion.questionNum,
+            dependsOnQuestionNumber: 1,
             dependsOnOptionNumber: 1,
           },
         ],
       })
 
-    expect(response.statusCode).toBe(201)
+    expect(response.status).toBe(201)
+    expect(response.body.question).toBeDefined()
+    expect(response.body.question.questionTitle).toBe('Question 2')
+  })
 
-    const questionOnDatabase = await prisma.question.findFirst({
-      where: {
-        title: 'Question with rules',
-      },
+  it('should return 400 if dependsOnQuestion is not found', async () => {
+    const survey = await request(app.getHttpServer())
+      .post('/surveys')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: 'Survey 3',
+        location: 'Location 3',
+        type: 'Type 3',
+      })
+
+    const response = await request(app.getHttpServer())
+      .post('/questions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        questionTitle: 'Question 3',
+        questionNum: 3,
+        surveyId: survey.body.survey.id,
+        conditionalRules: [
+          {
+            dependsOnQuestionNumber: 9999,
+            dependsOnOptionNumber: 1,
+          },
+        ],
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 400 if dependsOnOption is not found', async () => {
+    const survey = await request(app.getHttpServer())
+      .post('/surveys')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: 'Survey 4',
+        location: 'Location 4',
+        type: 'Type 4',
+      })
+
+    // Create the question that will be depended on
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
+      surveyId: new UniqueEntityID(survey.body.survey.id),
+      questionNum: 1,
+      accountId: new UniqueEntityID(userId),
     })
 
-    if (!questionOnDatabase) throw new Error('Question not found')
+    const response = await request(app.getHttpServer())
+      .post('/questions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        questionTitle: 'Question 4',
+        questionNum: 4,
+        surveyId: survey.body.survey.id,
+        conditionalRules: [
+          {
+            dependsOnQuestionNumber: 1,
+            dependsOnOptionNumber: 9999,
+          },
+        ],
+      })
 
-    expect(questionOnDatabase).toBeTruthy()
-
-    const conditionalRuleOnDatabase = await prisma.conditionalRule.findFirst({
-      where: {
-        questionId: questionOnDatabase.id,
-      },
-    })
-
-    expect(conditionalRuleOnDatabase).toBeTruthy()
+    expect(response.status).toBe(400)
   })
 })

@@ -80,4 +80,12 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
       },
     })
   }
+
+  async deleteConditionalRulesByDependsOnOptionId(dependsOnOptionId: string): Promise<void> {
+    await this.prisma.conditionalRule.deleteMany({
+      where: {
+        dependsOnOptionId,
+      },
+    })
+  }
 }

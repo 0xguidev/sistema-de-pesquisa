@@ -169,4 +169,20 @@ export class PrismaQuestionRepository implements QuestionRepository {
       data,
     })
   }
+
+  async deleteConditionalRulesByQuestionId(questionId: string): Promise<void> {
+    await this.prisma.conditionalRule.deleteMany({
+      where: {
+        questionId,
+      },
+    })
+  }
+
+  async deleteConditionalRulesByDependsOnQuestionId(dependsOnQuestionId: string): Promise<void> {
+    await this.prisma.conditionalRule.deleteMany({
+      where: {
+        dependsOnQuestionId,
+      },
+    })
+  }
 }

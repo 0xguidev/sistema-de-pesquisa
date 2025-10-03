@@ -19,14 +19,24 @@ export class InMemorySurveyRepository implements SurveyRepository {
 
   async findManyWithPagination(
     page: number,
-  ): Promise<{ id: string; title: string }[]> {
+    accountId: string,
+  ): Promise<{ surveys: { id: string; title: string }[]; total: number }> {
     const skip = (page - 1) * 10
     const take = 10
 
-    return this.items.slice(skip, skip + take).map((survey) => ({
+    const filteredItems = this.items.filter(
+      (item) => item.accountId.toString() === accountId,
+    )
+
+    const surveys = filteredItems.slice(skip, skip + take).map((survey) => ({
       id: survey.id.toString(),
       title: survey.title,
     }))
+
+    return {
+      surveys,
+      total: filteredItems.length,
+    }
   }
 
   async create(survey: Survey) {

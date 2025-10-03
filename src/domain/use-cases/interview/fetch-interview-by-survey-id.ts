@@ -2,7 +2,6 @@ import { InterviewRepository } from '../../repositories/interview-repository'
 import { Either, right, left } from 'src/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { InterviewResponse } from '@/infra/http/controllers/interview/interfaces/interview.interfaces'
-import { json } from 'stream/consumers'
 
 interface FetchInterviewsBySurveyIdUseCaseRequest {
   surveyId: string

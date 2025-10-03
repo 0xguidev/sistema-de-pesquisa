@@ -11,6 +11,7 @@ type FetchSurveyListUseCaseResponse = Either<
   Error,
   {
     surveys: { id: string; title: string }[]
+    total: number
   }
 >
 
@@ -23,15 +24,16 @@ export class FetchSurveyListUseCase {
     accountId,
   }: SurveyListUseCaseRequest): Promise<FetchSurveyListUseCaseResponse> {
     try {
-      const surveys = await this.surveyRepository.findManyWithPagination(
+      const result = await this.surveyRepository.findManyWithPagination(
         page,
         accountId,
       )
 
       return right({
-        surveys,
+        surveys: result.surveys,
+        total: result.total,
       })
-    } catch (error) {
+    } catch {
       return left(new Error('Failed to fetch surveys'))
     }
   }

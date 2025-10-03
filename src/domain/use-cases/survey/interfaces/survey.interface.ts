@@ -1,14 +1,19 @@
-export interface Question {
-  id: string
-  title: string
-  num: number
-  option_answers: OptionAnswer[]
+export interface ConditionalRule {
+  questionNum: number
+  optionNum: number
 }
 
-export interface OptionAnswer {
+export interface Question {
   id: string
-  option: string
-  number: number
+  questionTitle: string
+  questionNum: number
+  options: Option[]
+  conditionalRules: ConditionalRule[]
+}
+
+export interface Option {
+  optionTitle: string
+  optionNum: number
 }
 
 export interface SurveyDetails {
@@ -20,4 +25,4 @@ export interface SurveyDetails {
   slug: string
   createdAt?: Date
   updatedAt?: Date | null
-} 
+}

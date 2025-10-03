@@ -4,14 +4,12 @@ import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { InterviewFactory } from 'test/factories/make-interview'
-import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
 import { SurveyFactory } from 'test/factories/make-survey'
 
 describe('Fetch interviews (E2E)', () => {
   let app: INestApplication
-  let prisma: PrismaService
   let jwt: JwtService
   let interviewFactory: InterviewFactory
   let accountFactory: AccountFactory
@@ -24,7 +22,6 @@ describe('Fetch interviews (E2E)', () => {
     }).compile()
 
     app = modularRef.createNestApplication()
-    prisma = modularRef.get(PrismaService)
     jwt = modularRef.get(JwtService)
     interviewFactory = modularRef.get(InterviewFactory)
     accountFactory = modularRef.get(AccountFactory)

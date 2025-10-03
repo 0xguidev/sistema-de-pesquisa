@@ -1,9 +1,9 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Slug } from '@/domain/entities/value-objects/slug'
 import {
-  Survey as SurveyDetails,
   Question as PrismaQuestion,
   OptionAnswer as PrismaOptionAnswer,
+  ConditionalRule as PrismaConditionalRule,
 } from '@prisma/client'
 
 export class PrismaSurveyDetailsMapper {
@@ -16,7 +16,13 @@ export class PrismaSurveyDetailsMapper {
     slug: string
     createdAt: Date
     updatedAt: Date | null
-    questions: (PrismaQuestion & { option_answers: PrismaOptionAnswer[] })[]
+    questions: (PrismaQuestion & {
+      option_answers: PrismaOptionAnswer[]
+      conditionalRules: (PrismaConditionalRule & {
+        dependsOnQuestion: PrismaQuestion
+        dependsOnOption: PrismaOptionAnswer
+      })[]
+    })[]
   }): any {
     return {
       survey: {
@@ -36,7 +42,7 @@ export class PrismaSurveyDetailsMapper {
             slug: Slug.create(question.slug).value,
             createdAt: question.createdAt,
             updatedAt: question.updatedAt,
-            option_answers: question.option_answers.map((option) => {
+            options: question.option_answers.map((option) => {
               return {
                 id: new UniqueEntityID(option.id).toValue(),
                 optionTitle: option.option,
@@ -45,6 +51,12 @@ export class PrismaSurveyDetailsMapper {
                 slug: Slug.create(option.slug).value,
                 createdAt: option.createdAt,
                 updatedAt: option.updatedAt,
+              }
+            }),
+            conditionalRules: question.conditionalRules.map((rule) => {
+              return {
+                questionNum: rule.dependsOnQuestion.number,
+                optionNum: rule.dependsOnOption.number,
               }
             }),
           }
