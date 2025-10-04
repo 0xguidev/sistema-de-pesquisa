@@ -8,7 +8,6 @@ export interface SimpleReportData {
   options: {
     num: number
     answer: string
-    count: number
     percentage: number
   }[]
 }
@@ -75,11 +74,13 @@ export class GenerateSimpleReportUseCase {
         options: options.map(opt => ({
           num: opt.num,
           answer: opt.answer,
-          count: opt.count,
           percentage: opt.percentage,
         })),
       })
     }
+
+    // Ordenar o resultado por questionNum em ordem crescente
+    result.sort((a, b) => a.questionNum - b.questionNum)
 
     return result
   }

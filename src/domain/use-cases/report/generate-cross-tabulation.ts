@@ -9,13 +9,25 @@ export interface CrossTabulationData {
   questionBNum: number
   questionBId: string
   answers: Array<{
-    answerA: string
-    answerB: string
-    count: number
-    percentage: number
     numA: number
+    answerA: string
     numB: number
+    answerB: string
+    percentage: number
   }>
+}
+
+interface InternalAnswer {
+  numA: number
+  answerA: string
+  numB: number
+  answerB: string
+  percentage: number
+  count: number
+}
+
+interface InternalCrossTabulationData extends Omit<CrossTabulationData, 'answers'> {
+  answers: InternalAnswer[]
 }
 
 @Injectable()
@@ -28,7 +40,7 @@ export class GenerateCrossTabulationUseCase {
       throw new Error('Nenhuma entrevista encontrada para gerar relatório')
     }
 
-    const result: CrossTabulationData[] = []
+    const result: InternalCrossTabulationData[] = []
 
     // Loop pelas entrevistas
     for (const interview of interviews.data) {
@@ -70,16 +82,16 @@ export class GenerateCrossTabulationUseCase {
             }
 
             let answerEntry = entry.answers.find(
-              a => a.answerA === answerTextA && a.answerB === answerTextB,
+              a => a.numA === answerA.option.number && a.numB === answerB.option.number,
             )
             if (!answerEntry) {
               answerEntry = {
-                answerA: answerTextA,
-                answerB: answerTextB,
-                count: 0,
-                percentage: 0,
                 numA: answerA.option.number,
+                answerA: answerA.option.title,
                 numB: answerB.option.number,
+                answerB: answerB.option.title,
+                percentage: 0,
+                count: 0,
               }
               entry.answers.push(answerEntry)
             }
@@ -104,6 +116,18 @@ export class GenerateCrossTabulationUseCase {
       }
     }
 
-    return result
+    // Ordenar o resultado por questionANum e questionBNum em ordem crescente
+    result.sort((a, b) => {
+      if (a.questionANum !== b.questionANum) return a.questionANum - b.questionANum
+      return a.questionBNum - b.questionBNum
+    })
+
+    // Remove count from answers
+    const finalResult: CrossTabulationData[] = result.map(entry => ({
+      ...entry,
+      answers: entry.answers.map(({ count, ...rest }) => rest)
+    }))
+
+    return finalResult
   }
 }
