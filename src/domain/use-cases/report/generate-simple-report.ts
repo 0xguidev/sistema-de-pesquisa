@@ -1,16 +1,29 @@
 import { Injectable } from '@nestjs/common'
 import { InterviewRepository } from 'src/domain/repositories/interview-repository'
-import { ISimpleReport, ISimpleOptionsReport } from '../../types/ReportTypes'
+
+export interface SimpleReportData {
+  questionId: string
+  questionNum: number
+  questionTitle: string
+  options: {
+    num: number
+    answer: string
+    count: number
+    percentage: number
+  }[]
+}
 
 @Injectable()
 export class GenerateSimpleReportUseCase {
   constructor(private interviewRepository: InterviewRepository) {}
 
-  async execute(surveyId: string, accountId: string): Promise<ISimpleReport[]> {
+  async execute(surveyId: string, accountId: string): Promise<SimpleReportData[]> {
     const interviews = await this.interviewRepository.findBySurveyId(surveyId, accountId, 1, 1000)
-    if (!interviews || interviews.data.length === 0) return []
+    if (!interviews || interviews.data.length === 0) {
+      throw new Error('Nenhuma entrevista encontrada para gerar relatório')
+    }
 
-    const report: Record<string, Record<string, ISimpleOptionsReport & { num: number }>> = {}
+    const report: Record<string, Record<string, { answer: string; count: number; percentage: number; num: number }>> = {}
 
     for (const interview of interviews.data) {
       for (const answer of interview.answers) {
@@ -37,43 +50,34 @@ export class GenerateSimpleReportUseCase {
     }
 
     const totalVotes = interviews.data.length
-    const result: ISimpleReport[] = []
+    const result: SimpleReportData[] = []
 
     for (const questionId in report) {
-      const options: ISimpleOptionsReport[] = []
+      const options = Object.values(report[questionId])
+      options.sort((a, b) => a.num - b.num)
 
-      for (const answerText in report[questionId]) {
-        const item = report[questionId][answerText]
-        const count = item.count
-        const percentage = parseFloat(((count / totalVotes) * 100).toFixed(1))
-
-        options.push({
-          answer: answerText,
-          count,
-          percentage,
-          num: report[questionId][answerText].num,
-        })
-      }
-
-      // Sort options by num
-      options.sort((a, b) => {
-        const numA = report[questionId][a.answer].num
-        const numB = report[questionId][b.answer].num
-        return numA - numB
-      })
-
-      // Get question text and num from the first answer
+      // Obter texto da pergunta
       const firstAnswer = interviews.data
         .flatMap(i => i.answers)
         .find(a => a.question.questionId === questionId)
       const questionText = firstAnswer?.question.title || 'N/A'
       const questionNum = firstAnswer?.question.number || 0
 
+      // Calcular porcentagens
+      options.forEach(option => {
+        option.percentage = parseFloat(((option.count / totalVotes) * 100).toFixed(1))
+      })
+
       result.push({
-        question: questionText,
         questionId,
         questionNum,
-        options,
+        questionTitle: questionText,
+        options: options.map(opt => ({
+          num: opt.num,
+          answer: opt.answer,
+          count: opt.count,
+          percentage: opt.percentage,
+        })),
       })
     }
 

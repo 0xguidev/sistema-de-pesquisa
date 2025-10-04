@@ -1,16 +1,34 @@
 import { Injectable } from '@nestjs/common'
 import { InterviewRepository } from 'src/domain/repositories/interview-repository'
-import { ICrossReport, ICrossReportAnswer } from '../../types/ReportTypes'
+
+export interface CrossTabulationData {
+  questionA: string
+  questionANum: number
+  questionAId: string
+  questionB: string
+  questionBNum: number
+  questionBId: string
+  answers: Array<{
+    answerA: string
+    answerB: string
+    count: number
+    percentage: number
+    numA: number
+    numB: number
+  }>
+}
 
 @Injectable()
 export class GenerateCrossTabulationUseCase {
   constructor(private interviewRepository: InterviewRepository) {}
 
-  async execute(surveyId: string, accountId: string): Promise<ICrossReport[]> {
+  async execute(surveyId: string, accountId: string): Promise<CrossTabulationData[]> {
     const interviews = await this.interviewRepository.findBySurveyId(surveyId, accountId, 1, 1000)
-    if (!interviews || interviews.data.length === 0) return []
+    if (!interviews || interviews.data.length === 0) {
+      throw new Error('Nenhuma entrevista encontrada para gerar relatório')
+    }
 
-    const result: ICrossReport[] = []
+    const result: CrossTabulationData[] = []
 
     // Loop pelas entrevistas
     for (const interview of interviews.data) {

@@ -18,7 +18,19 @@ export class InMemoryInterviewRepository implements InterviewRepository {
       accountId: string
       createdAt: Date
       updatedAt: Date
-      answers: { id: string; question: string; answer: string }[]
+      answers: {
+        answerId: string
+        question: {
+          questionId: string
+          title: string
+          number: number
+        }
+        option: {
+          optionId: string
+          title: string
+          number: number
+        }
+      }[]
     }[]
     total: number
   }> {

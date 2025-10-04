@@ -39,8 +39,10 @@ import { FetchSurveyIdUseCase } from '@/domain/use-cases/survey/fetch-survey-id'
 import { FetchSurveyByIdController } from './controllers/survey/fetch-survey-id.controller'
 import { FetchInterviewsController } from './controllers/interview/fetch-interviews.controller'
 import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/fetch-interview-by-survey-id'
+import { GenerateSimpleReportWordUseCase } from '@/domain/use-cases/report/generate-simple-report-word'
 import { GenerateSimpleReportUseCase } from '@/domain/use-cases/report/generate-simple-report'
 import { GenerateSimpleReportController } from './controllers/report/generate-simple-report.controller'
+import { GenerateCrossTabulationWordUseCase } from '@/domain/use-cases/report/generate-cross-tabulation-word'
 import { GenerateCrossTabulationUseCase } from '@/domain/use-cases/report/generate-cross-tabulation'
 import { GenerateCrossTabulationController } from './controllers/report/generate-cross-tabulation.controller'
 
@@ -66,7 +68,9 @@ import { GenerateCrossTabulationController } from './controllers/report/generate
     FetchSurveyListUseCase,
     FetchSurveyIdUseCase,
     FetchInterviewsBySurveyIdUseCase,
+    GenerateSimpleReportWordUseCase,
     GenerateSimpleReportUseCase,
+    GenerateCrossTabulationWordUseCase,
     GenerateCrossTabulationUseCase,
   ],
   controllers: [
