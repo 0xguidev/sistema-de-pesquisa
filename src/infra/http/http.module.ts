@@ -42,9 +42,9 @@ import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/f
 import { GenerateSimpleReportWordUseCase } from '@/domain/use-cases/report/generate-simple-report-word'
 import { GenerateSimpleReportUseCase } from '@/domain/use-cases/report/generate-simple-report'
 import { GenerateSimpleReportController } from './controllers/report/generate-simple-report.controller'
-import { GenerateCrossTabulationWordUseCase } from '@/domain/use-cases/report/generate-cross-tabulation-word'
-import { GenerateCrossTabulationUseCase } from '@/domain/use-cases/report/generate-cross-tabulation'
-import { GenerateCrossTabulationController } from './controllers/report/generate-cross-tabulation.controller'
+import { GenerateCrossReportWordUseCase } from '@/domain/use-cases/report/generate-cross-report-word'
+import { GenerateCrossReportUseCase } from '@/domain/use-cases/report/generate-cross-report'
+import { GenerateCrossReportController } from './controllers/report/generate-cross-report.controller'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule],
@@ -70,8 +70,8 @@ import { GenerateCrossTabulationController } from './controllers/report/generate
     FetchInterviewsBySurveyIdUseCase,
     GenerateSimpleReportWordUseCase,
     GenerateSimpleReportUseCase,
-    GenerateCrossTabulationWordUseCase,
-    GenerateCrossTabulationUseCase,
+    GenerateCrossReportWordUseCase,
+    GenerateCrossReportUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -94,7 +94,7 @@ import { GenerateCrossTabulationController } from './controllers/report/generate
     FetchSurveyByIdController,
     FetchInterviewsController,
     GenerateSimpleReportController,
-    GenerateCrossTabulationController,
+    GenerateCrossReportController,
   ],
 })
 export class HttpModule {}

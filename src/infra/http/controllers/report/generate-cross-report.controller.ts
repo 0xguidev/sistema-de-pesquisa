@@ -1,24 +1,24 @@
 import { Controller, Get, Param, Res, Header } from '@nestjs/common'
-import { GenerateSimpleReportWordUseCase } from '@/domain/use-cases/report/generate-simple-report-word'
-import { GenerateSimpleReportUseCase } from '@/domain/use-cases/report/generate-simple-report'
+import { GenerateCrossReportWordUseCase } from '@/domain/use-cases/report/generate-cross-report-word'
+import { GenerateCrossReportUseCase } from '@/domain/use-cases/report/generate-cross-report'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { SurveyRepository } from '@/domain/repositories/survey-repository'
 
 @Controller('/reports')
-export class GenerateSimpleReportController {
+export class GenerateCrossReportController {
   constructor(
-    private generateSimpleReportWordUseCase: GenerateSimpleReportWordUseCase,
-    private generateSimpleReportUseCase: GenerateSimpleReportUseCase,
+    private generateCrossReportWordUseCase: GenerateCrossReportWordUseCase,
+    private generateCrossReportUseCase: GenerateCrossReportUseCase,
     private surveyRepository: SurveyRepository,
   ) {}
 
-  @Get('/simple/:surveyId')
+  @Get('/cross/:surveyId')
   async getData(@Param('surveyId') surveyId: string, @CurrentUser() user: UserPayload) {
-    return this.generateSimpleReportUseCase.execute(surveyId, user.sub)
+    return this.generateCrossReportUseCase.execute(surveyId, user.sub)
   }
 
-  @Get('/simple/:surveyId/download')
+  @Get('/cross/:surveyId/download')
   @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
   async handle(@Param('surveyId') surveyId: string, @CurrentUser() user: UserPayload, @Res() res: any) {
     const survey = await this.surveyRepository.findById(surveyId)
@@ -32,11 +32,12 @@ export class GenerateSimpleReportController {
     const dateSuffix = `${month}-${year}`
 
     const surveyName = survey.title.replace(/\s+/g, '-')
-    const filename = `relatorio-simples-${surveyName}-${dateSuffix}.docx`
+    const filename = `relatorio-cruzado-${surveyName}-${dateSuffix}.docx`
 
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 
-    const buffer = await this.generateSimpleReportWordUseCase.execute(surveyId, user.sub)
+    const buffer = await this.generateCrossReportWordUseCase.execute(surveyId, user.sub)
     res.send(buffer)
   }
 }
+

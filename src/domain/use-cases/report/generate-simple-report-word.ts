@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InterviewRepository } from 'src/domain/repositories/interview-repository'
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType } from 'docx'
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, ShadingType } from 'docx'
 
 @Injectable()
 export class GenerateSimpleReportWordUseCase {
@@ -90,28 +90,27 @@ export class GenerateSimpleReportWordUseCase {
             new TableRow({
               children: [
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Opção', bold: true })] })],
+                  children: [new Paragraph({ children: [new TextRun({ text: 'Opção', bold: true, color: 'FFFFFF' })] })],
+                  shading: { type: ShadingType.SOLID, color: '4A90E2' },
                 }),
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Contagem', bold: true })] })],
-                }),
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Porcentagem', bold: true })] })],
+                  children: [new Paragraph({ children: [new TextRun({ text: 'Porcentagem', bold: true, color: 'FFFFFF' })] })],
+                  shading: { type: ShadingType.SOLID, color: '4A90E2' },
                 }),
               ],
             }),
-            ...options.map(option => {
+            ...options.map((option, index) => {
               const percentage = parseFloat(((option.count / totalVotes) * 100).toFixed(1))
+              const rowColor = index % 2 === 0 ? 'F9F9F9' : 'FFFFFF'
               return new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun(option.answer)] })],
+                    children: [new Paragraph({ children: [new TextRun(`${option.num}. ${option.answer}`)] })],
+                    shading: { type: ShadingType.SOLID, color: rowColor },
                   }),
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun(option.count.toString())] })],
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ children: [new TextRun(`${percentage}%`)] })],
+                    children: [new Paragraph({ children: [new TextRun(`${percentage.toFixed(2)}%`)], alignment: AlignmentType.CENTER })],
+                    shading: { type: ShadingType.SOLID, color: rowColor },
                   }),
                 ],
               })

@@ -5,7 +5,7 @@ import { AppModule } from '@/app.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { hash } from 'bcryptjs'
 
-describe('GenerateCrossTabulationController (e2e)', () => {
+describe('GenerateCrossReportController (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
 
@@ -23,7 +23,7 @@ describe('GenerateCrossTabulationController (e2e)', () => {
     await app.close()
   })
 
-  it('should generate cross tabulation report', async () => {
+  it('should generate cross report report', async () => {
     const user = await prisma.user.create({
       data: {
         email: 'test2@example.com',
@@ -70,26 +70,6 @@ describe('GenerateCrossTabulationController (e2e)', () => {
         questionId: question1.id,
         userId: user.id,
         slug: 'yes-option-q1',
-      },
-    })
-
-    const option2Q1 = await prisma.optionAnswer.create({
-      data: {
-        option: 'No',
-        number: 2,
-        questionId: question1.id,
-        userId: user.id,
-        slug: 'no-option-q1',
-      },
-    })
-
-    const option1Q2 = await prisma.optionAnswer.create({
-      data: {
-        option: 'True',
-        number: 1,
-        questionId: question2.id,
-        userId: user.id,
-        slug: 'true-option-q2',
       },
     })
 
