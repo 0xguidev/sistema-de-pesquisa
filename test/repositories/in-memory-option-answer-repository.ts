@@ -1,5 +1,5 @@
-import { OptionAnswer } from 'src/domain/entities/option-answer'
-import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-repository'
+import { OptionAnswer } from '@/domain/entities/option-answer'
+import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 
 export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
   public items: OptionAnswer[] = []
@@ -35,7 +35,8 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
   ): Promise<OptionAnswer | null> {
     const optionAnswer = this.items.find(
       (item) =>
-        item.questionId.toString() === questionId && item.optionNum === optionNum,
+        item.questionId.toString() === questionId &&
+        item.optionNum === optionNum,
     )
 
     if (!optionAnswer) {

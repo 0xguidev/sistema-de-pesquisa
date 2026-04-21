@@ -1,18 +1,39 @@
 import { Injectable } from '@nestjs/common'
-import { InterviewRepository } from 'src/domain/repositories/interview-repository'
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, AlignmentType, ShadingType } from 'docx'
+import { InterviewRepository } from '@/domain/repositories/interview-repository'
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  AlignmentType,
+  ShadingType,
+} from 'docx'
 
 @Injectable()
 export class GenerateSimpleReportWordUseCase {
   constructor(private interviewRepository: InterviewRepository) {}
 
   async execute(surveyId: string, accountId: string): Promise<Buffer> {
-    const interviews = await this.interviewRepository.findBySurveyId(surveyId, accountId, 1, 1000)
+    const interviews = await this.interviewRepository.findBySurveyId(
+      surveyId,
+      accountId,
+      1,
+      1000,
+    )
     if (!interviews || interviews.data.length === 0) {
       throw new Error('Nenhuma entrevista encontrada para gerar relatório')
     }
 
-    const report: Record<string, Record<string, { answer: string; count: number; percentage: number; num: number }>> = {}
+    const report: Record<
+      string,
+      Record<
+        string,
+        { answer: string; count: number; percentage: number; num: number }
+      >
+    > = {}
 
     for (const interview of interviews.data) {
       for (const answer of interview.answers) {
@@ -69,8 +90,8 @@ export class GenerateSimpleReportWordUseCase {
 
       // Obter texto da pergunta
       const firstAnswer = interviews.data
-        .flatMap(i => i.answers)
-        .find(a => a.question.questionId === questionId)
+        .flatMap((i) => i.answers)
+        .find((a) => a.question.questionId === questionId)
       const questionText = firstAnswer?.question.title || 'N/A'
       const questionNum = firstAnswer?.question.number || 0
 
@@ -90,26 +111,59 @@ export class GenerateSimpleReportWordUseCase {
             new TableRow({
               children: [
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Opção', bold: true, color: 'FFFFFF' })] })],
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({
+                          text: 'Opção',
+                          bold: true,
+                          color: 'FFFFFF',
+                        }),
+                      ],
+                    }),
+                  ],
                   shading: { type: ShadingType.SOLID, color: '4A90E2' },
                 }),
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Porcentagem', bold: true, color: 'FFFFFF' })] })],
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({
+                          text: 'Porcentagem',
+                          bold: true,
+                          color: 'FFFFFF',
+                        }),
+                      ],
+                    }),
+                  ],
                   shading: { type: ShadingType.SOLID, color: '4A90E2' },
                 }),
               ],
             }),
             ...options.map((option, index) => {
-              const percentage = parseFloat(((option.count / totalVotes) * 100).toFixed(1))
+              const percentage = parseFloat(
+                ((option.count / totalVotes) * 100).toFixed(1),
+              )
               const rowColor = index % 2 === 0 ? 'F9F9F9' : 'FFFFFF'
               return new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun(`${option.num}. ${option.answer}`)] })],
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun(`${option.num}. ${option.answer}`),
+                        ],
+                      }),
+                    ],
                     shading: { type: ShadingType.SOLID, color: rowColor },
                   }),
                   new TableCell({
-                    children: [new Paragraph({ children: [new TextRun(`${percentage.toFixed(2)}%`)], alignment: AlignmentType.CENTER })],
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun(`${percentage.toFixed(2)}%`)],
+                        alignment: AlignmentType.CENTER,
+                      }),
+                    ],
                     shading: { type: ShadingType.SOLID, color: rowColor },
                   }),
                 ],
@@ -123,10 +177,12 @@ export class GenerateSimpleReportWordUseCase {
 
     // Criar documento Word
     const doc = new Document({
-      sections: [{
-        properties: {},
-        children,
-      }],
+      sections: [
+        {
+          properties: {},
+          children,
+        },
+      ],
     })
 
     // Gerar buffer do documento

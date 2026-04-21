@@ -2,11 +2,11 @@ import { PrismaOptionAnswerMapper } from '@/infra/database/prisma/mappers/prisma
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import {
   OptionAnswer,
   OptionAnswerProps,
-} from 'src/domain/entities/option-answer'
+} from '@/domain/entities/option-answer'
 export function makeOptionAnswer(
   override: Partial<OptionAnswerProps> = {},
   id?: UniqueEntityID,

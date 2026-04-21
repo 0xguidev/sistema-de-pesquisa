@@ -5,7 +5,7 @@ import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question
 import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { makeQuestion } from 'test/factories/make-question'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let inMemoryQuestionRepository: InMemoryQuestionRepository
@@ -97,7 +97,9 @@ describe('Generate Cross Report Word', () => {
       total: 1,
     }
 
-    inMemoryInterviewRepository.findBySurveyId = vi.fn().mockResolvedValue(mockData)
+    inMemoryInterviewRepository.findBySurveyId = vi
+      .fn()
+      .mockResolvedValue(mockData)
 
     const result = await sut.execute('survey-1', 'account-1')
 

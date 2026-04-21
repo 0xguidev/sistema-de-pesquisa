@@ -1,7 +1,7 @@
 import { makeSurvey } from 'test/factories/make-survey'
 import { EditSurveyUseCase } from './edit-survey'
 import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let inMemorySurveysRepository: InMemorySurveyRepository
 let sut: EditSurveyUseCase

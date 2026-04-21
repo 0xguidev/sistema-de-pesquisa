@@ -1,5 +1,5 @@
-import { Survey } from 'src/domain/entities/survey'
-import { SurveyRepository } from 'src/domain/repositories/survey-repository'
+import { Survey } from '@/domain/entities/survey'
+import { SurveyRepository } from '@/domain/repositories/survey-repository'
 import { InMemoryQuestionRepository } from './in-memory-question-repository'
 
 export class InMemorySurveyRepository implements SurveyRepository {

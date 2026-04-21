@@ -1,6 +1,6 @@
-import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
-import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
-import { Either, left, right } from 'src/core/types/either'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { Either, left, right } from '@/core/types/either'
 import { Question } from '../../entities/question'
 import { QuestionRepository } from '../../repositories/question-repository'
 import { Injectable } from '@nestjs/common'
@@ -38,7 +38,7 @@ export class EditQuestionUseCase {
     if (question.accountId.toString() !== accountId) {
       return left(new NotAllowedError())
     }
-    
+
     question.questionTitle = questionTitle ?? question.questionTitle
     question.questionNum = questionNum ?? question.questionNum
 

@@ -1,5 +1,5 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { Either, right } from 'src/core/types/either'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { Either, right } from '@/core/types/either'
 import { OptionAnswerRepository } from '../../repositories/option-answer-repository'
 import { OptionAnswer } from '../../entities/option-answer'
 import { Injectable } from '@nestjs/common'

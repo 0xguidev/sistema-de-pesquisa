@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
-import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
-import { Either, left, right } from 'src/core/types/either'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { Either, left, right } from '@/core/types/either'
 import { QuestionRepository } from '../../repositories/question-repository'
 
 interface DeleteQuestionUseCaseRequest {
@@ -33,8 +33,12 @@ export class DeleteQuestionUseCase {
     }
 
     // Delete conditional rules related to this question
-    await this.questionsRepository.deleteConditionalRulesByQuestionId(isQuestion.id.toString())
-    await this.questionsRepository.deleteConditionalRulesByDependsOnQuestionId(isQuestion.id.toString())
+    await this.questionsRepository.deleteConditionalRulesByQuestionId(
+      isQuestion.id.toString(),
+    )
+    await this.questionsRepository.deleteConditionalRulesByDependsOnQuestionId(
+      isQuestion.id.toString(),
+    )
 
     await this.questionsRepository.delete(isQuestion.id.toString())
 

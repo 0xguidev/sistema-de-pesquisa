@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
-import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
-import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
-import { Either, left, right } from 'src/core/types/either'
-import { OptionAnswer } from 'src/domain/entities/option-answer'
-import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-repository'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { Either, left, right } from '@/core/types/either'
+import { OptionAnswer } from '@/domain/entities/option-answer'
+import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 
 interface EditOptionAnswerUseCaseRequest {
   accountId: string

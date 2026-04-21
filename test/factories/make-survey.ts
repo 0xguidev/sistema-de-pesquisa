@@ -2,8 +2,8 @@ import { PrismaSurveyMapper } from '@/infra/database/prisma/mappers/prisma-surve
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { Survey, SurveyProps } from 'src/domain/entities/survey'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { Survey, SurveyProps } from '@/domain/entities/survey'
 
 export function makeSurvey(
   override: Partial<SurveyProps> = {},

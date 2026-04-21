@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { InterviewRepository } from 'src/domain/repositories/interview-repository'
-import { QuestionRepository } from 'src/domain/repositories/question-repository'
-import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-repository'
+import { InterviewRepository } from '@/domain/repositories/interview-repository'
+import { QuestionRepository } from '@/domain/repositories/question-repository'
+import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 
 export interface CrossReportData {
   questionA: string

@@ -1,8 +1,8 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Question } from '../../entities/question'
 import { QuestionRepository } from '../../repositories/question-repository'
 import { OptionAnswerRepository } from '../../repositories/option-answer-repository'
-import { Either, left, right } from 'src/core/types/either'
+import { Either, left, right } from '@/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { ConditionalRule } from '../../entities/conditional-rule'
 
@@ -49,19 +49,21 @@ export class CreateQuestionUseCase {
 
     if (conditionalRules) {
       for (const rule of conditionalRules) {
-        const dependsOnQuestion = await this.questionRepository.findByQuestionNum(
-          surveyId,
-          rule.dependsOnQuestionNumber,
-        )
+        const dependsOnQuestion =
+          await this.questionRepository.findByQuestionNum(
+            surveyId,
+            rule.dependsOnQuestionNumber,
+          )
 
         if (!dependsOnQuestion) {
           return left(new Error('Depends on question not found'))
         }
 
-        const optionAnswer = await this.optionAnswerRepository.findOptionByQuestionIdAndOptionNum(
-          dependsOnQuestion.id.toString(),
-          rule.dependsOnOptionNumber,
-        )
+        const optionAnswer =
+          await this.optionAnswerRepository.findOptionByQuestionIdAndOptionNum(
+            dependsOnQuestion.id.toString(),
+            rule.dependsOnOptionNumber,
+          )
 
         if (!optionAnswer) {
           return left(new Error('Depends on option not found'))

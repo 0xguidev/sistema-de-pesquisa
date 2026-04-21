@@ -1,5 +1,5 @@
-import { Interview } from 'src/domain/entities/interview'
-import { InterviewRepository } from 'src/domain/repositories/interview-repository'
+import { Interview } from '@/domain/entities/interview'
+import { InterviewRepository } from '@/domain/repositories/interview-repository'
 
 export class InMemoryInterviewRepository implements InterviewRepository {
   public items: Interview[] = []

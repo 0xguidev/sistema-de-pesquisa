@@ -1,6 +1,6 @@
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Slug } from './value-objects/slug'
-import { Entity } from 'src/core/entities/entity'
+import { Entity } from '@/core/entities/entity'
 import { Optional } from '@/core/types/optional'
 
 export interface OptionAnswerProps {

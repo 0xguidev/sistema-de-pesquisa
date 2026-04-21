@@ -1,6 +1,6 @@
-import { Question } from 'src/domain/entities/question'
-import { QuestionRepository } from 'src/domain/repositories/question-repository'
-import { ConditionalRule } from 'src/domain/entities/conditional-rule'
+import { Question } from '@/domain/entities/question'
+import { QuestionRepository } from '@/domain/repositories/question-repository'
+import { ConditionalRule } from '@/domain/entities/conditional-rule'
 
 export class InMemoryQuestionRepository implements QuestionRepository {
   public items: Question[] = []

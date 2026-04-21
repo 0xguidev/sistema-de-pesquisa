@@ -3,12 +3,12 @@ import { PrismaConditionalRuleMapper } from '@/infra/database/prisma/mappers/pri
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
-import { Question, QuestionProps } from 'src/domain/entities/question'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { Question, QuestionProps } from '@/domain/entities/question'
 import {
   ConditionalRule,
   ConditionalRuleProps,
-} from 'src/domain/entities/conditional-rule'
+} from '@/domain/entities/conditional-rule'
 
 export function makeQuestion(
   override: Partial<QuestionProps> = {},

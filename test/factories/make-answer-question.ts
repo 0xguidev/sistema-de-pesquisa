@@ -1,11 +1,11 @@
 import { PrismaAnswerMapper } from '@/infra/database/prisma/mappers/prisma-answer-mapper'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { Injectable } from '@nestjs/common'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import {
   AnswerQuestion,
   AnswerQuestionProps,
-} from 'src/domain/entities/answer-question'
+} from '@/domain/entities/answer-question'
 
 export function makeAnswerQuestion(
   override: Partial<AnswerQuestionProps> = {},

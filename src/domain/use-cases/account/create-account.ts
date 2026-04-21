@@ -1,8 +1,8 @@
-import { Either, left, right } from 'src/core/types/either'
+import { Either, left, right } from '@/core/types/either'
 import { AccountAlreadyExistsError } from '../error/account-already-exists.error'
 import { Injectable } from '@nestjs/common'
-import { AccountRepository } from 'src/domain/repositories/account-repository'
-import { Account } from 'src/domain/entities/account'
+import { AccountRepository } from '@/domain/repositories/account-repository'
+import { Account } from '@/domain/entities/account'
 import { HashGenerator } from '@/domain/cryptography/hash-generator'
 
 interface RegisterAccountUseCaseRequest {

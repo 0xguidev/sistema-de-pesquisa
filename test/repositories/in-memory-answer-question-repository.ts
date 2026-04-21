@@ -1,5 +1,5 @@
-import { AnswerQuestion } from 'src/domain/entities/answer-question'
-import { AnswerQuestionRepository } from 'src/domain/repositories/answer-question-repository'
+import { AnswerQuestion } from '@/domain/entities/answer-question'
+import { AnswerQuestionRepository } from '@/domain/repositories/answer-question-repository'
 
 export class InMemoryAnswerQuestionRepository
   implements AnswerQuestionRepository

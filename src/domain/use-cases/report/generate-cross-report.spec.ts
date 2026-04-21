@@ -5,7 +5,7 @@ import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question
 import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { makeQuestion } from 'test/factories/make-question'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let interviewRepo: InMemoryInterviewRepository
 let questionRepo: InMemoryQuestionRepository

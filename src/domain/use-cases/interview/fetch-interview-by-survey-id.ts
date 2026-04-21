@@ -1,5 +1,5 @@
 import { InterviewRepository } from '../../repositories/interview-repository'
-import { Either, right, left } from 'src/core/types/either'
+import { Either, right, left } from '@/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { InterviewResponse } from '@/infra/http/controllers/interview/interfaces/interview.interfaces'
 

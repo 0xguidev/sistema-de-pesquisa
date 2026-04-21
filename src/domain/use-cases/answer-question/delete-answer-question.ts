@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common'
-import { NotAllowedError } from 'src/core/errors/errors/not-allowed-error'
-import { ResourceNotFoundError } from 'src/core/errors/errors/resource-not-found-error'
-import { Either, left, right } from 'src/core/types/either'
-import { AnswerQuestionRepository } from 'src/domain/repositories/answer-question-repository'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { Either, left, right } from '@/core/types/either'
+import { AnswerQuestionRepository } from '@/domain/repositories/answer-question-repository'
 
 interface DeleteAnswerQuestionUseCaseRequest {
   answerQuestionId: string

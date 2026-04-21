@@ -1,6 +1,6 @@
 import { expect, beforeEach } from 'vitest'
 import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { CreateOptionAnswerUseCase } from './create-option-answer'
 
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository

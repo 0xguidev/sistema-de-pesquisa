@@ -1,6 +1,6 @@
-import { Either, right, left } from 'src/core/types/either'
-import { OptionAnswer } from 'src/domain/entities/option-answer'
-import { OptionAnswerRepository } from 'src/domain/repositories/option-answer-repository'
+import { Either, right, left } from '@/core/types/either'
+import { OptionAnswer } from '@/domain/entities/option-answer'
+import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 
 interface GetOptionAnswerUseCaseRequest {
   optionanswerId: string

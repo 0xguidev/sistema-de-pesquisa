@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { SurveyRepository } from '../../repositories/survey-repository'
-import { Either, right, left } from 'src/core/types/either'
+import { Either, right, left } from '@/core/types/either'
 
 interface SurveyListUseCaseRequest {
   page: number

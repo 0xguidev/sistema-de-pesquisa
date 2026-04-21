@@ -1,7 +1,7 @@
 import { makeQuestion } from 'test/factories/make-question'
 import { EditQuestionUseCase } from './edit-question'
 import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let inMemoryQuestionsRepository: InMemoryQuestionRepository
 let sut: EditQuestionUseCase

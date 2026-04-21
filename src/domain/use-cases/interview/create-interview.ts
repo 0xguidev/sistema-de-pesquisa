@@ -1,4 +1,4 @@
-import { Either, right } from 'src/core/types/either'
+import { Either, right } from '@/core/types/either'
 import { Interview } from '../../entities/interview'
 import { InterviewRepository } from '../../repositories/interview-repository'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
