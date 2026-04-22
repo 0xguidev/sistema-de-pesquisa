@@ -45,7 +45,8 @@ import { GenerateSimpleReportController } from './controllers/report/generate-si
 import { GenerateCrossReportWordUseCase } from '@/domain/use-cases/report/generate-cross-report-word'
 import { GenerateCrossReportUseCase } from '@/domain/use-cases/report/generate-cross-report'
 import { GenerateCrossReportController } from './controllers/report/generate-cross-report.controller'
-
+import { GenerateSimpleReportPdfController } from './controllers/report/generate-simple-report-pdf.controller'
+import { GenerateSimpleReportPdfUseCase } from '@/domain/use-cases/report/generate-simple-report-pdf'
 @Module({
   imports: [DatabaseModule, CryptographyModule],
   providers: [
@@ -72,6 +73,7 @@ import { GenerateCrossReportController } from './controllers/report/generate-cro
     GenerateSimpleReportUseCase,
     GenerateCrossReportWordUseCase,
     GenerateCrossReportUseCase,
+    GenerateSimpleReportPdfUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -94,6 +96,7 @@ import { GenerateCrossReportController } from './controllers/report/generate-cro
     FetchSurveyByIdController,
     FetchInterviewsController,
     GenerateSimpleReportController,
+    GenerateSimpleReportPdfController,
     GenerateCrossReportController,
   ],
 })

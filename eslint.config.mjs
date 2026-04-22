@@ -1,6 +1,7 @@
 import js from '@eslint/js'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import tsparser from '@typescript-eslint/parser'
+import globals from 'globals'
 
 export default [
   js.configs.recommended,
@@ -14,8 +15,7 @@ export default [
         sourceType: 'module',
       },
       globals: {
-        Buffer: 'readonly',
-        process: 'readonly',
+        ...globals.node,
       },
     },
     plugins: {
@@ -30,25 +30,5 @@ export default [
       'no-unused-vars': 'off',
       semi: ['error', 'never'],
     },
-  },
-  {
-    files: ['**/*.spec.ts', '**/*.test.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
-    languageOptions: {
-      globals: {
-        describe: 'readonly',
-        it: 'readonly',
-        test: 'readonly',
-        expect: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        Buffer: 'readonly',
-        process: 'readonly',
-      },
-    },
-  },
-  {
-    ignores: ['.eslintrc.js'],
   },
 ]
