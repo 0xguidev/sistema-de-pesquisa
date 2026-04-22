@@ -1,9 +1,9 @@
 import { expect, beforeEach, describe, it, vi } from 'vitest'
 import { GenerateSimpleReportWordUseCase } from './generate-simple-report-word'
-import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
-import { makeQuestion } from 'test/factories/make-question'
-import { makeOptionAnswer } from 'test/factories/make-option-answer'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { InMemoryInterviewRepository } from '../../../../test/repositories/in-memory-interview-repository'
+import { makeQuestion } from '../../../../test/factories/make-question'
+import { makeOptionAnswer } from '../../../../test/factories/make-option-answer'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let sut: GenerateSimpleReportWordUseCase
@@ -59,7 +59,7 @@ describe('Generate simple report word', () => {
 
     inMemoryInterviewRepository.findBySurveyId = vi
       .fn()
-      .mockResolvedValue(mockData)
+      .mockResolvedValue(mockData as any)
 
     const result = await sut.execute('survey-1', 'account-1')
 

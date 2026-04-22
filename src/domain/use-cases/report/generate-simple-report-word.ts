@@ -9,7 +9,9 @@ import {
   TableRow,
   TextRun,
   AlignmentType,
+  BorderStyle,
   ShadingType,
+  VerticalAlign,
   WidthType,
 } from 'docx'
 
@@ -24,9 +26,14 @@ export class GenerateSimpleReportWordUseCase {
       1,
       1000,
     )
+
     if (!interviews || interviews.data.length === 0) {
       throw new Error('Nenhuma entrevista encontrada para gerar relatório')
     }
+
+    // FIX 1: Montar mapa de metadados das perguntas em uma única passagem (evita O(n²))
+    const questionMeta: Map<string, { title: string; number: number }> =
+      new Map()
 
     const report: Record<
       string,
@@ -41,11 +48,20 @@ export class GenerateSimpleReportWordUseCase {
         if (answer && answer.question.questionId && answer.option.title) {
           const questionId = answer.question.questionId
 
+          // Armazena metadados da pergunta na primeira ocorrência
+          if (!questionMeta.has(questionId)) {
+            questionMeta.set(questionId, {
+              title: answer.question.title,
+              number: answer.question.number,
+            })
+          }
+
           if (!report[questionId]) {
             report[questionId] = {}
           }
 
           const answerText = answer.option.title
+
           if (!report[questionId][answerText]) {
             report[questionId][answerText] = {
               answer: answerText,
@@ -62,6 +78,32 @@ export class GenerateSimpleReportWordUseCase {
 
     const totalVotes = interviews.data.length
 
+    // FIX 2: Calcular percentuais centralizadamente e armazenar no report
+    for (const questionId in report) {
+      for (const answerText in report[questionId]) {
+        const entry = report[questionId][answerText]
+        entry.percentage = parseFloat(
+          ((entry.count / totalVotes) * 100).toFixed(1),
+        )
+      }
+    }
+
+    // FIX 3: Bordas usando BorderStyle enum
+    const cellBorder = {
+      top: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+      left: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+      right: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+    }
+
+    // FIX 4: margins como números simples (não objetos aninhados)
+    const cellMargins = {
+      top: 100,
+      bottom: 100,
+      left: 120,
+      right: 120,
+    }
+
     // Construir children do documento
     const children: (Paragraph | Table)[] = [
       new Paragraph({
@@ -70,33 +112,22 @@ export class GenerateSimpleReportWordUseCase {
             text: 'Relatório Simples da Pesquisa',
             bold: true,
             size: 32,
+            font: 'Calibri',
           }),
         ],
         alignment: AlignmentType.CENTER,
       }),
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Total de entrevistas: ${totalVotes}`,
-            size: 24,
-          }),
-        ],
-      }),
-      new Paragraph({ children: [new TextRun('')] }), // Espaço
     ]
 
     for (const questionId in report) {
       const options = Object.values(report[questionId])
       options.sort((a, b) => a.num - b.num)
 
-      // Obter texto da pergunta
-      const firstAnswer = interviews.data
-        .flatMap((i) => i.answers)
-        .find((a) => a.question.questionId === questionId)
-      const questionText = firstAnswer?.question.title || 'N/A'
-      const questionNum = firstAnswer?.question.number || 0
+      // FIX 5: Usar o mapa de metadados em vez de flatMap (O(1) em vez de O(n))
+      const meta = questionMeta.get(questionId)
+      const questionText = meta?.title ?? 'N/A'
+      const questionNum = meta?.number ?? 0
 
-      // Adicionar pergunta
       children.push(
         new Paragraph({
           children: [
@@ -104,22 +135,27 @@ export class GenerateSimpleReportWordUseCase {
               text: `${questionNum}. ${questionText}`,
               bold: true,
               size: 26,
+              font: 'Calibri',
             }),
           ],
         }),
         new Table({
           width: {
-            size: 100,
-            type: WidthType.PERCENTAGE,
+            size: 9360,
+            type: WidthType.DXA,
           },
+          // columnWidths deve somar ao width da tabela (9360 DXA)
+          columnWidths: [576, 8208, 576],
           rows: [
+            // Linha de cabeçalho
             new TableRow({
               children: [
                 new TableCell({
-                  width: {
-                    size: 288,
-                    type: WidthType.DXA,
-                  },
+                  width: { size: 576, type: WidthType.DXA },
+                  margins: cellMargins,
+                  borders: cellBorder,
+                  // FIX 6: VerticalAlign enum em vez de string literal
+                  verticalAlign: VerticalAlign.CENTER,
                   children: [
                     new Paragraph({
                       children: [
@@ -127,18 +163,21 @@ export class GenerateSimpleReportWordUseCase {
                           text: 'Nº',
                           bold: true,
                           color: 'FFFFFF',
+                          size: 22,
+                          font: 'Calibri',
                         }),
                       ],
                       alignment: AlignmentType.CENTER,
                     }),
                   ],
-                  shading: { type: ShadingType.SOLID, color: '4A90E2' },
+                  // FIX 7: ShadingType.CLEAR em vez de SOLID para evitar fundo preto
+                  shading: { type: ShadingType.CLEAR, fill: '4472C4' },
                 }),
                 new TableCell({
-                  width: {
-                    size: 3960,
-                    type: WidthType.DXA,
-                  },
+                  width: { size: 8208, type: WidthType.DXA },
+                  margins: cellMargins,
+                  borders: cellBorder,
+                  verticalAlign: VerticalAlign.CENTER,
                   children: [
                     new Paragraph({
                       children: [
@@ -146,17 +185,19 @@ export class GenerateSimpleReportWordUseCase {
                           text: 'Opção',
                           bold: true,
                           color: 'FFFFFF',
+                          size: 22,
+                          font: 'Calibri',
                         }),
                       ],
                     }),
                   ],
-                  shading: { type: ShadingType.SOLID, color: '4A90E2' },
+                  shading: { type: ShadingType.CLEAR, fill: '4472C4' },
                 }),
                 new TableCell({
-                  width: {
-                    size: 288,
-                    type: WidthType.DXA,
-                  },
+                  width: { size: 576, type: WidthType.DXA },
+                  margins: cellMargins,
+                  borders: cellBorder,
+                  verticalAlign: VerticalAlign.CENTER,
                   children: [
                     new Paragraph({
                       children: [
@@ -164,80 +205,111 @@ export class GenerateSimpleReportWordUseCase {
                           text: '%',
                           bold: true,
                           color: 'FFFFFF',
+                          size: 22,
+                          font: 'Calibri',
                         }),
                       ],
                       alignment: AlignmentType.CENTER,
                     }),
                   ],
-                  shading: { type: ShadingType.SOLID, color: '4A90E2' },
+                  shading: { type: ShadingType.CLEAR, fill: '4472C4' },
                 }),
               ],
             }),
+            // Linhas de dados
             ...options.map((option, index) => {
-              const percentage = parseFloat(
-                ((option.count / totalVotes) * 100).toFixed(1),
-              )
-              const rowColor = index % 2 === 0 ? 'F9F9F9' : 'FFFFFF'
+              const rowFill = index % 2 === 0 ? 'F8F9FA' : 'FFFFFF'
               return new TableRow({
                 children: [
                   new TableCell({
-                    width: {
-                      size: 288,
-                      type: WidthType.DXA,
-                    },
+                    width: { size: 576, type: WidthType.DXA },
+                    margins: cellMargins,
+                    borders: cellBorder,
+                    verticalAlign: VerticalAlign.CENTER,
                     children: [
                       new Paragraph({
-                        children: [new TextRun(`${option.num}`)],
+                        children: [
+                          new TextRun({
+                            text: `${option.num}`,
+                            size: 20,
+                            font: 'Calibri',
+                          }),
+                        ],
                         alignment: AlignmentType.CENTER,
                       }),
                     ],
-                    shading: { type: ShadingType.SOLID, color: rowColor },
+                    shading: { type: ShadingType.CLEAR, fill: rowFill },
                   }),
                   new TableCell({
-                    width: {
-                      size: 3960,
-                      type: WidthType.DXA,
-                    },
+                    width: { size: 8208, type: WidthType.DXA },
+                    margins: cellMargins,
+                    borders: cellBorder,
+                    verticalAlign: VerticalAlign.CENTER,
                     children: [
                       new Paragraph({
-                        children: [new TextRun(option.answer)],
+                        children: [
+                          new TextRun({
+                            text: option.answer,
+                            size: 20,
+                            font: 'Calibri',
+                          }),
+                        ],
                       }),
                     ],
-                    shading: { type: ShadingType.SOLID, color: rowColor },
+                    shading: { type: ShadingType.CLEAR, fill: rowFill },
                   }),
                   new TableCell({
-                    width: {
-                      size: 288,
-                      type: WidthType.DXA,
-                    },
+                    width: { size: 576, type: WidthType.DXA },
+                    margins: cellMargins,
+                    borders: cellBorder,
+                    verticalAlign: VerticalAlign.CENTER,
                     children: [
                       new Paragraph({
-                        children: [new TextRun(`${percentage.toFixed(2)}%`)],
+                        children: [
+                          new TextRun({
+                            // FIX 8: Usar o percentage já calculado no report
+                            text: `${option.percentage.toFixed(2)}%`,
+                            size: 20,
+                            font: 'Calibri',
+                            italics: true,
+                          }),
+                        ],
                         alignment: AlignmentType.CENTER,
                       }),
                     ],
-                    shading: { type: ShadingType.SOLID, color: rowColor },
+                    shading: { type: ShadingType.CLEAR, fill: rowFill },
                   }),
                 ],
               })
             }),
           ],
         }),
-        new Paragraph({ children: [new TextRun('')] }), // Espaço
+        new Paragraph({ children: [new TextRun('')] }),
       )
     }
 
-    // Criar documento Word
     const doc = new Document({
       sections: [
         {
-          properties: {},
+          properties: {
+            page: {
+              size: {
+                width: 11906,
+                height: 16838,
+              },
+              margin: {
+                top: 1440,
+                right: 1440,
+                bottom: 1440,
+                left: 1440,
+              },
+            },
+          },
           children,
         },
       ],
     })
 
-    // Gerar buffer do documento
     const buffer = await Packer.toBuffer(doc)
     return buffer
   }
