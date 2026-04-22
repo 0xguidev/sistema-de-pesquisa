@@ -10,6 +10,7 @@ import {
   TextRun,
   AlignmentType,
   ShadingType,
+  WidthType,
 } from 'docx'
 
 @Injectable()
@@ -107,10 +108,37 @@ export class GenerateSimpleReportWordUseCase {
           ],
         }),
         new Table({
+          width: {
+            size: 100,
+            type: WidthType.PERCENTAGE,
+          },
           rows: [
             new TableRow({
               children: [
                 new TableCell({
+                  width: {
+                    size: 288,
+                    type: WidthType.DXA,
+                  },
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({
+                          text: 'Nº',
+                          bold: true,
+                          color: 'FFFFFF',
+                        }),
+                      ],
+                      alignment: AlignmentType.CENTER,
+                    }),
+                  ],
+                  shading: { type: ShadingType.SOLID, color: '4A90E2' },
+                }),
+                new TableCell({
+                  width: {
+                    size: 3960,
+                    type: WidthType.DXA,
+                  },
                   children: [
                     new Paragraph({
                       children: [
@@ -125,15 +153,20 @@ export class GenerateSimpleReportWordUseCase {
                   shading: { type: ShadingType.SOLID, color: '4A90E2' },
                 }),
                 new TableCell({
+                  width: {
+                    size: 288,
+                    type: WidthType.DXA,
+                  },
                   children: [
                     new Paragraph({
                       children: [
                         new TextRun({
-                          text: 'Porcentagem',
+                          text: '%',
                           bold: true,
                           color: 'FFFFFF',
                         }),
                       ],
+                      alignment: AlignmentType.CENTER,
                     }),
                   ],
                   shading: { type: ShadingType.SOLID, color: '4A90E2' },
@@ -148,16 +181,35 @@ export class GenerateSimpleReportWordUseCase {
               return new TableRow({
                 children: [
                   new TableCell({
+                    width: {
+                      size: 288,
+                      type: WidthType.DXA,
+                    },
                     children: [
                       new Paragraph({
-                        children: [
-                          new TextRun(`${option.num}. ${option.answer}`),
-                        ],
+                        children: [new TextRun(`${option.num}`)],
+                        alignment: AlignmentType.CENTER,
                       }),
                     ],
                     shading: { type: ShadingType.SOLID, color: rowColor },
                   }),
                   new TableCell({
+                    width: {
+                      size: 3960,
+                      type: WidthType.DXA,
+                    },
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun(option.answer)],
+                      }),
+                    ],
+                    shading: { type: ShadingType.SOLID, color: rowColor },
+                  }),
+                  new TableCell({
+                    width: {
+                      size: 288,
+                      type: WidthType.DXA,
+                    },
                     children: [
                       new Paragraph({
                         children: [new TextRun(`${percentage.toFixed(2)}%`)],
