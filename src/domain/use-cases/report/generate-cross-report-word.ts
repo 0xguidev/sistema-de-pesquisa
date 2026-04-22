@@ -11,8 +11,32 @@ import {
   TableRow,
   TextRun,
   AlignmentType,
+  BorderStyle,
   ShadingType,
+  VerticalAlign,
+  WidthType,
 } from 'docx'
+
+// ---------------------------------------------------------------------------
+// Constantes de layout
+// ---------------------------------------------------------------------------
+
+/** Margens da página em DXA (1 inch = 1440 DXA) */
+const PAGE_MARGIN = 1440
+
+/**
+ * Largura útil do conteúdo em A4 retrato (DXA).
+ *   11906 - 2 × 1440 = 9026
+ * Todas as tabelas usam esta largura fixa. O Word faz word-wrap
+ * automaticamente dentro de cada célula quando o texto não cabe.
+ */
+const CONTENT_WIDTH = 11906 - PAGE_MARGIN * 2 // 9026 DXA
+
+/**
+ * Fração da largura total reservada para a coluna de rótulo (opções B).
+ * O restante (75 %) é dividido igualmente entre as colunas de dados.
+ */
+const LABEL_COL_RATIO = 0.3
 
 @Injectable()
 export class GenerateCrossReportWordUseCase {
@@ -33,7 +57,6 @@ export class GenerateCrossReportWordUseCase {
       throw new Error('Nenhuma entrevista encontrada para gerar relatório')
     }
 
-    // Buscar todas as perguntas do survey
     const questions =
       await this.questionRepository.findQuestionsBySurveyId(surveyId)
     if (!questions || questions.length < 2) {
@@ -41,6 +64,10 @@ export class GenerateCrossReportWordUseCase {
         'São necessárias pelo menos duas perguntas para gerar relatório cruzado',
       )
     }
+
+    // -----------------------------------------------------------------------
+    // Montar estrutura de resultados
+    // -----------------------------------------------------------------------
 
     const result: Array<{
       questionA: string
@@ -59,7 +86,6 @@ export class GenerateCrossReportWordUseCase {
       }>
     }> = []
 
-    // Gerar pares de perguntas e suas combinações de opções
     for (let i = 0; i < questions.length; i++) {
       for (let j = i + 1; j < questions.length; j++) {
         const questionA = questions[i]
@@ -72,59 +98,33 @@ export class GenerateCrossReportWordUseCase {
           questionB.id.toString(),
         )
 
-        if (
-          !optionsA ||
-          !optionsB ||
-          optionsA.length === 0 ||
-          optionsB.length === 0
-        ) {
-          continue // Pular se alguma pergunta não tem opções
-        }
+        if (!optionsA?.length || !optionsB?.length) continue
 
-        const entry: {
-          questionA: string
-          questionANum: number
-          questionAId: string
-          questionB: string
-          questionBNum: number
-          questionBId: string
-          answers: Array<{
-            answerA: string
-            answerB: string
-            count: number
-            percentage: number
-            numA: number
-            numB: number
-          }>
-        } = {
+        result.push({
           questionA: questionA.questionTitle,
           questionANum: questionA.questionNum,
           questionAId: questionA.id.toString(),
           questionB: questionB.questionTitle,
           questionBNum: questionB.questionNum,
           questionBId: questionB.id.toString(),
-          answers: [],
-        }
-
-        // Gerar todas as combinações cartesianas de opções
-        for (const optionA of optionsA) {
-          for (const optionB of optionsB) {
-            entry.answers.push({
-              answerA: optionA.optionTitle,
-              answerB: optionB.optionTitle,
+          answers: optionsA.flatMap((optA) =>
+            optionsB.map((optB) => ({
+              answerA: optA.optionTitle,
+              answerB: optB.optionTitle,
               count: 0,
               percentage: 0,
-              numA: optionA.optionNum,
-              numB: optionB.optionNum,
-            })
-          }
-        }
-
-        result.push(entry)
+              numA: optA.optionNum,
+              numB: optB.optionNum,
+            })),
+          ),
+        })
       }
     }
 
-    // Contar ocorrências nas entrevistas
+    // -----------------------------------------------------------------------
+    // Contar ocorrências
+    // -----------------------------------------------------------------------
+
     for (const interview of interviews.data) {
       for (const entry of result) {
         const answerA = interview.answers.find(
@@ -135,180 +135,243 @@ export class GenerateCrossReportWordUseCase {
         )
 
         if (answerA && answerB) {
-          const answerEntry = entry.answers.find(
+          const match = entry.answers.find(
             (a) =>
               a.numA === answerA.option.number &&
               a.numB === answerB.option.number,
           )
-          if (answerEntry) {
-            answerEntry.count++
-          }
+          if (match) match.count++
         }
       }
     }
 
-    // Calcular porcentagens e ordenar as respostas dentro de cada entrada
+    // -----------------------------------------------------------------------
+    // Calcular percentuais e ordenar
+    // -----------------------------------------------------------------------
+
+    const totalVotes = interviews.data.length
+
     for (const entry of result) {
-      const totalVotes = interviews.data.length
-
-      // Ordenar por numA e numB
-      entry.answers.sort((a, b) => {
-        if (a.numA !== b.numA) return a.numA - b.numA
-        return a.numB - b.numB
-      })
-
+      entry.answers.sort((a, b) =>
+        a.numA !== b.numA ? a.numA - b.numA : a.numB - b.numB,
+      )
       for (const a of entry.answers) {
         a.percentage = parseFloat(((a.count / totalVotes) * 100).toFixed(1))
       }
     }
 
-    // Construir children do documento
+    // -----------------------------------------------------------------------
+    // Helpers de estilo
+    // -----------------------------------------------------------------------
+
+    const cellBorder = {
+      top: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+      left: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+      right: { style: BorderStyle.SINGLE, size: 1, color: 'D3D3D3' },
+    }
+
+    const cellMargins = { top: 100, bottom: 100, left: 120, right: 120 }
+
+    /**
+     * Calcula os colWidths para uma tabela com `numDataCols` colunas de dados.
+     *
+     * A tabela sempre ocupa CONTENT_WIDTH no total. A coluna de rótulo recebe
+     * LABEL_COL_RATIO do total; o restante é dividido igualmente entre as colunas
+     * de dados. A última coluna de dados absorve o resíduo de arredondamento.
+     *
+     * Não há largura mínima: deixamos o Word fazer word-wrap nas células
+     * estreitas em vez de estourar a margem.
+     */
+    const calcColWidths = (numDataCols: number): number[] => {
+      const labelWidth = Math.floor(CONTENT_WIDTH * LABEL_COL_RATIO)
+      const remaining = CONTENT_WIDTH - labelWidth
+      const dataWidth = Math.floor(remaining / numDataCols)
+      const lastDataWidth = remaining - dataWidth * (numDataCols - 1)
+
+      return [
+        labelWidth,
+        ...Array(numDataCols - 1).fill(dataWidth),
+        lastDataWidth,
+      ]
+    }
+
+    /**
+     * Célula de cabeçalho.
+     * `width` é passado em DXA; o Word respeita o tamanho e quebra o texto
+     * quando necessário graças ao `wordWrap` implícito do formato OOXML.
+     */
+    const buildHeaderCell = (text: string, width: number): TableCell =>
+      new TableCell({
+        width: { size: width, type: WidthType.DXA },
+        margins: cellMargins,
+        borders: cellBorder,
+        verticalAlign: VerticalAlign.CENTER,
+        shading: { type: ShadingType.CLEAR, fill: '4472C4' },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text,
+                bold: true,
+                color: 'FFFFFF',
+                size: 18,
+                font: 'Calibri',
+              }),
+            ],
+          }),
+        ],
+      })
+
+    /**
+     * Célula de dado.
+     * Sem nenhuma propriedade que desabilite quebra de linha — o Word
+     * aplica word-wrap automaticamente quando o conteúdo excede a largura.
+     */
+    const buildDataCell = (
+      text: string,
+      width: number,
+      fill: string,
+      bold = false,
+      center = false,
+    ): TableCell =>
+      new TableCell({
+        width: { size: width, type: WidthType.DXA },
+        margins: cellMargins,
+        borders: cellBorder,
+        verticalAlign: VerticalAlign.CENTER,
+        shading: { type: ShadingType.CLEAR, fill },
+        children: [
+          new Paragraph({
+            alignment: center ? AlignmentType.CENTER : AlignmentType.LEFT,
+            children: [
+              new TextRun({
+                text,
+                bold,
+                size: 18,
+                font: 'Calibri',
+                italics: !bold && center,
+              }),
+            ],
+          }),
+        ],
+      })
+
+    // -----------------------------------------------------------------------
+    // Construir conteúdo do documento (seção única em retrato)
+    // -----------------------------------------------------------------------
+
     const children: (Paragraph | Table)[] = [
       new Paragraph({
+        alignment: AlignmentType.CENTER,
         children: [
           new TextRun({
             text: 'Relatório Cruzado da Pesquisa',
             bold: true,
             size: 32,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Total de entrevistas: ${interviews.data.length}`,
-            size: 24,
+            font: 'Calibri',
           }),
         ],
       }),
-      new Paragraph({ children: [new TextRun('')] }), // Espaço
+      new Paragraph({ children: [new TextRun('')] }),
     ]
 
     for (const entry of result) {
-      // Create a map for quick lookup
-      const percentageMap: Record<string, number> = {}
-      entry.answers.forEach((answer) => {
-        percentageMap[`${answer.numA}-${answer.numB}`] = answer.percentage
-      })
-
-      // Get unique numA and numB, sorted
       const uniqueNumA = Array.from(
         new Set(entry.answers.map((a) => a.numA)),
       ).sort((a, b) => a - b)
+
       const uniqueNumB = Array.from(
         new Set(entry.answers.map((a) => a.numB)),
       ).sort((a, b) => a - b)
 
-      // Get the answer texts for headers
       const numATexts: Record<number, string> = {}
       const numBTexts: Record<number, string> = {}
-      entry.answers.forEach((answer) => {
+      const percentageMap: Record<string, number> = {}
+
+      for (const answer of entry.answers) {
         numATexts[answer.numA] = answer.answerA
         numBTexts[answer.numB] = answer.answerB
-      })
+        percentageMap[`${answer.numA}-${answer.numB}`] = answer.percentage
+      }
+
+      const colWidths = calcColWidths(uniqueNumA.length)
+      const tableWidth = colWidths.reduce((s, w) => s + w, 0)
 
       children.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `${entry.questionANum}. ${entry.questionA} vs ${entry.questionBNum}. ${entry.questionB}`,
+              text: `${entry.questionANum}. ${entry.questionA}  ×  ${entry.questionBNum}. ${entry.questionB}`,
               bold: true,
-              size: 26,
+              size: 22,
+              font: 'Calibri',
             }),
           ],
         }),
         new Table({
+          width: { size: tableWidth, type: WidthType.DXA },
+          columnWidths: colWidths,
           rows: [
+            // Linha de cabeçalho
             new TableRow({
               children: [
-                new TableCell({
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({
-                          text: 'Opções B / Opções A',
-                          bold: true,
-                          color: 'FFFFFF',
-                        }),
-                      ],
-                    }),
-                  ],
-                  shading: { type: ShadingType.SOLID, color: '4A90E2' },
-                }),
-                ...uniqueNumA.map(
-                  (numA) =>
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          children: [
-                            new TextRun({
-                              text: numATexts[numA],
-                              bold: true,
-                              color: 'FFFFFF',
-                            }),
-                          ],
-                        }),
-                      ],
-                      shading: { type: ShadingType.SOLID, color: '4A90E2' },
-                    }),
+                buildHeaderCell('Opções B \\ Opções A', colWidths[0]),
+                ...uniqueNumA.map((numA, idx) =>
+                  buildHeaderCell(numATexts[numA], colWidths[idx + 1]),
                 ),
               ],
             }),
+            // Linhas de dados
             ...uniqueNumB.map(
               (numB, rowIndex) =>
                 new TableRow({
                   children: [
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          children: [
-                            new TextRun({ text: numBTexts[numB], bold: true }),
-                          ],
-                        }),
-                      ],
-                      shading: {
-                        type: ShadingType.SOLID,
-                        color: rowIndex % 2 === 0 ? 'F0F0F0' : 'FFFFFF',
-                      },
-                    }),
-                    ...uniqueNumA.map((numA) => {
-                      const percentage = percentageMap[`${numA}-${numB}`] || 0
-                      return new TableCell({
-                        children: [
-                          new Paragraph({
-                            children: [
-                              new TextRun({
-                                text: percentage.toFixed(2) + '%',
-                              }),
-                            ],
-                            alignment: AlignmentType.CENTER,
-                          }),
-                        ],
-                        shading: { type: ShadingType.SOLID, color: 'FFFFFF' },
-                      })
-                    }),
+                    buildDataCell(
+                      numBTexts[numB],
+                      colWidths[0],
+                      rowIndex % 2 === 0 ? 'EBF0FA' : 'FFFFFF',
+                      true,
+                      false,
+                    ),
+                    ...uniqueNumA.map((numA, colIndex) =>
+                      buildDataCell(
+                        `${(percentageMap[`${numA}-${numB}`] ?? 0).toFixed(1)}%`,
+                        colWidths[colIndex + 1],
+                        rowIndex % 2 === 0 ? 'F8F9FA' : 'FFFFFF',
+                        false,
+                        true,
+                      ),
+                    ),
                   ],
                 }),
             ),
           ],
         }),
-        new Paragraph({ children: [new TextRun('')] }), // Espaço
+        new Paragraph({ children: [new TextRun('')] }),
       )
     }
 
-    // Criar documento Word
     const doc = new Document({
       sections: [
         {
-          properties: {},
+          properties: {
+            page: {
+              size: { width: 11906, height: 16838 },
+              margin: {
+                top: PAGE_MARGIN,
+                right: PAGE_MARGIN,
+                bottom: PAGE_MARGIN,
+                left: PAGE_MARGIN,
+              },
+            },
+          },
           children,
         },
       ],
     })
 
-    // Gerar buffer do documento
-    const buffer = await Packer.toBuffer(doc)
-    return buffer
+    return Packer.toBuffer(doc)
   }
 }
