@@ -148,7 +148,7 @@ export class GenerateCrossReportUseCase {
 
       for (const a of entry.answers) {
         a.percentage = parseFloat(
-          ((a.percentage / totalVotes) * 100).toFixed(1),
+          ((a.percentage / totalVotes) * 100).toFixed(2),
         )
       }
     }

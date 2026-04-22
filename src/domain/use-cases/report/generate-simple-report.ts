@@ -79,7 +79,7 @@ export class GenerateSimpleReportUseCase {
       // Calcular porcentagens
       options.forEach((option) => {
         option.percentage = parseFloat(
-          ((option.count / totalVotes) * 100).toFixed(1),
+          ((option.count / totalVotes) * 100).toFixed(2),
         )
       })
 
