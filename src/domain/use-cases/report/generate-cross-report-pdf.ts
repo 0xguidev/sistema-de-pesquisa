@@ -5,9 +5,7 @@ import { buildCrossHtml } from './utils/build-cross-html'
 
 @Injectable()
 export class GenerateCrossReportPdfUseCase {
-  constructor(
-    private generateCrossReportUseCase: GenerateCrossReportUseCase,
-  ) {}
+  constructor(private generateCrossReportUseCase: GenerateCrossReportUseCase) {}
 
   async execute(surveyId: string, accountId: string): Promise<Buffer> {
     const crossData = await this.generateCrossReportUseCase.execute(
@@ -35,6 +33,7 @@ export class GenerateCrossReportPdfUseCase {
 
     await page.setContent(html, {
       waitUntil: 'networkidle0',
+      timeout: 100000,
     })
 
     // 🔥 importante: esperar gráficos renderizarem

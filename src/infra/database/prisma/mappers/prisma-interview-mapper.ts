@@ -20,7 +20,7 @@ export class PrismaInterviewMapper {
       id: interview.id.toString(),
       surveyId: interview.surveyId.toString(),
       userId: interview.accountId.toString(),
-      createdAt: interview.createdAt,
+      createdAt: interview.createdAt ?? new Date(),
       updatedAt: interview.updatedAt,
     }
   }

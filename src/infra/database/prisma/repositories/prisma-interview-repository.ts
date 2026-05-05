@@ -27,13 +27,18 @@ export class PrismaInterviewRepository implements InterviewRepository {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: {
-          createdAt: 'desc',
+          createdAt: 'asc',
         },
         include: {
           answer_questions: {
             include: {
               question: true,
               optionAnswer: true,
+            },
+            orderBy: {
+              question: {
+                number: 'asc', // perguntas ordenadas por número
+              },
             },
           },
         },
@@ -57,7 +62,10 @@ export class PrismaInterviewRepository implements InterviewRepository {
     const data = PrismaInterviewMapper.toPrisma(interview)
 
     await this.prisma.interview.create({
-      data,
+      data: {
+        ...data,
+        createdAt: interview.createdAt ?? new Date(),
+      },
     })
   }
 

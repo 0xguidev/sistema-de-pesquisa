@@ -15,22 +15,23 @@ import {
   ShadingType,
   VerticalAlign,
   WidthType,
+  PageOrientation,
 } from 'docx'
 
 // ---------------------------------------------------------------------------
 // Constantes de layout
 // ---------------------------------------------------------------------------
 
-/** Margens da página em DXA (1 inch = 1440 DXA) */
-const PAGE_MARGIN = 1440
+/** Margens da página em DXA — reduzidas para aproveitar melhor o espaço em paisagem */
+const PAGE_MARGIN = 720 // 0.5 inch
 
 /**
- * Largura útil do conteúdo em A4 retrato (DXA).
- *   11906 - 2 × 1440 = 9026
+ * Largura útil do conteúdo em A4 paisagem (DXA).
+ *   16838 - 2 × 720 = 15398
  * Todas as tabelas usam esta largura fixa. O Word faz word-wrap
  * automaticamente dentro de cada célula quando o texto não cabe.
  */
-const CONTENT_WIDTH = 11906 - PAGE_MARGIN * 2 // 9026 DXA
+const CONTENT_WIDTH = 16838 - PAGE_MARGIN * 2 // 15398 DXA
 
 /**
  * Fração da largura total reservada para a coluna de rótulo (opções B).
@@ -259,7 +260,7 @@ export class GenerateCrossReportWordUseCase {
       })
 
     // -----------------------------------------------------------------------
-    // Construir conteúdo do documento (seção única em retrato)
+    // Construir conteúdo do documento (seção única em paisagem)
     // -----------------------------------------------------------------------
 
     const children: (Paragraph | Table)[] = [
@@ -358,7 +359,13 @@ export class GenerateCrossReportWordUseCase {
         {
           properties: {
             page: {
-              size: { width: 11906, height: 16838 },
+              size: {
+                // Passar as dimensões no formato retrato — o docx-js faz o swap
+                // internamente quando orientation = LANDSCAPE
+                width: 11906,
+                height: 16838,
+                orientation: PageOrientation.LANDSCAPE,
+              },
               margin: {
                 top: PAGE_MARGIN,
                 right: PAGE_MARGIN,

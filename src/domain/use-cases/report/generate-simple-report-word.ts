@@ -104,6 +104,11 @@ export class GenerateSimpleReportWordUseCase {
       right: 120,
     }
 
+    // Larguras das colunas (somam 9360 DXA)
+    const COL_NUM = 900 // Nº
+    const COL_PCT = 900 // %
+    const COL_OPT = 9360 - COL_NUM - COL_PCT // 7560 — Opção
+
     // Construir children do documento
     const children: (Paragraph | Table)[] = [
       new Paragraph({
@@ -144,17 +149,15 @@ export class GenerateSimpleReportWordUseCase {
             size: 9360,
             type: WidthType.DXA,
           },
-          // columnWidths deve somar ao width da tabela (9360 DXA)
-          columnWidths: [576, 8208, 576],
+          columnWidths: [COL_NUM, COL_OPT, COL_PCT],
           rows: [
             // Linha de cabeçalho
             new TableRow({
               children: [
                 new TableCell({
-                  width: { size: 576, type: WidthType.DXA },
+                  width: { size: COL_NUM, type: WidthType.DXA },
                   margins: cellMargins,
                   borders: cellBorder,
-                  // FIX 6: VerticalAlign enum em vez de string literal
                   verticalAlign: VerticalAlign.CENTER,
                   children: [
                     new Paragraph({
@@ -170,11 +173,10 @@ export class GenerateSimpleReportWordUseCase {
                       alignment: AlignmentType.CENTER,
                     }),
                   ],
-                  // FIX 7: ShadingType.CLEAR em vez de SOLID para evitar fundo preto
                   shading: { type: ShadingType.CLEAR, fill: '4472C4' },
                 }),
                 new TableCell({
-                  width: { size: 8208, type: WidthType.DXA },
+                  width: { size: COL_OPT, type: WidthType.DXA },
                   margins: cellMargins,
                   borders: cellBorder,
                   verticalAlign: VerticalAlign.CENTER,
@@ -194,7 +196,7 @@ export class GenerateSimpleReportWordUseCase {
                   shading: { type: ShadingType.CLEAR, fill: '4472C4' },
                 }),
                 new TableCell({
-                  width: { size: 576, type: WidthType.DXA },
+                  width: { size: COL_PCT, type: WidthType.DXA },
                   margins: cellMargins,
                   borders: cellBorder,
                   verticalAlign: VerticalAlign.CENTER,
@@ -222,7 +224,7 @@ export class GenerateSimpleReportWordUseCase {
               return new TableRow({
                 children: [
                   new TableCell({
-                    width: { size: 576, type: WidthType.DXA },
+                    width: { size: COL_NUM, type: WidthType.DXA },
                     margins: cellMargins,
                     borders: cellBorder,
                     verticalAlign: VerticalAlign.CENTER,
@@ -241,7 +243,7 @@ export class GenerateSimpleReportWordUseCase {
                     shading: { type: ShadingType.CLEAR, fill: rowFill },
                   }),
                   new TableCell({
-                    width: { size: 8208, type: WidthType.DXA },
+                    width: { size: COL_OPT, type: WidthType.DXA },
                     margins: cellMargins,
                     borders: cellBorder,
                     verticalAlign: VerticalAlign.CENTER,
@@ -259,7 +261,7 @@ export class GenerateSimpleReportWordUseCase {
                     shading: { type: ShadingType.CLEAR, fill: rowFill },
                   }),
                   new TableCell({
-                    width: { size: 576, type: WidthType.DXA },
+                    width: { size: COL_PCT, type: WidthType.DXA },
                     margins: cellMargins,
                     borders: cellBorder,
                     verticalAlign: VerticalAlign.CENTER,
@@ -267,7 +269,6 @@ export class GenerateSimpleReportWordUseCase {
                       new Paragraph({
                         children: [
                           new TextRun({
-                            // FIX 8: Usar o percentage já calculado no report
                             text: `${option.percentage.toFixed(2)}%`,
                             size: 20,
                             font: 'Calibri',
