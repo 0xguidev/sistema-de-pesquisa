@@ -9,7 +9,6 @@ import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
 import { SurveyFactory } from 'test/factories/make-survey'
 import { OptionAnswerFactory } from 'test/factories/make-option-answer'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 describe('Delete question (E2E)', () => {
   let app: INestApplication

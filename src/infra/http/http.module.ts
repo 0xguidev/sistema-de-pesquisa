@@ -49,6 +49,8 @@ import { GenerateSimpleReportPdfController } from './controllers/report/generate
 import { GenerateSimpleReportPdfUseCase } from '@/domain/use-cases/report/generate-simple-report-pdf'
 import { GenerateCrossReportPdfController } from './controllers/report/generate-cross-report-pdf.controller'
 import { GenerateCrossReportPdfUseCase } from '@/domain/use-cases/report/generate-cross-report-pdf'
+import { FetchQuestionByIdUseCase } from '@/domain/use-cases/question/fetch-question-by-id'
+import { FetchQuestionByIdController } from './controllers/question/fetch-question-by-id.controller'
 @Module({
   imports: [DatabaseModule, CryptographyModule],
   providers: [
@@ -77,6 +79,7 @@ import { GenerateCrossReportPdfUseCase } from '@/domain/use-cases/report/generat
     GenerateCrossReportUseCase,
     GenerateSimpleReportPdfUseCase,
     GenerateCrossReportPdfUseCase,
+    FetchQuestionByIdUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -102,6 +105,7 @@ import { GenerateCrossReportPdfUseCase } from '@/domain/use-cases/report/generat
     GenerateSimpleReportPdfController,
     GenerateCrossReportController,
     GenerateCrossReportPdfController,
+    FetchQuestionByIdController,
   ],
 })
 export class HttpModule {}
