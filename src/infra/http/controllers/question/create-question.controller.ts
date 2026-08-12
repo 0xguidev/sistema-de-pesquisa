@@ -6,10 +6,12 @@ import {
   Body,
   Controller,
   HttpCode,
+  NotFoundException,
   Post,
 } from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 const questionBodySchema = z.object({
   questionTitle: z.string(),
@@ -53,7 +55,13 @@ export class CreateQuestionController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException(result.value.message)
+      const error = result.value
+
+      if (error instanceof ResourceNotFoundError) {
+        throw new NotFoundException(error.message)
+      }
+
+      throw new BadRequestException(error)
     }
 
     return {

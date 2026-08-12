@@ -5,7 +5,8 @@ import { OptionAnswerRepository } from '../../repositories/option-answer-reposit
 import { Either, left, right } from '@/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { ConditionalRule } from '../../entities/conditional-rule'
-
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+ 
 interface CreateQuestionUseCaseRequest {
   questionTitle: string
   questionNum: number
@@ -16,21 +17,21 @@ interface CreateQuestionUseCaseRequest {
     dependsOnOptionNumber: number
   }[]
 }
-
+ 
 export type CreateQuestionUseCaseResponse = Either<
-  Error,
+  ResourceNotFoundError,
   {
     question: Question
   }
 >
-
+ 
 @Injectable()
 export class CreateQuestionUseCase {
   constructor(
     private questionRepository: QuestionRepository,
     private optionAnswerRepository: OptionAnswerRepository,
   ) {}
-
+ 
   async execute({
     questionTitle,
     questionNum,
@@ -44,9 +45,9 @@ export class CreateQuestionUseCase {
       surveyId: new UniqueEntityID(surveyId),
       accountId: new UniqueEntityID(accountId),
     })
-
+ 
     await this.questionRepository.create(question)
-
+ 
     if (conditionalRules) {
       for (const rule of conditionalRules) {
         const dependsOnQuestion =
@@ -54,21 +55,21 @@ export class CreateQuestionUseCase {
             surveyId,
             rule.dependsOnQuestionNumber,
           )
-
+ 
         if (!dependsOnQuestion) {
-          return left(new Error('Depends on question not found'))
+          return left(new ResourceNotFoundError())
         }
-
+ 
         const optionAnswer =
           await this.optionAnswerRepository.findOptionByQuestionIdAndOptionNum(
             dependsOnQuestion.id.toString(),
             rule.dependsOnOptionNumber,
           )
-
+ 
         if (!optionAnswer) {
-          return left(new Error('Depends on option not found'))
+          return left(new ResourceNotFoundError())
         }
-
+ 
         const conditionalRule = ConditionalRule.create({
           questionId: question.id,
           dependsOnQuestionId: dependsOnQuestion.id,
@@ -77,13 +78,14 @@ export class CreateQuestionUseCase {
           dependsOnOptionNumber: rule.dependsOnOptionNumber,
           surveyId: new UniqueEntityID(surveyId),
         })
-
+ 
         await this.questionRepository.createConditionalRule(conditionalRule)
       }
     }
-
+ 
     return right({
       question,
     })
   }
 }
+ 

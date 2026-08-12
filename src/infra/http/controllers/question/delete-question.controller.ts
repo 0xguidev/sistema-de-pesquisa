@@ -5,9 +5,13 @@ import {
   BadRequestException,
   Controller,
   Delete,
+  ForbiddenException,
   HttpCode,
+  NotFoundException,
   Param,
 } from '@nestjs/common'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 
 @Controller('/questions/:id')
 export class DeleteQuestionController {
@@ -27,6 +31,16 @@ export class DeleteQuestionController {
     })
 
     if (result.isLeft()) {
+      const error = result.value
+
+      if (error instanceof ResourceNotFoundError) {
+        throw new NotFoundException(error.message)
+      }
+
+      if (error instanceof NotAllowedError) {
+        throw new ForbiddenException(error.message)
+      }
+
       throw new BadRequestException()
     }
   }

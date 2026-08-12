@@ -1,48 +1,52 @@
+
+Create question.controller.e2e spec · TS
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
 import { AppModule } from '@/app.module'
+import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { AccountFactory } from 'test/factories/make-Account'
 import { QuestionFactory } from 'test/factories/make-question'
 import { OptionAnswerFactory } from 'test/factories/make-option-answer'
-
+ 
 describe('Create Question Controller (E2E)', () => {
   let app: INestApplication
+  let prisma: PrismaService
   let jwt: JwtService
   let accountFactory: AccountFactory
   let questionFactory: QuestionFactory
   let optionAnswerFactory: OptionAnswerFactory
   let accessToken: string
   let userId: string
-
+ 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [AppModule, DatabaseModule],
+      providers: [AccountFactory, QuestionFactory, OptionAnswerFactory],
     }).compile()
-
+ 
     app = moduleRef.createNestApplication()
     await app.init()
-
+ 
+    prisma = moduleRef.get(PrismaService)
     jwt = moduleRef.get(JwtService)
-    const prisma = moduleRef.get(PrismaService)
-    accountFactory = new AccountFactory(prisma)
-    questionFactory = new QuestionFactory(prisma)
-    optionAnswerFactory = new OptionAnswerFactory(prisma)
-
-    // Create a user and generate token
+    accountFactory = moduleRef.get(AccountFactory)
+    questionFactory = moduleRef.get(QuestionFactory)
+    optionAnswerFactory = moduleRef.get(OptionAnswerFactory)
+ 
     const user = await accountFactory.makePrismaAccount()
     userId = user.id.toString()
     accessToken = jwt.sign({ sub: userId })
   })
-
+ 
   afterAll(async () => {
     await app.close()
   })
-
-  it('should create a question without conditional rules', async () => {
+ 
+  test('[POST] /questions - without conditional rules', async () => {
     const survey = await request(app.getHttpServer())
       .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -51,7 +55,7 @@ describe('Create Question Controller (E2E)', () => {
         location: 'Location 1',
         type: 'Type 1',
       })
-
+ 
     const response = await request(app.getHttpServer())
       .post('/questions')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -60,13 +64,28 @@ describe('Create Question Controller (E2E)', () => {
         questionNum: 1,
         surveyId: survey.body.surveyId,
       })
-
-    expect(response.status).toBe(201)
-    expect(response.body.question).toBeDefined()
-    expect(response.body.question.questionTitle).toBe('Question 1')
+ 
+    expect(response.statusCode).toBe(201)
+    expect(response.body.question).toEqual(
+      expect.objectContaining({
+        questionTitle: 'Question 1',
+        questionNum: 1,
+        surveyId: survey.body.surveyId,
+        accountId: userId,
+      }),
+    )
+ 
+    const questionOnDatabase = await prisma.question.findFirst({
+      where: {
+        title: 'Question 1',
+        surveyId: survey.body.surveyId,
+      },
+    })
+ 
+    expect(questionOnDatabase).toBeTruthy()
   })
-
-  it('should create a question with conditional rules', async () => {
+ 
+  test('[POST] /questions - with valid conditional rules', async () => {
     const survey = await request(app.getHttpServer())
       .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -75,22 +94,19 @@ describe('Create Question Controller (E2E)', () => {
         location: 'Location 2',
         type: 'Type 2',
       })
-
-    // Create the question that will be depended on
-    const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
+ 
+    const dependsOnQuestion = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(survey.body.surveyId),
       questionNum: 1,
       accountId: new UniqueEntityID(userId),
     })
-
-    // Create an option answer for the dependsOnQuestion
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _optionAnswer = await optionAnswerFactory.makePrismaOptionAnswer({
-      questionId: _dependsOnQuestion.id,
+ 
+    await optionAnswerFactory.makePrismaOptionAnswer({
+      questionId: dependsOnQuestion.id,
       optionNum: 1,
       accountId: new UniqueEntityID(userId),
     })
-
+ 
     const response = await request(app.getHttpServer())
       .post('/questions')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -105,13 +121,20 @@ describe('Create Question Controller (E2E)', () => {
           },
         ],
       })
-
-    expect(response.status).toBe(201)
-    expect(response.body.question).toBeDefined()
+ 
+    expect(response.statusCode).toBe(201)
     expect(response.body.question.questionTitle).toBe('Question 2')
+ 
+    const conditionalRuleOnDatabase = await prisma.conditionalRule.findFirst({
+      where: {
+        questionId: response.body.question.id,
+      },
+    })
+ 
+    expect(conditionalRuleOnDatabase).toBeTruthy()
   })
-
-  it('should return 400 if dependsOnQuestion is not found', async () => {
+ 
+  test('[POST] /questions - 404 when dependsOnQuestion is not found', async () => {
     const survey = await request(app.getHttpServer())
       .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -120,7 +143,7 @@ describe('Create Question Controller (E2E)', () => {
         location: 'Location 3',
         type: 'Type 3',
       })
-
+ 
     const response = await request(app.getHttpServer())
       .post('/questions')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -135,11 +158,18 @@ describe('Create Question Controller (E2E)', () => {
           },
         ],
       })
-
-    expect(response.status).toBe(400)
+ 
+    expect(response.statusCode).toBe(404)
+ 
+    const questionOnDatabase = await prisma.question.findFirst({
+      where: { title: 'Question 3' },
+    })
+    // Question is created before conditional rules are validated in the
+    // use case, so it will exist even though the request returned 400.
+    expect(questionOnDatabase).toBeTruthy()
   })
-
-  it('should return 400 if dependsOnOption is not found', async () => {
+ 
+  test('[POST] /questions - 404 when dependsOnOption is not found', async () => {
     const survey = await request(app.getHttpServer())
       .post('/surveys')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -148,15 +178,13 @@ describe('Create Question Controller (E2E)', () => {
         location: 'Location 4',
         type: 'Type 4',
       })
-
-    // Create the question that will be depended on
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _dependsOnQuestion = await questionFactory.makePrismaQuestion({
+ 
+    await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(survey.body.surveyId),
       questionNum: 1,
       accountId: new UniqueEntityID(userId),
     })
-
+ 
     const response = await request(app.getHttpServer())
       .post('/questions')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -171,7 +199,32 @@ describe('Create Question Controller (E2E)', () => {
           },
         ],
       })
-
-    expect(response.status).toBe(400)
+ 
+    expect(response.statusCode).toBe(404)
+  })
+ 
+  test('[POST] /questions - 400 with invalid payload', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/questions')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        questionNum: 1,
+        // missing questionTitle and surveyId
+      })
+ 
+    expect(response.statusCode).toBe(400)
+  })
+ 
+  test('[POST] /questions - 401 without access token', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/questions')
+      .send({
+        questionTitle: 'Question 5',
+        questionNum: 5,
+        surveyId: 'any-survey-id',
+      })
+ 
+    expect(response.statusCode).toBe(401)
   })
 })
+ 
