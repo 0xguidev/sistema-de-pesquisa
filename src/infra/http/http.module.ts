@@ -55,6 +55,8 @@ import { FetchQuestionsBySurveyIdUseCase } from '@/domain/use-cases/question/fet
 import { FetchQuestionsBySurveyIdController } from './controllers/question/fetch-questions-by-survey-id.controller'
 import { GetOptionAnswerUseCase } from '@/domain/use-cases/option-answer/get-option-answer'
 import { FetchOptionController } from './controllers/option/fetch-option.controller'
+import { GetOptionsByQuestionIdUseCase } from '@/domain/use-cases/option-answer/get-options-by-question-id'
+import { FetchOptionsByQuestionIdController } from './controllers/option/fetch-options-by-question-id.controller'
 @Module({
   imports: [DatabaseModule, CryptographyModule],
   providers: [
@@ -86,6 +88,7 @@ import { FetchOptionController } from './controllers/option/fetch-option.control
     FetchQuestionByIdUseCase,
     FetchQuestionsBySurveyIdUseCase,
     GetOptionAnswerUseCase,
+    GetOptionsByQuestionIdUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -114,6 +117,7 @@ import { FetchOptionController } from './controllers/option/fetch-option.control
     FetchQuestionByIdController,
     FetchQuestionsBySurveyIdController,
     FetchOptionController,
+    FetchOptionsByQuestionIdController,
   ],
 })
 export class HttpModule {}

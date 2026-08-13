@@ -1,5 +1,6 @@
 import { Either, right, left } from '@/core/types/either'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
+import { Injectable } from '@nestjs/common'
 
 interface GetOptionsByQuestionIdUseCaseRequest {
   questionId: string
@@ -16,6 +17,7 @@ type GetOptionsByQuestionIdUseCaseResponse = Either<
   }>
 >
 
+@Injectable()
 export class GetOptionsByQuestionIdUseCase {
   constructor(private optionAnswerRepository: OptionAnswerRepository) {}
 
