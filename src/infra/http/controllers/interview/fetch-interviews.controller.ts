@@ -20,7 +20,7 @@ const paginationQuerySchema = z.object({
 type SurveyIdParam = z.infer<typeof surveyIdParamSchema>
 type PaginationQuery = z.infer<typeof paginationQuerySchema>
 
-@Controller('/interviews/:surveyId')
+@Controller('/interviews/survey/:surveyId')
 export class FetchInterviewsController {
   constructor(
     private fetchInterviewsBySurveyIdUseCase: FetchInterviewsBySurveyIdUseCase,

@@ -30,7 +30,7 @@ describe('Fetch interviews (E2E)', () => {
     await app.init()
   })
 
-  test('[GET] /interviews/:surveyId', async () => {
+  test('[GET] /interviews/survey/:surveyId', async () => {
     const user = await accountFactory.makePrismaAccount()
     const accessToken = jwt.sign({ sub: user.id.toString() })
 
@@ -53,7 +53,7 @@ describe('Fetch interviews (E2E)', () => {
     })
 
     const response = await request(app.getHttpServer())
-      .get(`/interviews/${survey.id.toString()}?page=1&limit=2`)
+      .get(`/interviews/survey/${survey.id.toString()}?page=1&limit=2`)
       .set('Authorization', `Bearer ${accessToken}`)
 
     expect(response.statusCode).toBe(200)
