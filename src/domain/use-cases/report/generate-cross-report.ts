@@ -72,9 +72,11 @@ export class GenerateCrossReportUseCase {
 
         const optionsA = await this.optionAnswerRepository.findManyByQuestionId(
           questionA.id.toString(),
+          accountId,
         )
         const optionsB = await this.optionAnswerRepository.findManyByQuestionId(
           questionB.id.toString(),
+          accountId,
         )
 
         if (

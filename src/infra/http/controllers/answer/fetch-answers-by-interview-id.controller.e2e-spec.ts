@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { AppModule } from '@/app.module'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { AccountFactory } from 'test/factories/make-Account'
@@ -51,9 +52,12 @@ describe('Fetch answers by interview ID (E2E)', () => {
   })
 
   async function createInterviewFor(accountId: string) {
-    const survey = await surveyFactory.makePrismaSurvey({ accountId })
+    const accountIdEntity = new UniqueEntityID(accountId)
+    const survey = await surveyFactory.makePrismaSurvey({
+      accountId: accountIdEntity,
+    })
     const interview = await interviewFactory.makePrismaInterview({
-      accountId,
+      accountId: accountIdEntity,
       surveyId: survey.id,
     })
 
@@ -65,18 +69,19 @@ describe('Fetch answers by interview ID (E2E)', () => {
     surveyId: string,
     accountId: string,
   ) {
+    const accountIdEntity = new UniqueEntityID(accountId)
     const question = await questionFactory.makePrismaQuestion({
-      accountId,
-      surveyId,
+      accountId: accountIdEntity,
+      surveyId: new UniqueEntityID(surveyId),
     })
     const option = await optionFactory.makePrismaOptionAnswer({
-      accountId,
+      accountId: accountIdEntity,
       questionId: question.id,
     })
 
     return answerFactory.makePrismaAnswerQuestion({
-      accountId,
-      interviewId,
+      accountId: accountIdEntity,
+      interviewId: new UniqueEntityID(interviewId),
       questionId: question.id,
       optionAnswerId: option.id,
     })

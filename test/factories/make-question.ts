@@ -41,6 +41,7 @@ export function makeConditionalRule(
       surveyId,
       dependsOnQuestionId: dependsOnQuestion.id,
       dependsOnQuestionNumber: dependsOnQuestion.questionNum,
+      dependsOnOptionId: new UniqueEntityID(),
       dependsOnOptionNumber: faker.number.int({ min: 1, max: 10 }),
       ...override,
     },
@@ -85,7 +86,10 @@ export class QuestionFactory {
     })
 
     await this.prisma.conditionalRule.create({
-      data: PrismaConditionalRuleMapper.toPrisma(conditionalRule),
+      data: PrismaConditionalRuleMapper.toPrisma(
+        conditionalRule,
+        conditionalRule.dependsOnOptionId.toString(),
+      ),
     })
 
     return question

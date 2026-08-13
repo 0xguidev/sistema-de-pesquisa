@@ -29,7 +29,10 @@ export class EditOptionAnswerUseCase {
     optionTitle,
     optionNum,
   }: EditOptionAnswerUseCaseRequest): Promise<EditOptionAnswerUseCaseResponse> {
-    const optionAnswer = await this.optionAnswersRepository.findById(optionId)
+    const optionAnswer = await this.optionAnswersRepository.findById(
+      optionId,
+      accountId,
+    )
 
     if (!optionAnswer) {
       return left(new ResourceNotFoundError())

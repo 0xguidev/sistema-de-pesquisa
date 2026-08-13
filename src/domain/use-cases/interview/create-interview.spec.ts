@@ -14,9 +14,10 @@ describe('create an interview', async () => {
 
   it('should create a interview', async () => {
     const survey = makeSurvey()
-    
+
     const createdInterview = await sut.execute({
       surveyId: survey.id.toString(),
+      accountId: survey.accountId.toString(),
     })
 
     expect(createdInterview.isRight()).toBe(true)

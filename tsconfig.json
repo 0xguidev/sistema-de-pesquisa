@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2022", 
+    "target": "es2022",
     "lib": ["es2022"],
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -12,8 +12,10 @@
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "test/*": ["./test/*"]
     },
     "types": ["vitest/globals", "node"]
   }

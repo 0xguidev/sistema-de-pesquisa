@@ -20,18 +20,12 @@ export class PrismaConditionalRuleMapper {
   static toPrisma(rule: ConditionalRule, dependsOnOptionId: string): any {
     return {
       id: rule.id.toString(),
-      question: { connect: { id: rule.questionId.toString() } },
-      dependsOnQuestion: {
-        connect: { id: rule.dependsOnQuestionId.toString() },
-      },
+      questionId: rule.questionId.toString(),
+      dependsOnQuestionId: rule.dependsOnQuestionId.toString(),
       dependsOnQuestionNumber: rule.dependsOnQuestionNumber,
+      dependsOnOptionId,
       dependsOnOptionNumber: rule.dependsOnOptionNumber,
-      survey: { connect: { id: rule.surveyId.toString() } },
-      dependsOnOption: {
-        connect: {
-          id: dependsOnOptionId,
-        },
-      },
+      surveyId: rule.surveyId.toString(),
     }
   }
 }

@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { AppModule } from '@/app.module'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { AccountFactory } from 'test/factories/make-Account'
@@ -51,17 +52,20 @@ describe('Fetch answer by ID (E2E)', () => {
   })
 
   async function createAnswerFor(accountId: string) {
-    const survey = await surveyFactory.makePrismaSurvey({ accountId })
+    const accountIdEntity = new UniqueEntityID(accountId)
+    const survey = await surveyFactory.makePrismaSurvey({
+      accountId: accountIdEntity,
+    })
     const interview = await interviewFactory.makePrismaInterview({
-      accountId,
+      accountId: accountIdEntity,
       surveyId: survey.id,
     })
     const question = await questionFactory.makePrismaQuestion({
-      accountId,
+      accountId: accountIdEntity,
       surveyId: survey.id,
     })
     const option = await optionFactory.makePrismaOptionAnswer({
-      accountId,
+      accountId: accountIdEntity,
       questionId: question.id,
     })
     const answer = await answerFactory.makePrismaAnswerQuestion({

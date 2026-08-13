@@ -17,7 +17,7 @@ describe('Get Survey', () => {
     const survey = makeSurvey({ title: 'any_title', accountId: account.id })
 
     await inMemorySurveysRepository.create(survey)
-    inMemorySurveysRepository.items[0].questions = []
+    ;(inMemorySurveysRepository.items[0] as any).questions = []
 
     const existsSurvey = await sut.execute({
       surveyId: survey.id.toString(),

@@ -39,6 +39,14 @@ export class ConditionalRule extends Entity<ConditionalRuleProps> {
     this.props.dependsOnQuestionNumber = number
   }
 
+  get dependsOnOptionId() {
+    return this.props.dependsOnOptionId
+  }
+
+  set dependsOnOptionId(id: UniqueEntityID) {
+    this.props.dependsOnOptionId = id
+  }
+
   get dependsOnOptionNumber() {
     return this.props.dependsOnOptionNumber
   }
