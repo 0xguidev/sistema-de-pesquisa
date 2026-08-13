@@ -4,6 +4,16 @@ import { AccountRepository } from '@/domain/repositories/account-repository'
 export class InMemoryAccountRepository implements AccountRepository {
   public items: Account[] = []
 
+  async findById(id: string) {
+    const account = this.items.find((item) => item.id.toString() === id)
+
+    if (!account) {
+      return null
+    }
+
+    return account
+  }
+
   async findByEmail(email: string) {
     const account = this.items.find((item) => item.email === email)
 
@@ -16,5 +26,13 @@ export class InMemoryAccountRepository implements AccountRepository {
 
   async create(account: Account) {
     this.items.push(account)
+  }
+
+  async update(account: Account) {
+    const index = this.items.findIndex((item) => item.id.equals(account.id))
+
+    if (index >= 0) {
+      this.items[index] = account
+    }
   }
 }

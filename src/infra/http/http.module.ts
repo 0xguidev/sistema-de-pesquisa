@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
 import { CreateAccountController } from './controllers/account/create-account.controller'
+import { EditAccountController } from './controllers/account/edit-account.controller'
 import { RegisterAccountUseCase } from '@/domain/use-cases/account/create-account'
+import { EditAccountUseCase } from '@/domain/use-cases/account/edit-account'
 import { DatabaseModule } from '../database/database.module'
 import { CryptographyModule } from '../cryptography/cryptography.module'
 import { AuthenticateController } from './controllers/authenticate/authenticate.controller'
@@ -67,6 +69,7 @@ import { FetchAnswersByInterviewIdController } from './controllers/answer/fetch-
   imports: [DatabaseModule, CryptographyModule],
   providers: [
     RegisterAccountUseCase,
+    EditAccountUseCase,
     AuthenticateAccountUseCase,
     CreateSurveyUseCase,
     CreateQuestionUseCase,
@@ -101,6 +104,7 @@ import { FetchAnswersByInterviewIdController } from './controllers/answer/fetch-
   ],
   controllers: [
     CreateAccountController,
+    EditAccountController,
     AuthenticateController,
     CreateSurveyController,
     CreateQuestionController,

@@ -15,12 +15,25 @@ export class Account extends Entity<AccountProps> {
     return this.props.name
   }
 
+  set name(name: string) {
+    this.props.name = name
+  }
+
   get email() {
     return this.props.email
   }
 
+  set email(email: string) {
+    this.props.email = email
+    this.props.slug = Slug.createFromText(email)
+  }
+
   get password() {
     return this.props.password
+  }
+
+  set password(password: string) {
+    this.props.password = password
   }
 
   get slug() {
