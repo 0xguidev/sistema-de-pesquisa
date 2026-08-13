@@ -5,18 +5,12 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
   public items: OptionAnswer[] = []
 
   constructor() {} // private survey: InMemorySurveyRepository,
-  async findManyByQuestionId(
-    questionId: string,
-  ): Promise<OptionAnswer[] | null> {
-    const options = this.items.filter(
-      (item) => item.questionId.toString() === questionId,
+  async findManyByQuestionId(questionId: string, userId: string) {
+    return this.items.filter(
+      (item) =>
+        item.questionId.toString() === questionId &&
+        item.accountId.toString() === userId,
     )
-
-    if (!options) {
-      return null
-    }
-
-    return options
   }
 
   async findById(id: string, accountId: string) {
