@@ -31,4 +31,12 @@ export default [
       semi: ['error', 'never'],
     },
   },
+  {
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.vitest,
+      },
+    },
+  },
 ]

@@ -63,16 +63,6 @@ describe('GenerateSimpleReportController (e2e)', () => {
       },
     })
 
-    const option2 = await prisma.optionAnswer.create({
-      data: {
-        option: 'No',
-        number: 2,
-        questionId: question.id,
-        userId: user.id,
-        slug: 'no-option',
-      },
-    })
-
     const interview = await prisma.interview.create({
       data: {
         surveyId: survey.id,

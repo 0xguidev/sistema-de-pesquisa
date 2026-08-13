@@ -1,5 +1,4 @@
 
-Create question.controller.e2e spec · TS
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { JwtService } from '@nestjs/jwt'
