@@ -1,9 +1,13 @@
 import { OptionAnswer } from '../entities/option-answer'
 
 export abstract class OptionAnswerRepository {
-  abstract findById(id: string): Promise<OptionAnswer | null>
+  abstract findById(
+    optionId: string,
+    accountId: string,
+  ): Promise<OptionAnswer | null>
   abstract findManyByQuestionId(
     questionId: string,
+    accountId: string,
   ): Promise<OptionAnswer[] | null>
   abstract findOptionByQuestionIdAndOptionNum(
     questionId: string,
@@ -12,5 +16,7 @@ export abstract class OptionAnswerRepository {
   abstract create(optionanswer: OptionAnswer): Promise<void>
   abstract save(optionanswer: OptionAnswer): Promise<void>
   abstract delete(optionAnswer: OptionAnswer): Promise<void>
-  abstract deleteConditionalRulesByDependsOnOptionId(dependsOnOptionId: string): Promise<void>
+  abstract deleteConditionalRulesByDependsOnOptionId(
+    dependsOnOptionId: string,
+  ): Promise<void>
 }

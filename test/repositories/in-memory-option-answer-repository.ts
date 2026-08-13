@@ -19,14 +19,13 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
     return options
   }
 
-  async findById(id: string) {
-    const optionanswer = this.items.find((item) => item.id.toString() === id)
-
-    if (!optionanswer) {
-      return null
-    }
-
-    return optionanswer
+  async findById(id: string, accountId: string) {
+    return (
+      this.items.find(
+        (item) =>
+          item.id.toString() === id && item.accountId.toString() === accountId,
+      ) ?? null
+    )
   }
 
   async findOptionByQuestionIdAndOptionNum(
