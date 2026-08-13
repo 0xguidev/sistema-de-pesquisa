@@ -59,6 +59,8 @@ import { GetOptionsByQuestionIdUseCase } from '@/domain/use-cases/option-answer/
 import { FetchOptionsByQuestionIdController } from './controllers/option/fetch-options-by-question-id.controller'
 import { FetchInterviewUseCase } from '@/domain/use-cases/interview/fetch-interview-by-id'
 import { FetchInterviewController } from './controllers/interview/fetch-interview.controller'
+import { GetAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/get-answer-question'
+import { FetchAnswerQuestionController } from './controllers/answer/fetch-answer-question.controller'
 @Module({
   imports: [DatabaseModule, CryptographyModule],
   providers: [
@@ -92,6 +94,7 @@ import { FetchInterviewController } from './controllers/interview/fetch-intervie
     GetOptionAnswerUseCase,
     GetOptionsByQuestionIdUseCase,
     FetchInterviewUseCase,
+    GetAnswerQuestionUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -114,6 +117,7 @@ import { FetchInterviewController } from './controllers/interview/fetch-intervie
     FetchSurveyByIdController,
     FetchInterviewsController,
     FetchInterviewController,
+    FetchAnswerQuestionController,
     GenerateSimpleReportController,
     GenerateSimpleReportPdfController,
     GenerateCrossReportController,
