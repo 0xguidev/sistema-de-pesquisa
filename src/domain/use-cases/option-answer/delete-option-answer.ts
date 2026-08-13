@@ -22,8 +22,10 @@ export class DeleteOptionAnswerUseCase {
     optionAnswerId,
     accountId,
   }: DeleteOptionAnswerUseCaseRequest): Promise<DeleteOptionAnswerUseCaseResponse> {
-    const optionAnswer =
-      await this.optionanswersRepository.findById(optionAnswerId, accountId)
+    const optionAnswer = await this.optionanswersRepository.findById(
+      optionAnswerId,
+      accountId,
+    )
 
     if (!optionAnswer) {
       return left(new ResourceNotFoundError())
