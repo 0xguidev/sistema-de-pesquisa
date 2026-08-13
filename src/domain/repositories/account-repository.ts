@@ -5,4 +5,5 @@ export abstract class AccountRepository {
   abstract findByEmail(email: string): Promise<Account | null>
   abstract create(student: Account): Promise<void>
   abstract update(account: Account): Promise<void>
+  abstract delete(id: string): Promise<void>
 }

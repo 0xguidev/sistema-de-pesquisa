@@ -35,4 +35,8 @@ export class InMemoryAccountRepository implements AccountRepository {
       this.items[index] = account
     }
   }
+
+  async delete(id: string) {
+    this.items = this.items.filter((item) => item.id.toString() !== id)
+  }
 }
