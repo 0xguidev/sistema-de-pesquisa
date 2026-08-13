@@ -53,6 +53,8 @@ import { FetchQuestionByIdUseCase } from '@/domain/use-cases/question/fetch-ques
 import { FetchQuestionByIdController } from './controllers/question/fetch-question-by-id.controller'
 import { FetchQuestionsBySurveyIdUseCase } from '@/domain/use-cases/question/fetch-questions-by-survey-id'
 import { FetchQuestionsBySurveyIdController } from './controllers/question/fetch-questions-by-survey-id.controller'
+import { GetOptionAnswerUseCase } from '@/domain/use-cases/option-answer/get-option-answer'
+import { FetchOptionController } from './controllers/option/fetch-option.controller'
 @Module({
   imports: [DatabaseModule, CryptographyModule],
   providers: [
@@ -83,6 +85,7 @@ import { FetchQuestionsBySurveyIdController } from './controllers/question/fetch
     GenerateCrossReportPdfUseCase,
     FetchQuestionByIdUseCase,
     FetchQuestionsBySurveyIdUseCase,
+    GetOptionAnswerUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -110,6 +113,7 @@ import { FetchQuestionsBySurveyIdController } from './controllers/question/fetch
     GenerateCrossReportPdfController,
     FetchQuestionByIdController,
     FetchQuestionsBySurveyIdController,
+    FetchOptionController,
   ],
 })
 export class HttpModule {}

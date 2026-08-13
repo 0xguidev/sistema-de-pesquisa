@@ -8,10 +8,14 @@ import { PrismaOptionAnswerMapper } from '../mappers/prisma-option-answer-mapper
 export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findById(id: string): Promise<OptionAnswer | null> {
+  async findById(
+    optionId: string,
+    accountId: string,
+  ): Promise<OptionAnswer | null> {
     const optionAnswer = await this.prisma.optionAnswer.findUnique({
       where: {
-        id,
+        id: optionId,
+        userId: accountId,
       },
     })
 
@@ -24,10 +28,12 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
 
   async findManyByQuestionId(
     questionId: string,
+    userId: string,
   ): Promise<OptionAnswer[] | null> {
     const options = await this.prisma.optionAnswer.findMany({
       where: {
         questionId,
+        userId,
       },
     })
     if (!options) {
@@ -81,7 +87,9 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
     })
   }
 
-  async deleteConditionalRulesByDependsOnOptionId(dependsOnOptionId: string): Promise<void> {
+  async deleteConditionalRulesByDependsOnOptionId(
+    dependsOnOptionId: string,
+  ): Promise<void> {
     await this.prisma.conditionalRule.deleteMany({
       where: {
         dependsOnOptionId,
