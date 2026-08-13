@@ -17,6 +17,15 @@ export class InMemoryAnswerQuestionRepository
 
     return answerquestion
   }
+
+  async findManyByInterviewId(interviewId: string, accountId: string) {
+    return this.items.filter(
+      (item) =>
+        item.interviewId.toString() === interviewId &&
+        item.accountId.toString() === accountId,
+    )
+  }
+
   async create(answerquestion: AnswerQuestion) {
     this.items.push(answerquestion)
   }

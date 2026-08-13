@@ -29,6 +29,22 @@ export class PrismaAnswerQuestionRepository
 
     return PrismaAnswerMapper.toDomain(answer)
   }
+  async findManyByInterviewId(
+    interviewId: string,
+    accountId: string,
+  ): Promise<AnswerQuestion[]> {
+    const answers = await this.prisma.answerQuestion.findMany({
+      where: {
+        interviewId,
+        userId: accountId,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    })
+
+    return answers.map(PrismaAnswerMapper.toDomain)
+  }
   async delete(id: string): Promise<void> {
     await this.prisma.answerQuestion.delete({
       where: {
