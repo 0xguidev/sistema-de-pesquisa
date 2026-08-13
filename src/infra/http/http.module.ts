@@ -51,6 +51,8 @@ import { GenerateCrossReportPdfController } from './controllers/report/generate-
 import { GenerateCrossReportPdfUseCase } from '@/domain/use-cases/report/generate-cross-report-pdf'
 import { FetchQuestionByIdUseCase } from '@/domain/use-cases/question/fetch-question-by-id'
 import { FetchQuestionByIdController } from './controllers/question/fetch-question-by-id.controller'
+import { FetchQuestionsBySurveyIdUseCase } from '@/domain/use-cases/question/fetch-questions-by-survey-id'
+import { FetchQuestionsBySurveyIdController } from './controllers/question/fetch-questions-by-survey-id.controller'
 @Module({
   imports: [DatabaseModule, CryptographyModule],
   providers: [
@@ -80,6 +82,7 @@ import { FetchQuestionByIdController } from './controllers/question/fetch-questi
     GenerateSimpleReportPdfUseCase,
     GenerateCrossReportPdfUseCase,
     FetchQuestionByIdUseCase,
+    FetchQuestionsBySurveyIdUseCase,
   ],
   controllers: [
     CreateAccountController,
@@ -106,6 +109,7 @@ import { FetchQuestionByIdController } from './controllers/question/fetch-questi
     GenerateCrossReportController,
     GenerateCrossReportPdfController,
     FetchQuestionByIdController,
+    FetchQuestionsBySurveyIdController,
   ],
 })
 export class HttpModule {}
