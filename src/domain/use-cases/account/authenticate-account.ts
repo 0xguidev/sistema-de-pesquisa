@@ -29,7 +29,8 @@ export class AuthenticateAccountUseCase {
     email,
     password,
   }: AuthenticateStudentUseCaseRequest): Promise<AuthenticateAccountUseCaseResponse> {
-    const account = await this.accountRepository.findByEmail(email)
+    const normalizedEmail = email.trim().toLowerCase()
+    const account = await this.accountRepository.findByEmail(normalizedEmail)
     if (!account) {
       return left(new WrongCredentialsError())
     }

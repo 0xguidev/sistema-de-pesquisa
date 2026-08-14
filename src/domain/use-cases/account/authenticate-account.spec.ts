@@ -53,4 +53,28 @@ describe('Authenticate Student', () => {
       aud: 'sistema-de-pesquisa',
     })
   })
+
+  it('should authenticate when email casing differs', async () => {
+    const student = makeAccount({
+      email: 'john@example.com',
+      password: await fakeHasher.hash('123456'),
+    })
+
+    inMemoryAccountRepository.items.push(student)
+
+    const result = await sut.execute({
+      email: '  JOHN@EXAMPLE.COM  ',
+      password: '123456',
+    })
+
+    expect(result.isRight()).toBe(true)
+
+    if (result.isLeft()) {
+      throw new Error('Expected authentication to succeed')
+    }
+
+    expect(result.value).toEqual({
+      accessToken: expect.any(String),
+    })
+  })
 })

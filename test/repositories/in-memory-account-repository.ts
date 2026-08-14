@@ -15,7 +15,10 @@ export class InMemoryAccountRepository implements AccountRepository {
   }
 
   async findByEmail(email: string) {
-    const account = this.items.find((item) => item.email === email)
+    const normalizedEmail = email.trim().toLowerCase()
+    const account = this.items.find(
+      (item) => item.email.trim().toLowerCase() === normalizedEmail,
+    )
 
     if (!account) {
       return null

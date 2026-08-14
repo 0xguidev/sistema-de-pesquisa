@@ -15,7 +15,7 @@ import { AccountAlreadyExistsError } from '@/domain/use-cases/error/account-alre
 
 const createAccountBodySchema = z.object({
   name: z.string(),
-  email: z.string().email(),
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
   password: z.string(),
 })
 

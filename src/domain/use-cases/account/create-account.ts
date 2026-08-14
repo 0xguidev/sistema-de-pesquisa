@@ -30,17 +30,21 @@ export class RegisterAccountUseCase {
     email,
     password,
   }: RegisterAccountUseCaseRequest): Promise<RegisterAccountUseCaseResponse> {
-    const userWithSameEmail = await this.accountRepository.findByEmail(email)
+    const normalizedEmail = email.trim().toLowerCase()
+
+    const userWithSameEmail = await this.accountRepository.findByEmail(
+      normalizedEmail,
+    )
 
     if (userWithSameEmail) {
-      return left(new AccountAlreadyExistsError(email))
+      return left(new AccountAlreadyExistsError(normalizedEmail))
     }
 
     const hashedPassword = await this.hashGenerator.hash(password)
 
     const account = Account.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
     })
 

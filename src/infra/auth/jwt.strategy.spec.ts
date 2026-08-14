@@ -1,13 +1,18 @@
 import { EnvService } from '../env/env.service'
 import { JwtStrategy } from './jwt.strategy'
 
+type RequestLike = {
+  headers: { authorization?: string }
+  cookies?: { token?: string }
+}
+
 describe('JwtStrategy', () => {
   const strategy = new JwtStrategy({
     get: () => Buffer.from('test-public-key').toString('base64'),
   } as unknown as EnvService)
 
-  const extractToken = (request: { headers: { authorization?: string }, cookies?: { token?: string } }) =>
-    (strategy as unknown as { _jwtFromRequest: (request: typeof request) => string | null })._jwtFromRequest(request)
+  const extractToken = (request: RequestLike) =>
+    (strategy as unknown as { _jwtFromRequest: (request: RequestLike) => string | null })._jwtFromRequest(request)
 
   it('should extract a token only from the Authorization Bearer header', () => {
     expect(extractToken({
