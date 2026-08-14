@@ -16,6 +16,7 @@ import {
 } from './rate-limit.config'
 import { RATE_LIMIT_MESSAGE } from './rate-limit.constants'
 import { PublicRateLimitGuard } from './public-rate-limit.guard'
+import { SessionService } from '../auth/session.service'
 
 describe('public endpoint rate limiting', () => {
   let app: INestApplication
@@ -42,6 +43,10 @@ describe('public endpoint rate limiting', () => {
       controllers: [AuthenticateController, CreateAccountController],
       providers: [
         PublicRateLimitGuard,
+        {
+          provide: SessionService,
+          useValue: { create: vi.fn() },
+        },
         {
           provide: AuthenticateAccountUseCase,
           useValue: { execute: authenticate },

@@ -45,6 +45,7 @@ describe('Authenticate Student', () => {
 
     expect(result.value).toEqual({
       accessToken: expect.any(String),
+      accountId: student.id.toString(),
     })
 
     const payload = JSON.parse(result.value.accessToken)
@@ -74,6 +75,7 @@ describe('Authenticate Student', () => {
 
     expect(result.value).toEqual({
       accessToken: expect.any(String),
+      accountId: student.id.toString(),
     })
   })
 

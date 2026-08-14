@@ -6,6 +6,8 @@ import {
   UnauthorizedException,
   UseGuards,
   UsePipes,
+  Headers,
+  Ip,
 } from '@nestjs/common'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { z } from 'zod'
@@ -15,6 +17,7 @@ import { WrongCredentialsError } from '@/domain/use-cases/error/wrong-credential
 import { SkipThrottle } from '@nestjs/throttler'
 import { REGISTER_IP_THROTTLER } from '@/infra/rate-limit/rate-limit.constants'
 import { PublicRateLimitGuard } from '@/infra/rate-limit/public-rate-limit.guard'
+import { SessionService } from '@/infra/auth/session.service'
 
 const authenticateBodySchema = z.object({
   email: z
@@ -32,11 +35,18 @@ type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 @UseGuards(PublicRateLimitGuard)
 @SkipThrottle({ [REGISTER_IP_THROTTLER]: true })
 export class AuthenticateController {
-  constructor(private authenticateAccount: AuthenticateAccountUseCase) {}
+  constructor(
+    private authenticateAccount: AuthenticateAccountUseCase,
+    private sessions: SessionService,
+  ) {}
 
   @Post()
   @UsePipes(new ZodValidationPipe(authenticateBodySchema))
-  async handle(@Body() body: AuthenticateBodySchema) {
+  async handle(
+    @Body() body: AuthenticateBodySchema,
+    @Headers('user-agent') userAgent?: string,
+    @Ip() ip?: string,
+  ) {
     const { email, password } = body
 
     const result = await this.authenticateAccount.execute({
@@ -55,10 +65,12 @@ export class AuthenticateController {
       }
     }
 
-    const { accessToken } = result.value
+    const tokens = await this.sessions.create(result.value.accountId, { userAgent, ip })
 
     return {
-      access_token: accessToken,
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      refresh_expires_at: tokens.refreshExpiresAt.toISOString(),
       token_type: 'Bearer',
     }
   }

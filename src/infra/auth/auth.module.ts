@@ -7,6 +7,7 @@ import { JwtStrategy } from './jwt.strategy'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtAuthGuard } from './jwt-auth.guard'
 import { DatabaseModule } from '../database/database.module'
+import { SessionService } from './session.service'
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { DatabaseModule } from '../database/database.module'
         return {
           signOptions: {
             algorithm: 'RS256',
-            expiresIn: '1d',
+            expiresIn: '10m',
             issuer: 'sistema-de-pesquisa',
             audience: 'sistema-de-pesquisa',
           },
@@ -35,11 +36,13 @@ import { DatabaseModule } from '../database/database.module'
   ],
   providers: [
     JwtStrategy,
+    SessionService,
     EnvService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
   ],
+  exports: [SessionService],
 })
 export class AuthModule {}

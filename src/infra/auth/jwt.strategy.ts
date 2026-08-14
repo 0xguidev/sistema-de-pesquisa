@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { EnvService } from '../env/env.service'
 import { TokenRevocation } from '@/domain/auth/token-revocation'
 import { UnauthorizedException } from '@nestjs/common'
+import { SessionService } from './session.service'
 
 const JWT_ISSUER = 'sistema-de-pesquisa'
 const JWT_AUDIENCE = 'sistema-de-pesquisa'
@@ -12,6 +13,7 @@ const JWT_AUDIENCE = 'sistema-de-pesquisa'
 const tokenPayloadSchema = z
   .object({
     sub: z.string().uuid(),
+    sid: z.string().uuid(),
     iss: z.string().min(1),
     aud: z.string().min(1),
     exp: z.number().int().positive(),
@@ -32,6 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     config: EnvService,
     private tokenRevocation: TokenRevocation,
+    private sessions: SessionService,
   ) {
     const publicKey = config.get('JWT_PUBLIC_KEY')
 
@@ -54,6 +57,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       )
     ) {
       throw new UnauthorizedException('Token has been revoked')
+    }
+
+    if (!(await this.sessions.isActive(validatedPayload.sid, validatedPayload.sub))) {
+      throw new UnauthorizedException('Session is not active')
     }
 
     return validatedPayload

@@ -8,12 +8,14 @@ type RequestLike = {
 }
 
 describe('JwtStrategy', () => {
+  const sessionId = '223e4567-e89b-12d3-a456-426614174000'
   const tokenRevocation = new InMemoryTokenRevocation()
   const strategy = new JwtStrategy(
     {
       get: () => Buffer.from('test-public-key').toString('base64'),
     } as unknown as EnvService,
     tokenRevocation,
+    { isActive: vi.fn().mockResolvedValue(true) } as never,
   )
 
   const extractToken = (request: RequestLike) =>
@@ -65,6 +67,7 @@ describe('JwtStrategy', () => {
     const activeAccountId = '123e4567-e89b-12d3-a456-426614174001'
     const payload = (sub: string) => ({
       sub,
+      sid: sessionId,
       iss: 'sistema-de-pesquisa',
       aud: 'sistema-de-pesquisa',
       exp: Math.floor(Date.now() / 1000) + 60,
@@ -90,6 +93,7 @@ describe('JwtStrategy', () => {
     const revokedBefore = new Date('2026-08-14T12:00:00.500Z')
     const payload = (iat: number) => ({
       sub: accountId,
+      sid: sessionId,
       iss: 'sistema-de-pesquisa',
       aud: 'sistema-de-pesquisa',
       exp: iat + 60,
@@ -112,6 +116,7 @@ describe('JwtStrategy', () => {
     const deletedAt = new Date((issuedAt + 10) * 1000)
     const deletedAccountToken = {
       sub: deletedAccountId,
+      sid: sessionId,
       iss: 'sistema-de-pesquisa',
       aud: 'sistema-de-pesquisa',
       exp: issuedAt + 60,

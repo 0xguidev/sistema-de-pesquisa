@@ -68,8 +68,10 @@ import { FetchAnswerQuestionController } from './controllers/answer/fetch-answer
 import { FetchAnswersByInterviewIdUseCase } from '@/domain/use-cases/answer-question/fetch-answers-by-interview-id'
 import { FetchAnswersByInterviewIdController } from './controllers/answer/fetch-answers-by-interview-id.controller'
 import { RateLimitModule } from '../rate-limit/rate-limit.module'
+import { AuthModule } from '../auth/auth.module'
+import { SessionController } from './controllers/authenticate/session.controller'
 @Module({
-  imports: [DatabaseModule, CryptographyModule, RateLimitModule],
+  imports: [DatabaseModule, CryptographyModule, RateLimitModule, AuthModule],
   providers: [
     RegisterAccountUseCase,
     EditAccountUseCase,
@@ -111,6 +113,7 @@ import { RateLimitModule } from '../rate-limit/rate-limit.module'
     EditAccountController,
     DeleteAccountController,
     AuthenticateController,
+    SessionController,
     CreateSurveyController,
     CreateQuestionController,
     CreateOptionAnswerController,

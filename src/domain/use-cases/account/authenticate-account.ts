@@ -16,6 +16,7 @@ type AuthenticateAccountUseCaseResponse = Either<
   WrongCredentialsError,
   {
     accessToken: string
+    accountId: string
   }
 >
 
@@ -57,6 +58,7 @@ export class AuthenticateAccountUseCase {
     })
     return right({
       accessToken,
+      accountId: account.id.toString(),
     })
   }
 }

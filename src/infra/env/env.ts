@@ -41,6 +41,9 @@ export const envSchema = z.object({
     .max(86400)
     .optional()
     .default(900),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).optional().default(30),
+  SESSION_CLEANUP_INTERVAL_MINUTES: z.coerce.number().int().min(1).max(1440).optional().default(60),
+  SESSION_IP_HASH_SECRET: z.string().min(32).optional(),
   REGISTER_RATE_LIMIT_IP_MAX: z.coerce
     .number()
     .int()
