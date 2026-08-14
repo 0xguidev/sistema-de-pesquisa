@@ -36,8 +36,22 @@ describe('Create Account (E2E)', () => {
     })
 
     expect(userOnDatabase).toBeTruthy()
+    expect(userOnDatabase?.role).toBe('USER')
     expect(response.body).not.toHaveProperty('password')
     expect(response.body).not.toHaveProperty('hash')
+  })
+
+  test('ignores a client attempt to self-assign the ADMIN role', async () => {
+    const email = 'role-escalation@example.com'
+    await request(app.getHttpServer()).post('/accounts').send({
+      name: 'Regular User',
+      email,
+      password: 'valid-password',
+      role: 'ADMIN',
+    }).expect(201)
+
+    const account = await prisma.user.findUnique({ where: { email } })
+    expect(account?.role).toBe('USER')
   })
 
   test('does not reveal whether an account email already exists', async () => {

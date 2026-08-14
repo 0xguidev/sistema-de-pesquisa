@@ -6,6 +6,8 @@ import { EnvService } from '../env/env.service'
 import { TokenRevocation } from '@/domain/auth/token-revocation'
 import { UnauthorizedException } from '@nestjs/common'
 import { SessionService } from './session.service'
+import { AccountRepository } from '@/domain/repositories/account-repository'
+import { AccountRole } from '@/domain/entities/account'
 
 const JWT_ISSUER = 'sistema-de-pesquisa'
 const JWT_AUDIENCE = 'sistema-de-pesquisa'
@@ -27,7 +29,8 @@ const tokenPayloadSchema = z
     },
   )
 
-export type UserPayload = z.infer<typeof tokenPayloadSchema>
+type TokenPayload = z.infer<typeof tokenPayloadSchema>
+export type UserPayload = TokenPayload & { role: AccountRole }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -35,6 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     config: EnvService,
     private tokenRevocation: TokenRevocation,
     private sessions: SessionService,
+    private accounts: AccountRepository,
   ) {
     const publicKey = config.get('JWT_PUBLIC_KEY')
 
@@ -63,6 +67,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Session is not active')
     }
 
-    return validatedPayload
+    // The role is deliberately loaded from the source of truth on every request.
+    // Role changes and account deletion therefore take effect immediately and do
+    // not depend on access-token expiry.
+    const account = await this.accounts.findById(validatedPayload.sub)
+    if (!account) {
+      throw new UnauthorizedException('Account is not active')
+    }
+
+    return { ...validatedPayload, role: account.role }
   }
 }

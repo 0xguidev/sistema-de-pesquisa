@@ -10,12 +10,16 @@ type RequestLike = {
 describe('JwtStrategy', () => {
   const sessionId = '223e4567-e89b-12d3-a456-426614174000'
   const tokenRevocation = new InMemoryTokenRevocation()
+  const accounts = {
+    findById: vi.fn().mockResolvedValue({ role: 'USER' }),
+  }
   const strategy = new JwtStrategy(
     {
       get: () => Buffer.from('test-public-key').toString('base64'),
     } as unknown as EnvService,
     tokenRevocation,
     { isActive: vi.fn().mockResolvedValue(true) } as never,
+    accounts as never,
   )
 
   const extractToken = (request: RequestLike) =>
@@ -84,7 +88,7 @@ describe('JwtStrategy', () => {
       'Token has been revoked',
     )
     await expect(strategy.validate(activePayload)).resolves.toEqual(
-      activePayload,
+      { ...activePayload, role: 'USER' },
     )
   })
 
@@ -106,7 +110,23 @@ describe('JwtStrategy', () => {
       'Token has been revoked',
     )
     await expect(strategy.validate(payload(1786708801))).resolves.toEqual(
-      payload(1786708801),
+      { ...payload(1786708801), role: 'USER' },
+    )
+  })
+
+  it('rejects a valid session when its account no longer exists', async () => {
+    accounts.findById.mockResolvedValueOnce(null as never)
+    const payload = {
+      sub: '123e4567-e89b-12d3-a456-426614174004',
+      sid: sessionId,
+      iss: 'sistema-de-pesquisa',
+      aud: 'sistema-de-pesquisa',
+      exp: Math.floor(Date.now() / 1000) + 60,
+      iat: Math.floor(Date.now() / 1000),
+    }
+
+    await expect(strategy.validate(payload)).rejects.toThrow(
+      'Account is not active',
     )
   })
 

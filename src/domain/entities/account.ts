@@ -8,7 +8,11 @@ export interface AccountProps {
   email: string
   password: string
   slug: Slug
+  role: AccountRole
 }
+
+export const ACCOUNT_ROLES = ['USER', 'ADMIN'] as const
+export type AccountRole = (typeof ACCOUNT_ROLES)[number]
 
 export class Account extends Entity<AccountProps> {
   get name() {
@@ -40,11 +44,19 @@ export class Account extends Entity<AccountProps> {
     return this.props.slug
   }
 
-  static create(props: Optional<AccountProps, 'slug'>, id?: UniqueEntityID) {
+  get role() {
+    return this.props.role
+  }
+
+  static create(
+    props: Optional<AccountProps, 'slug' | 'role'>,
+    id?: UniqueEntityID,
+  ) {
     const account = new Account(
       {
         ...props,
         slug: props.slug ?? Slug.createFromText(props.email),
+        role: props.role ?? 'USER',
       },
       id,
     )
