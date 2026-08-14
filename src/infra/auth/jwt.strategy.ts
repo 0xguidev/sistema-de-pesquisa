@@ -52,12 +52,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: UserPayload) {
-    const validatedPayload = tokenPayloadSchema.parse(payload)
+    const parsedPayload = tokenPayloadSchema.safeParse(payload)
+    if (!parsedPayload.success) {
+      throw new UnauthorizedException('Invalid token claims')
+    }
+    const validatedPayload = parsedPayload.data
 
     if (
       await this.tokenRevocation.isTokenRevoked(
         validatedPayload.sub,
         validatedPayload.iat,
+        validatedPayload.sid,
       )
     ) {
       throw new UnauthorizedException('Token has been revoked')

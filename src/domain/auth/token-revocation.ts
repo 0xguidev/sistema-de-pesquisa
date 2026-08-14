@@ -6,5 +6,6 @@ export abstract class TokenRevocation {
   abstract isTokenRevoked(
     accountId: string,
     issuedAtSeconds: number,
+    sessionId?: string,
   ): Promise<boolean>
 }

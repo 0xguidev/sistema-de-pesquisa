@@ -20,15 +20,35 @@ export class TokenRevocationService implements TokenRevocation {
   async isTokenRevoked(
     accountId: string,
     issuedAtSeconds: number,
+    sessionId?: string,
   ): Promise<boolean> {
     const revocation = await this.prisma.revokedTokenSubject.findUnique({
       where: { accountId },
       select: { revokedBefore: true },
     })
 
-    return (
-      revocation !== null &&
-      issuedAtSeconds * 1000 <= revocation.revokedBefore.getTime()
-    )
+    if (
+      revocation === null ||
+      issuedAtSeconds * 1000 > revocation.revokedBefore.getTime()
+    ) {
+      return false
+    }
+
+    // JWT iat has one-second precision. A session created after the exact
+    // revocation instant must remain valid even when both timestamps fall in
+    // the same second.
+    if (sessionId) {
+      const newerSession = await this.prisma.session.findFirst({
+        where: {
+          id: sessionId,
+          accountId,
+          createdAt: { gt: revocation.revokedBefore },
+        },
+        select: { id: true },
+      })
+      if (newerSession) return false
+    }
+
+    return true
   }
 }

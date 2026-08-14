@@ -71,6 +71,10 @@ export class PrismaAccountRepository implements AccountRepository {
         create: { accountId, revokedBefore },
         update: { revokedBefore },
       }),
+      this.prisma.session.updateMany({
+        where: { accountId, revokedAt: null },
+        data: { revokedAt: revokedBefore },
+      }),
     ])
   }
 
