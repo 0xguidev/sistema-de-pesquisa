@@ -5,6 +5,7 @@ import { AccountRepository } from '@/domain/repositories/account-repository'
 import { normalizeAccountEmail } from '@/domain/account/account-policy'
 import { HashComparer } from '@/domain/cryptography/hash-comparer'
 import { Encrypter } from '@/domain/cryptography/encrypter'
+import { HashGenerator } from '@/domain/cryptography/hash-generator'
 
 interface AuthenticateStudentUseCaseRequest {
   email: string
@@ -23,6 +24,7 @@ export class AuthenticateAccountUseCase {
   constructor(
     private accountRepository: AccountRepository,
     private hashComparer: HashComparer,
+    private hashGenerator: HashGenerator,
     private encrypter: Encrypter,
   ) {}
 
@@ -43,6 +45,11 @@ export class AuthenticateAccountUseCase {
 
     if (!isPasswordValid) {
       return left(new WrongCredentialsError())
+    }
+
+    if (this.hashComparer.needsRehash(account.password)) {
+      account.password = await this.hashGenerator.hash(password)
+      await this.accountRepository.update(account)
     }
 
     const accessToken = await this.encrypter.encrypt({

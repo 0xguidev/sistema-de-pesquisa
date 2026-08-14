@@ -4,6 +4,33 @@ import { EnvService } from './env.service'
 import { envSchema, isCorsOriginAllowed, parseCorsOrigin } from './env'
 
 describe('environment validation', () => {
+  const requiredEnvironment = {
+    DATABASE_URL: 'http://localhost:5432',
+    JWT_PRIVATE_KEY: 'private-key',
+    JWT_PUBLIC_KEY: 'public-key',
+    CORS_ORIGIN: 'http://localhost:5173',
+  }
+
+  it('uses bcrypt cost 10 by default and reads a configured cost', () => {
+    expect(envSchema.parse(requiredEnvironment).BCRYPT_COST).toBe(10)
+    expect(
+      envSchema.parse({ ...requiredEnvironment, BCRYPT_COST: '12' })
+        .BCRYPT_COST,
+    ).toBe(12)
+  })
+
+  it.each(['9', '15', '10.5', 'invalid'])(
+    'rejects invalid bcrypt cost %s',
+    (bcryptCost) => {
+      expect(
+        envSchema.safeParse({
+          ...requiredEnvironment,
+          BCRYPT_COST: bcryptCost,
+        }).success,
+      ).toBe(false)
+    },
+  )
+
   it('requires JWT keys to be present', () => {
     const parsed = envSchema.safeParse({
       DATABASE_URL: 'http://localhost:5432',

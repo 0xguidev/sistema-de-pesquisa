@@ -12,6 +12,7 @@ export const envSchema = z.object({
   JWT_PRIVATE_KEY: z.string().min(1),
   JWT_PUBLIC_KEY: z.string().min(1),
   CORS_ORIGIN: z.string().min(1),
+  BCRYPT_COST: z.coerce.number().int().min(10).max(14).optional().default(10),
   // CLOUDFLARE_ACCOUNT_ID: z.string(),
   // AWS_BUCKET_NAME: z.string(),
   // AWS_ACCESS_KEY_ID: z.string(),
