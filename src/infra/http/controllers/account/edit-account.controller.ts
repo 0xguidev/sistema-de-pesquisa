@@ -15,11 +15,33 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { EditAccountUseCase } from '@/domain/use-cases/account/edit-account'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { AccountAlreadyExistsError } from '@/domain/use-cases/error/account-already-exists.error'
+import {
+  ACCOUNT_NAME_MAX_LENGTH,
+  ACCOUNT_NAME_MIN_LENGTH,
+  ACCOUNT_PASSWORD_MAX_LENGTH,
+  ACCOUNT_PASSWORD_MIN_LENGTH,
+  isAccountPasswordValid,
+} from '@/domain/account/account-policy'
 
 const editAccountBodySchema = z.object({
-  name: z.string().optional(),
-  email: z.string().email().optional(),
-  password: z.string().optional(),
+  name: z
+    .string()
+    .trim()
+    .min(ACCOUNT_NAME_MIN_LENGTH)
+    .max(ACCOUNT_NAME_MAX_LENGTH)
+    .optional(),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((value) => value.toLowerCase())
+    .optional(),
+  password: z
+    .string()
+    .min(ACCOUNT_PASSWORD_MIN_LENGTH)
+    .max(ACCOUNT_PASSWORD_MAX_LENGTH)
+    .refine(isAccountPasswordValid)
+    .optional(),
 })
 
 const bodyValidationPipe = new ZodValidationPipe(editAccountBodySchema)

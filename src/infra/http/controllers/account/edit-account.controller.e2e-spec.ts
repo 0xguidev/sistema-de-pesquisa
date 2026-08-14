@@ -55,4 +55,36 @@ describe('Edit Account (E2E)', () => {
     expect(accountOnDatabase).toBeTruthy()
     expect(accountOnDatabase?.name).toBe('Updated Name')
   })
+
+  test('normalizes email and rejects an email already used by another account', async () => {
+    const account = await accountFactory.makePrismaAccount({
+      email: 'edit-current@example.com',
+    })
+    await accountFactory.makePrismaAccount({
+      email: 'already-used@example.com',
+    })
+    const accessToken = jwt.sign({ sub: account.id.toString() })
+
+    const response = await request(app.getHttpServer())
+      .put('/accounts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ email: '  ALREADY-USED@EXAMPLE.COM  ' })
+
+    expect(response.statusCode).toBe(409)
+  })
+
+  test.each([
+    ['an invalid password', { password: 'short' }],
+    ['an empty name', { name: '   ' }],
+  ])('rejects %s', async (_, body) => {
+    const account = await accountFactory.makePrismaAccount()
+    const accessToken = jwt.sign({ sub: account.id.toString() })
+
+    const response = await request(app.getHttpServer())
+      .put('/accounts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(body)
+
+    expect(response.statusCode).toBe(400)
+  })
 })

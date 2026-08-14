@@ -6,6 +6,14 @@ import { Account } from '@/domain/entities/account'
 import { AccountAlreadyExistsError } from '../error/account-already-exists.error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
+import {
+  isAccountEmailValid,
+  isAccountNameValid,
+  isAccountPasswordValid,
+  normalizeAccountEmail,
+  normalizeAccountName,
+} from '@/domain/account/account-policy'
+import { InvalidAccountDataError } from '../error/invalid-account-data.error'
 
 interface EditAccountUseCaseRequest {
   accountId: string
@@ -15,7 +23,10 @@ interface EditAccountUseCaseRequest {
 }
 
 type EditAccountUseCaseResponse = Either<
-  ResourceNotFoundError | NotAllowedError | AccountAlreadyExistsError,
+  | ResourceNotFoundError
+  | NotAllowedError
+  | AccountAlreadyExistsError
+  | InvalidAccountDataError,
   {
     account: Account
   }
@@ -40,27 +51,47 @@ export class EditAccountUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    if (email && email !== account.email) {
+    const normalizedName =
+      name === undefined ? undefined : normalizeAccountName(name)
+    const normalizedEmail =
+      email === undefined ? undefined : normalizeAccountEmail(email)
+
+    if (normalizedName !== undefined && !isAccountNameValid(normalizedName)) {
+      return left(new InvalidAccountDataError('Invalid account name'))
+    }
+
+    if (
+      normalizedEmail !== undefined &&
+      !isAccountEmailValid(normalizedEmail)
+    ) {
+      return left(new InvalidAccountDataError('Invalid account email'))
+    }
+
+    if (password !== undefined && !isAccountPasswordValid(password)) {
+      return left(new InvalidAccountDataError('Invalid account password'))
+    }
+
+    if (normalizedEmail && normalizedEmail !== account.email) {
       const accountWithSameEmail =
-        await this.accountRepository.findByEmail(email)
+        await this.accountRepository.findByEmail(normalizedEmail)
 
       if (
         accountWithSameEmail &&
         accountWithSameEmail.id.toString() !== accountId
       ) {
-        return left(new AccountAlreadyExistsError(email))
+        return left(new AccountAlreadyExistsError(normalizedEmail))
       }
     }
 
-    if (name) {
-      account.name = name
+    if (normalizedName !== undefined) {
+      account.name = normalizedName
     }
 
-    if (email) {
-      account.email = email
+    if (normalizedEmail) {
+      account.email = normalizedEmail
     }
 
-    if (password) {
+    if (password !== undefined) {
       account.password = await this.hashGenerator.hash(password)
     }
 

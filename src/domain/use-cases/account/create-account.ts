@@ -4,6 +4,14 @@ import { Injectable } from '@nestjs/common'
 import { AccountRepository } from '@/domain/repositories/account-repository'
 import { Account } from '@/domain/entities/account'
 import { HashGenerator } from '@/domain/cryptography/hash-generator'
+import {
+  isAccountEmailValid,
+  isAccountNameValid,
+  isAccountPasswordValid,
+  normalizeAccountEmail,
+  normalizeAccountName,
+} from '@/domain/account/account-policy'
+import { InvalidAccountDataError } from '../error/invalid-account-data.error'
 
 interface RegisterAccountUseCaseRequest {
   name: string
@@ -12,7 +20,7 @@ interface RegisterAccountUseCaseRequest {
 }
 
 type RegisterAccountUseCaseResponse = Either<
-  AccountAlreadyExistsError,
+  AccountAlreadyExistsError | InvalidAccountDataError,
   {
     account: Account
   }
@@ -30,7 +38,20 @@ export class RegisterAccountUseCase {
     email,
     password,
   }: RegisterAccountUseCaseRequest): Promise<RegisterAccountUseCaseResponse> {
-    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedName = normalizeAccountName(name)
+    const normalizedEmail = normalizeAccountEmail(email)
+
+    if (!isAccountNameValid(normalizedName)) {
+      return left(new InvalidAccountDataError('Invalid account name'))
+    }
+
+    if (!isAccountEmailValid(normalizedEmail)) {
+      return left(new InvalidAccountDataError('Invalid account email'))
+    }
+
+    if (!isAccountPasswordValid(password)) {
+      return left(new InvalidAccountDataError('Invalid account password'))
+    }
 
     const userWithSameEmail =
       await this.accountRepository.findByEmail(normalizedEmail)
@@ -42,7 +63,7 @@ export class RegisterAccountUseCase {
     const hashedPassword = await this.hashGenerator.hash(password)
 
     const account = Account.create({
-      name,
+      name: normalizedName,
       email: normalizedEmail,
       password: hashedPassword,
     })

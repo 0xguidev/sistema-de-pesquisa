@@ -12,15 +12,30 @@ import { Public } from '@/infra/auth/public'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { z } from 'zod'
 import { AccountAlreadyExistsError } from '@/domain/use-cases/error/account-already-exists.error'
+import {
+  ACCOUNT_NAME_MAX_LENGTH,
+  ACCOUNT_NAME_MIN_LENGTH,
+  ACCOUNT_PASSWORD_MAX_LENGTH,
+  ACCOUNT_PASSWORD_MIN_LENGTH,
+  isAccountPasswordValid,
+} from '@/domain/account/account-policy'
 
 const createAccountBodySchema = z.object({
-  name: z.string(),
+  name: z
+    .string()
+    .trim()
+    .min(ACCOUNT_NAME_MIN_LENGTH)
+    .max(ACCOUNT_NAME_MAX_LENGTH),
   email: z
     .string()
     .trim()
     .email()
     .transform((value) => value.toLowerCase()),
-  password: z.string(),
+  password: z
+    .string()
+    .min(ACCOUNT_PASSWORD_MIN_LENGTH)
+    .max(ACCOUNT_PASSWORD_MAX_LENGTH)
+    .refine(isAccountPasswordValid),
 })
 
 type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>

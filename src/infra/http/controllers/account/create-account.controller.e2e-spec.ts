@@ -23,8 +23,8 @@ describe('Create Account (E2E)', () => {
   test('[POST] /accounts', async () => {
     const response = await request(app.getHttpServer()).post('/accounts').send({
       name: 'John Doe',
-      email: 'johndoe@example.com',
-      password: '123456',
+      email: '  JOHNDOE@EXAMPLE.COM  ',
+      password: 'valid-password',
     })
 
     expect(response.statusCode).toBe(201)
@@ -36,5 +36,24 @@ describe('Create Account (E2E)', () => {
     })
 
     expect(userOnDatabase).toBeTruthy()
+    expect(response.body).not.toHaveProperty('password')
+    expect(response.body).not.toHaveProperty('hash')
+  })
+
+  test.each([
+    [
+      'short password',
+      { name: 'John Doe', email: 'john@example.com', password: 'short' },
+    ],
+    [
+      'empty name',
+      { name: '   ', email: 'john@example.com', password: 'valid-password' },
+    ],
+  ])('rejects %s', async (_, body) => {
+    const response = await request(app.getHttpServer())
+      .post('/accounts')
+      .send(body)
+
+    expect(response.statusCode).toBe(400)
   })
 })
