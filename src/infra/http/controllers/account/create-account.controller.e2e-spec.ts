@@ -40,6 +40,25 @@ describe('Create Account (E2E)', () => {
     expect(response.body).not.toHaveProperty('hash')
   })
 
+  test('does not reveal whether an account email already exists', async () => {
+    const body = {
+      name: 'Existing Account',
+      email: 'existing@example.com',
+      password: 'valid-password',
+    }
+
+    const created = await request(app.getHttpServer())
+      .post('/accounts')
+      .send(body)
+    const duplicate = await request(app.getHttpServer())
+      .post('/accounts')
+      .send({ ...body, name: 'Another Name' })
+
+    expect(created.statusCode).toBe(201)
+    expect(duplicate.statusCode).toBe(created.statusCode)
+    expect(duplicate.body).toEqual(created.body)
+  })
+
   test.each([
     [
       'short password',

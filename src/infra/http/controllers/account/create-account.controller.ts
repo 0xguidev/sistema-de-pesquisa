@@ -1,10 +1,10 @@
 import {
   BadRequestException,
   Body,
-  ConflictException,
   Controller,
   HttpCode,
   Post,
+  UseGuards,
   UsePipes,
 } from '@nestjs/common'
 import { RegisterAccountUseCase } from '@/domain/use-cases/account/create-account'
@@ -19,6 +19,12 @@ import {
   ACCOUNT_PASSWORD_MIN_LENGTH,
   isAccountPasswordValid,
 } from '@/domain/account/account-policy'
+import { SkipThrottle } from '@nestjs/throttler'
+import {
+  LOGIN_IDENTIFIER_THROTTLER,
+  LOGIN_IP_THROTTLER,
+} from '@/infra/rate-limit/rate-limit.constants'
+import { PublicRateLimitGuard } from '@/infra/rate-limit/public-rate-limit.guard'
 
 const createAccountBodySchema = z.object({
   name: z
@@ -42,6 +48,11 @@ type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>
 
 @Controller('/accounts')
 @Public()
+@UseGuards(PublicRateLimitGuard)
+@SkipThrottle({
+  [LOGIN_IP_THROTTLER]: true,
+  [LOGIN_IDENTIFIER_THROTTLER]: true,
+})
 export class CreateAccountController {
   constructor(private registerAccount: RegisterAccountUseCase) {}
 
@@ -61,7 +72,7 @@ export class CreateAccountController {
 
       switch (error.constructor) {
         case AccountAlreadyExistsError:
-          throw new ConflictException(error.message)
+          return
         default:
           throw new BadRequestException(error.message)
       }

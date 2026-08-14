@@ -53,14 +53,13 @@ export class RegisterAccountUseCase {
       return left(new InvalidAccountDataError('Invalid account password'))
     }
 
+    const hashedPassword = await this.hashGenerator.hash(password)
     const userWithSameEmail =
       await this.accountRepository.findByEmail(normalizedEmail)
 
     if (userWithSameEmail) {
       return left(new AccountAlreadyExistsError(normalizedEmail))
     }
-
-    const hashedPassword = await this.hashGenerator.hash(password)
 
     const account = Account.create({
       name: normalizedName,

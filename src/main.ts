@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core'
+import { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule } from './app.module'
 import {
   isCorsOriginAllowed,
@@ -9,8 +10,11 @@ import {
 async function bootstrap() {
   validateRequiredEnv(process.env)
 
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
   const corsOrigin = parseCorsOrigin(process.env.CORS_ORIGIN!)
+  const trustedProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? 0)
+
+  app.set('trust proxy', trustedProxyHops)
 
   app.enableCors({
     origin: (origin, callback) =>

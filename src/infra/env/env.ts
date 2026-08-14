@@ -13,6 +13,48 @@ export const envSchema = z.object({
   JWT_PUBLIC_KEY: z.string().min(1),
   CORS_ORIGIN: z.string().min(1),
   BCRYPT_COST: z.coerce.number().int().min(10).max(14).optional().default(10),
+  TRUST_PROXY_HOPS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(10)
+    .optional()
+    .default(0),
+  LOGIN_RATE_LIMIT_IP_MAX: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .optional()
+    .default(20),
+  LOGIN_RATE_LIMIT_IDENTIFIER_MAX: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .optional()
+    .default(5),
+  LOGIN_RATE_LIMIT_WINDOW_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(86400)
+    .optional()
+    .default(900),
+  REGISTER_RATE_LIMIT_IP_MAX: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .optional()
+    .default(5),
+  REGISTER_RATE_LIMIT_WINDOW_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(86400)
+    .optional()
+    .default(3600),
   // CLOUDFLARE_ACCOUNT_ID: z.string(),
   // AWS_BUCKET_NAME: z.string(),
   // AWS_ACCESS_KEY_ID: z.string(),

@@ -67,8 +67,9 @@ import { GetAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/get
 import { FetchAnswerQuestionController } from './controllers/answer/fetch-answer-question.controller'
 import { FetchAnswersByInterviewIdUseCase } from '@/domain/use-cases/answer-question/fetch-answers-by-interview-id'
 import { FetchAnswersByInterviewIdController } from './controllers/answer/fetch-answers-by-interview-id.controller'
+import { RateLimitModule } from '../rate-limit/rate-limit.module'
 @Module({
-  imports: [DatabaseModule, CryptographyModule],
+  imports: [DatabaseModule, CryptographyModule, RateLimitModule],
   providers: [
     RegisterAccountUseCase,
     EditAccountUseCase,

@@ -19,6 +19,40 @@ describe('environment validation', () => {
     ).toBe(12)
   })
 
+  it('reads rate limits and trusted proxy hops from the environment', () => {
+    const parsed = envSchema.parse({
+      ...requiredEnvironment,
+      TRUST_PROXY_HOPS: '1',
+      LOGIN_RATE_LIMIT_IP_MAX: '10',
+      LOGIN_RATE_LIMIT_IDENTIFIER_MAX: '4',
+      LOGIN_RATE_LIMIT_WINDOW_SECONDS: '60',
+      REGISTER_RATE_LIMIT_IP_MAX: '3',
+      REGISTER_RATE_LIMIT_WINDOW_SECONDS: '120',
+    })
+
+    expect(parsed).toMatchObject({
+      TRUST_PROXY_HOPS: 1,
+      LOGIN_RATE_LIMIT_IP_MAX: 10,
+      LOGIN_RATE_LIMIT_IDENTIFIER_MAX: 4,
+      LOGIN_RATE_LIMIT_WINDOW_SECONDS: 60,
+      REGISTER_RATE_LIMIT_IP_MAX: 3,
+      REGISTER_RATE_LIMIT_WINDOW_SECONDS: 120,
+    })
+  })
+
+  it('rejects unsafe proxy and rate-limit configuration', () => {
+    expect(
+      envSchema.safeParse({ ...requiredEnvironment, TRUST_PROXY_HOPS: '-1' })
+        .success,
+    ).toBe(false)
+    expect(
+      envSchema.safeParse({
+        ...requiredEnvironment,
+        LOGIN_RATE_LIMIT_IP_MAX: '0',
+      }).success,
+    ).toBe(false)
+  })
+
   it.each(['9', '15', '10.5', 'invalid'])(
     'rejects invalid bcrypt cost %s',
     (bcryptCost) => {
