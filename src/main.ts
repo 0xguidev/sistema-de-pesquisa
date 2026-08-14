@@ -1,7 +1,10 @@
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
+import { validateRequiredEnv } from './infra/env/env'
 
 async function bootstrap() {
+  validateRequiredEnv(process.env)
+
   const app = await NestFactory.create(AppModule)
 
   app.enableCors({
