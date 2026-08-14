@@ -2,11 +2,26 @@ import { EnvService } from '../env/env.service'
 import { JwtStrategy } from './jwt.strategy'
 
 describe('JwtStrategy', () => {
-  it('should reject a token without expiration', async () => {
-    const strategy = new JwtStrategy({
-      get: () => Buffer.from('test-public-key').toString('base64'),
-    } as unknown as EnvService)
+  const strategy = new JwtStrategy({
+    get: () => Buffer.from('test-public-key').toString('base64'),
+  } as unknown as EnvService)
 
+  const extractToken = (request: { headers: { authorization?: string }, cookies?: { token?: string } }) =>
+    (strategy as unknown as { _jwtFromRequest: (request: typeof request) => string | null })._jwtFromRequest(request)
+
+  it('should extract a token only from the Authorization Bearer header', () => {
+    expect(extractToken({
+      headers: { authorization: 'Bearer header-token' },
+      cookies: { token: 'cookie-token' },
+    })).toBe('header-token')
+
+    expect(extractToken({
+      headers: {},
+      cookies: { token: 'cookie-token' },
+    })).toBeNull()
+  })
+
+  it('should reject a token without expiration', async () => {
     const payload = {
       sub: '123e4567-e89b-12d3-a456-426614174000',
       iss: 'sistema-de-pesquisa',

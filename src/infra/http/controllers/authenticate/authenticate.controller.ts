@@ -49,6 +49,7 @@ export class AuthenticateController {
 
     return {
       access_token: accessToken,
+      token_type: 'Bearer',
     }
   }
 }

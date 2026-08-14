@@ -3,7 +3,6 @@ import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { z } from 'zod'
 import { EnvService } from '../env/env.service'
-import { Request } from 'express'
 
 const JWT_ISSUER = 'sistema-de-pesquisa'
 const JWT_AUDIENCE = 'sistema-de-pesquisa'
@@ -26,13 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const publicKey = config.get('JWT_PUBLIC_KEY')
 
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => {
-          const token = req?.cookies?.token || null
-          return token
-        },
-        ExtractJwt.fromAuthHeaderAsBearerToken(), // fallback header
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: Buffer.from(publicKey, 'base64'),
       algorithms: ['RS256'],
       issuer: JWT_ISSUER,
