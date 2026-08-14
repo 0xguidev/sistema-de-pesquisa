@@ -3,6 +3,8 @@ import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { z } from 'zod'
 import { EnvService } from '../env/env.service'
+import { TokenRevocation } from '@/domain/auth/token-revocation'
+import { UnauthorizedException } from '@nestjs/common'
 
 const JWT_ISSUER = 'sistema-de-pesquisa'
 const JWT_AUDIENCE = 'sistema-de-pesquisa'
@@ -21,7 +23,10 @@ export type UserPayload = z.infer<typeof tokenPayloadSchema>
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(config: EnvService) {
+  constructor(
+    config: EnvService,
+    private tokenRevocation: TokenRevocation,
+  ) {
     const publicKey = config.get('JWT_PUBLIC_KEY')
 
     super({
@@ -34,6 +39,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: UserPayload) {
-    return tokenPayloadSchema.parse(payload)
+    const validatedPayload = tokenPayloadSchema.parse(payload)
+
+    if (await this.tokenRevocation.isAccountRevoked(validatedPayload.sub)) {
+      throw new UnauthorizedException('Token has been revoked')
+    }
+
+    return validatedPayload
   }
 }

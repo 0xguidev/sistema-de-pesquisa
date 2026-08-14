@@ -1,14 +1,20 @@
 import { makeAccount } from 'test/factories/make-Account'
 import { InMemoryAccountRepository } from 'test/repositories/in-memory-account-repository'
 import { DeleteAccountUseCase } from './delete-account'
+import { InMemoryTokenRevocation } from 'test/auth/in-memory-token-revocation'
 
 describe('Delete account', () => {
   let inMemoryAccountRepository: InMemoryAccountRepository
   let sut: DeleteAccountUseCase
+  let tokenRevocation: InMemoryTokenRevocation
 
   beforeEach(() => {
     inMemoryAccountRepository = new InMemoryAccountRepository()
-    sut = new DeleteAccountUseCase(inMemoryAccountRepository)
+    tokenRevocation = new InMemoryTokenRevocation()
+    sut = new DeleteAccountUseCase(
+      inMemoryAccountRepository,
+      tokenRevocation,
+    )
   })
 
   it('should be able to delete an account', async () => {
@@ -25,6 +31,9 @@ describe('Delete account', () => {
 
     expect(result.isRight()).toBe(true)
     expect(inMemoryAccountRepository.items).toHaveLength(0)
+    expect(
+      await tokenRevocation.isAccountRevoked(account.id.toString()),
+    ).toBe(true)
   })
 
   it('should not be able to delete a non-existent account', async () => {
@@ -33,5 +42,6 @@ describe('Delete account', () => {
     })
 
     expect(result.isLeft()).toBe(true)
+    expect(tokenRevocation.revokedAccountIds.size).toBe(0)
   })
 })

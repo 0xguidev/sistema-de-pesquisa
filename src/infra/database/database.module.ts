@@ -12,10 +12,16 @@ import { QuestionRepository } from '@/domain/repositories/question-repository'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import { AnswerQuestionRepository } from '@/domain/repositories/answer-question-repository'
+import { TokenRevocation } from '@/domain/auth/token-revocation'
+import { TokenRevocationService } from './token-revocation.service'
 
 @Module({
   providers: [
     PrismaService,
+    {
+      provide: TokenRevocation,
+      useClass: TokenRevocationService,
+    },
     {
       provide: AccountRepository,
       useClass: PrismaAccountRepository,
@@ -43,6 +49,7 @@ import { AnswerQuestionRepository } from '@/domain/repositories/answer-question-
   ],
   exports: [
     PrismaService,
+    TokenRevocation,
     AccountRepository,
     SurveyRepository,
     QuestionRepository,

@@ -6,9 +6,11 @@ import { EnvService } from '../env/env.service'
 import { JwtStrategy } from './jwt.strategy'
 import { APP_GUARD } from '@nestjs/core'
 import { JwtAuthGuard } from './jwt-auth.guard'
+import { DatabaseModule } from '../database/database.module'
 
 @Module({
   imports: [
+    DatabaseModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [EnvModule],

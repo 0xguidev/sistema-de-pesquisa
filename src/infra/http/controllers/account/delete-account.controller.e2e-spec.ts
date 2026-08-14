@@ -33,7 +33,13 @@ describe('Delete Account (E2E)', () => {
       name: 'Delete User',
     })
 
+    const otherAccount = await accountFactory.makePrismaAccount({
+      email: 'active-user@example.com',
+      name: 'Active User',
+    })
+
     const accessToken = jwt.sign({ sub: account.id.toString() })
+    const otherAccessToken = jwt.sign({ sub: otherAccount.id.toString() })
 
     const response = await request(app.getHttpServer())
       .delete('/accounts')
@@ -48,5 +54,15 @@ describe('Delete Account (E2E)', () => {
     })
 
     expect(accountOnDatabase).toBeNull()
+
+    await request(app.getHttpServer())
+      .get('/surveys')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(401)
+
+    await request(app.getHttpServer())
+      .get('/surveys')
+      .set('Authorization', `Bearer ${otherAccessToken}`)
+      .expect(200)
   })
 })
