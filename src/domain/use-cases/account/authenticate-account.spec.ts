@@ -47,10 +47,8 @@ describe('Authenticate Student', () => {
     })
 
     const payload = JSON.parse(result.value.accessToken)
-    expect(payload).toMatchObject({
+    expect(payload).toEqual({
       sub: student.id.toString(),
-      iss: 'sistema-de-pesquisa',
-      aud: 'sistema-de-pesquisa',
     })
   })
 
