@@ -6,20 +6,29 @@ import { PrismaService } from './prisma/prisma.service'
 export class TokenRevocationService implements TokenRevocation {
   constructor(private prisma: PrismaService) {}
 
-  async revokeAllForAccount(accountId: string): Promise<void> {
+  async revokeAllForAccount(
+    accountId: string,
+    revokedBefore = new Date(),
+  ): Promise<void> {
     await this.prisma.revokedTokenSubject.upsert({
       where: { accountId },
-      create: { accountId },
-      update: { revokedAt: new Date() },
+      create: { accountId, revokedBefore },
+      update: { revokedBefore },
     })
   }
 
-  async isAccountRevoked(accountId: string): Promise<boolean> {
+  async isTokenRevoked(
+    accountId: string,
+    issuedAtSeconds: number,
+  ): Promise<boolean> {
     const revocation = await this.prisma.revokedTokenSubject.findUnique({
       where: { accountId },
-      select: { accountId: true },
+      select: { revokedBefore: true },
     })
 
-    return revocation !== null
+    return (
+      revocation !== null &&
+      issuedAtSeconds * 1000 <= revocation.revokedBefore.getTime()
+    )
   }
 }

@@ -41,7 +41,25 @@ describe('Edit account', () => {
       expect(inMemoryAccountRepository.items[0].password).toBe(
         await fakeHasher.hash('new-password'),
       )
+      expect(
+        inMemoryAccountRepository.tokenRevocations.get(account.id.toString()),
+      ).toBeInstanceOf(Date)
     }
+  })
+
+  it('should keep existing tokens valid when changing only the email', async () => {
+    const account = makeAccount({ email: 'john@example.com' })
+    await inMemoryAccountRepository.create(account)
+
+    await sut.execute({
+      accountId: account.id.toString(),
+      email: 'new@example.com',
+    })
+
+    expect(inMemoryAccountRepository.tokenRevocations).not.toHaveProperty(
+      account.id.toString(),
+    )
+    expect(inMemoryAccountRepository.tokenRevocations.size).toBe(0)
   })
 
   it('should not be able to edit an account when the email is already in use', async () => {

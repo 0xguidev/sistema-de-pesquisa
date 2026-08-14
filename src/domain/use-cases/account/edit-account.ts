@@ -95,7 +95,12 @@ export class EditAccountUseCase {
       account.password = await this.hashGenerator.hash(password)
     }
 
-    await this.accountRepository.update(account)
+    if (password !== undefined) {
+      await this.accountRepository.updateAndRevokeTokens(account, new Date())
+    } else {
+      // Changing email alone keeps existing sessions: JWT identity uses immutable sub.
+      await this.accountRepository.update(account)
+    }
 
     return right({
       account,

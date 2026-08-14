@@ -9,15 +9,21 @@ import { UnauthorizedException } from '@nestjs/common'
 const JWT_ISSUER = 'sistema-de-pesquisa'
 const JWT_AUDIENCE = 'sistema-de-pesquisa'
 
-const tokenPayloadSchema = z.object({
-  sub: z.string().uuid(),
-  iss: z.string().min(1),
-  aud: z.string().min(1),
-  exp: z.number().int().positive(),
-}).refine((payload) => payload.iss === JWT_ISSUER && payload.aud === JWT_AUDIENCE, {
-  message: 'Invalid token issuer or audience',
-  path: ['iss', 'aud'],
-})
+const tokenPayloadSchema = z
+  .object({
+    sub: z.string().uuid(),
+    iss: z.string().min(1),
+    aud: z.string().min(1),
+    exp: z.number().int().positive(),
+    iat: z.number().int().nonnegative(),
+  })
+  .refine(
+    (payload) => payload.iss === JWT_ISSUER && payload.aud === JWT_AUDIENCE,
+    {
+      message: 'Invalid token issuer or audience',
+      path: ['iss', 'aud'],
+    },
+  )
 
 export type UserPayload = z.infer<typeof tokenPayloadSchema>
 
@@ -41,7 +47,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: UserPayload) {
     const validatedPayload = tokenPayloadSchema.parse(payload)
 
-    if (await this.tokenRevocation.isAccountRevoked(validatedPayload.sub)) {
+    if (
+      await this.tokenRevocation.isTokenRevoked(
+        validatedPayload.sub,
+        validatedPayload.iat,
+      )
+    ) {
       throw new UnauthorizedException('Token has been revoked')
     }
 

@@ -1,4 +1,10 @@
 export abstract class TokenRevocation {
-  abstract revokeAllForAccount(accountId: string): Promise<void>
-  abstract isAccountRevoked(accountId: string): Promise<boolean>
+  abstract revokeAllForAccount(
+    accountId: string,
+    revokedBefore?: Date,
+  ): Promise<void>
+  abstract isTokenRevoked(
+    accountId: string,
+    issuedAtSeconds: number,
+  ): Promise<boolean>
 }

@@ -32,8 +32,8 @@ model User {
 }
 
 model RevokedTokenSubject {
-  accountId String   @id @map("account_id")
-  revokedAt DateTime @default(now()) @map("revoked_at")
+  accountId     String   @id @map("account_id")
+  revokedBefore DateTime @default(now()) @map("revoked_before")
 
   @@map("revoked_token_subjects")
 }

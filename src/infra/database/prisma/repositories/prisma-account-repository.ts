@@ -57,11 +57,39 @@ export class PrismaAccountRepository implements AccountRepository {
     })
   }
 
+  async updateAndRevokeTokens(
+    account: Account,
+    revokedBefore: Date,
+  ): Promise<void> {
+    const data = PrismaAccountMapper.toPrisma(account)
+    const accountId = account.id.toString()
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: accountId }, data }),
+      this.prisma.revokedTokenSubject.upsert({
+        where: { accountId },
+        create: { accountId, revokedBefore },
+        update: { revokedBefore },
+      }),
+    ])
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.user.delete({
       where: {
         id,
       },
     })
+  }
+
+  async deleteAndRevokeTokens(id: string, revokedBefore: Date): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.user.delete({ where: { id } }),
+      this.prisma.revokedTokenSubject.upsert({
+        where: { accountId: id },
+        create: { accountId: id, revokedBefore },
+        update: { revokedBefore },
+      }),
+    ])
   }
 }

@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/types/either'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { AccountRepository } from '@/domain/repositories/account-repository'
-import { TokenRevocation } from '@/domain/auth/token-revocation'
 
 interface DeleteAccountUseCaseRequest {
   accountId: string
@@ -12,10 +11,7 @@ type DeleteAccountUseCaseResponse = Either<ResourceNotFoundError, null>
 
 @Injectable()
 export class DeleteAccountUseCase {
-  constructor(
-    private accountRepository: AccountRepository,
-    private tokenRevocation: TokenRevocation,
-  ) {}
+  constructor(private accountRepository: AccountRepository) {}
 
   async execute({
     accountId,
@@ -26,8 +22,8 @@ export class DeleteAccountUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    await this.accountRepository.delete(accountId)
-    await this.tokenRevocation.revokeAllForAccount(accountId)
+    // The revocation row intentionally survives deletion as a security tombstone.
+    await this.accountRepository.deleteAndRevokeTokens(accountId, new Date())
 
     return right(null)
   }

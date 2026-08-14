@@ -3,6 +3,7 @@ import { AccountRepository } from '@/domain/repositories/account-repository'
 
 export class InMemoryAccountRepository implements AccountRepository {
   public items: Account[] = []
+  public tokenRevocations = new Map<string, Date>()
 
   async findById(id: string) {
     const account = this.items.find((item) => item.id.toString() === id)
@@ -39,7 +40,17 @@ export class InMemoryAccountRepository implements AccountRepository {
     }
   }
 
+  async updateAndRevokeTokens(account: Account, revokedBefore: Date) {
+    await this.update(account)
+    this.tokenRevocations.set(account.id.toString(), revokedBefore)
+  }
+
   async delete(id: string) {
     this.items = this.items.filter((item) => item.id.toString() !== id)
+  }
+
+  async deleteAndRevokeTokens(id: string, revokedBefore: Date) {
+    await this.delete(id)
+    this.tokenRevocations.set(id, revokedBefore)
   }
 }
