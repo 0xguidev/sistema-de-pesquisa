@@ -5,8 +5,17 @@ import { z } from 'zod'
 import { EnvService } from '../env/env.service'
 import { Request } from 'express'
 
+const JWT_ISSUER = 'sistema-de-pesquisa'
+const JWT_AUDIENCE = 'sistema-de-pesquisa'
+
 const tokenPayloadSchema = z.object({
   sub: z.string().uuid(),
+  iss: z.string().min(1),
+  aud: z.string().min(1),
+  exp: z.number().int().positive(),
+}).refine((payload) => payload.iss === JWT_ISSUER && payload.aud === JWT_AUDIENCE, {
+  message: 'Invalid token issuer or audience',
+  path: ['iss', 'aud'],
 })
 
 export type UserPayload = z.infer<typeof tokenPayloadSchema>
@@ -26,6 +35,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ]),
       secretOrKey: Buffer.from(publicKey, 'base64'),
       algorithms: ['RS256'],
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
     })
   }
 

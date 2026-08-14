@@ -37,8 +37,20 @@ describe('Authenticate Student', () => {
     })
 
     expect(result.isRight()).toBe(true)
+
+    if (result.isLeft()) {
+      throw new Error('Expected authentication to succeed')
+    }
+
     expect(result.value).toEqual({
       accessToken: expect.any(String),
+    })
+
+    const payload = JSON.parse(result.value.accessToken)
+    expect(payload).toMatchObject({
+      sub: student.id.toString(),
+      iss: 'sistema-de-pesquisa',
+      aud: 'sistema-de-pesquisa',
     })
   })
 })

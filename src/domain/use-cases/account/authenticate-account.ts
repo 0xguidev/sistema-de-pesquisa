@@ -45,6 +45,8 @@ export class AuthenticateAccountUseCase {
 
     const accessToken = await this.encrypter.encrypt({
       sub: account.id.toString(),
+      iss: 'sistema-de-pesquisa',
+      aud: 'sistema-de-pesquisa',
     })
     return right({
       accessToken,
