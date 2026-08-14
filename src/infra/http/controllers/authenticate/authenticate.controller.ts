@@ -13,7 +13,11 @@ import { AuthenticateAccountUseCase } from '@/domain/use-cases/account/authentic
 import { WrongCredentialsError } from '@/domain/use-cases/error/wrong-credentials-error'
 
 const authenticateBodySchema = z.object({
-  email: z.string().trim().email().transform((value) => value.toLowerCase()),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((value) => value.toLowerCase()),
   password: z.string(),
 })
 

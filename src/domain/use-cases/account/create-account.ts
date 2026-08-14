@@ -32,9 +32,8 @@ export class RegisterAccountUseCase {
   }: RegisterAccountUseCaseRequest): Promise<RegisterAccountUseCaseResponse> {
     const normalizedEmail = email.trim().toLowerCase()
 
-    const userWithSameEmail = await this.accountRepository.findByEmail(
-      normalizedEmail,
-    )
+    const userWithSameEmail =
+      await this.accountRepository.findByEmail(normalizedEmail)
 
     if (userWithSameEmail) {
       return left(new AccountAlreadyExistsError(normalizedEmail))

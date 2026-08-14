@@ -12,18 +12,26 @@ describe('JwtStrategy', () => {
   } as unknown as EnvService)
 
   const extractToken = (request: RequestLike) =>
-    (strategy as unknown as { _jwtFromRequest: (request: RequestLike) => string | null })._jwtFromRequest(request)
+    (
+      strategy as unknown as {
+        _jwtFromRequest: (request: RequestLike) => string | null
+      }
+    )._jwtFromRequest(request)
 
   it('should extract a token only from the Authorization Bearer header', () => {
-    expect(extractToken({
-      headers: { authorization: 'Bearer header-token' },
-      cookies: { token: 'cookie-token' },
-    })).toBe('header-token')
+    expect(
+      extractToken({
+        headers: { authorization: 'Bearer header-token' },
+        cookies: { token: 'cookie-token' },
+      }),
+    ).toBe('header-token')
 
-    expect(extractToken({
-      headers: {},
-      cookies: { token: 'cookie-token' },
-    })).toBeNull()
+    expect(
+      extractToken({
+        headers: {},
+        cookies: { token: 'cookie-token' },
+      }),
+    ).toBeNull()
   })
 
   it('should reject a token without expiration', async () => {
