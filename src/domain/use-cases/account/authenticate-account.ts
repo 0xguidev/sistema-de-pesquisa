@@ -4,7 +4,6 @@ import { WrongCredentialsError } from '../error/wrong-credentials-error'
 import { AccountRepository } from '@/domain/repositories/account-repository'
 import { normalizeAccountEmail } from '@/domain/account/account-policy'
 import { HashComparer } from '@/domain/cryptography/hash-comparer'
-import { Encrypter } from '@/domain/cryptography/encrypter'
 import { HashGenerator } from '@/domain/cryptography/hash-generator'
 
 interface AuthenticateStudentUseCaseRequest {
@@ -15,7 +14,6 @@ interface AuthenticateStudentUseCaseRequest {
 type AuthenticateAccountUseCaseResponse = Either<
   WrongCredentialsError,
   {
-    accessToken: string
     accountId: string
   }
 >
@@ -26,7 +24,6 @@ export class AuthenticateAccountUseCase {
     private accountRepository: AccountRepository,
     private hashComparer: HashComparer,
     private hashGenerator: HashGenerator,
-    private encrypter: Encrypter,
   ) {}
 
   async execute({
@@ -53,11 +50,7 @@ export class AuthenticateAccountUseCase {
       await this.accountRepository.update(account)
     }
 
-    const accessToken = await this.encrypter.encrypt({
-      sub: account.id.toString(),
-    })
     return right({
-      accessToken,
       accountId: account.id.toString(),
     })
   }
