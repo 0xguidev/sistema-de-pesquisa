@@ -1,6 +1,6 @@
 CREATE TABLE "sessions" (
-    "id" UUID NOT NULL,
-    "account_id" UUID NOT NULL,
+    "id" TEXT NOT NULL,
+    "account_id" TEXT NOT NULL,
     "token_hash" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "expires_at" TIMESTAMP(3) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE "sessions" (
 
 CREATE TABLE "session_used_tokens" (
     "token_hash" TEXT NOT NULL,
-    "session_id" UUID NOT NULL,
+    "session_id" TEXT NOT NULL,
     "used_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "session_used_tokens_pkey" PRIMARY KEY ("token_hash")
 );
