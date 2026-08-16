@@ -25,7 +25,7 @@ import { RolesGuard } from './roles.guard'
         return {
           signOptions: {
             algorithm: 'RS256',
-            expiresIn: '10m',
+            expiresIn: '1d',
             issuer: 'sistema-de-pesquisa',
             audience: 'sistema-de-pesquisa',
           },
