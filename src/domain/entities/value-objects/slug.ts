@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 export class Slug {
   public value: string
 
@@ -27,9 +29,8 @@ export class Slug {
       .replace(/--+/g, '-')
       .replace(/-$/g, '')
 
-    const randomNumber = Math.floor(100 + Math.random() * 9090) // gera um número aleatório entre 100 e 999
-    const slugWithRandomNumber = `${slugText}-${randomNumber}`
+    const slugWithUniqueSuffix = `${slugText}-${randomUUID()}`
 
-    return new Slug(slugWithRandomNumber)
+    return new Slug(slugWithUniqueSuffix)
   }
 }
