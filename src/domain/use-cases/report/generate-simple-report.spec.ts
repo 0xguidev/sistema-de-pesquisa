@@ -152,14 +152,12 @@ describe('Generate simple report', () => {
     )
   })
 
-  it('should throw error when no interviews found', async () => {
+  it('should return an empty report when no interviews are found', async () => {
     inMemoryInterviewRepository.findBySurveyId = vi.fn().mockResolvedValue({
       data: [],
       total: 0,
     })
 
-    await expect(sut.execute('survey-1', 'account-1')).rejects.toThrow(
-      'Nenhuma entrevista encontrada para gerar relatório',
-    )
+    await expect(sut.execute('survey-1', 'account-1')).resolves.toEqual([])
   })
 })

@@ -27,7 +27,7 @@ export class GenerateSimpleReportUseCase {
       1000,
     )
     if (!interviews || interviews.data.length === 0) {
-      throw new Error('Nenhuma entrevista encontrada para gerar relatório')
+      return []
     }
 
     const report: Record<
