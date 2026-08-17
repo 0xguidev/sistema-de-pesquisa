@@ -50,7 +50,7 @@ export class GenerateCrossReportUseCase {
       1000,
     )
     if (!interviews || interviews.data.length === 0) {
-      throw new Error('Nenhuma entrevista encontrada para gerar relatório')
+      return []
     }
 
     // Buscar todas as perguntas do survey
