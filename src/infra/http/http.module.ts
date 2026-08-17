@@ -51,8 +51,6 @@ import { GenerateCrossReportUseCase } from '@/domain/use-cases/report/generate-c
 import { GenerateCrossReportController } from './controllers/report/generate-cross-report.controller'
 import { GenerateSimpleReportPdfController } from './controllers/report/generate-simple-report-pdf.controller'
 import { GenerateSimpleReportPdfUseCase } from '@/domain/use-cases/report/generate-simple-report-pdf'
-import { GenerateCrossReportPdfController } from './controllers/report/generate-cross-report-pdf.controller'
-import { GenerateCrossReportPdfUseCase } from '@/domain/use-cases/report/generate-cross-report-pdf'
 import { FetchQuestionByIdUseCase } from '@/domain/use-cases/question/fetch-question-by-id'
 import { FetchQuestionByIdController } from './controllers/question/fetch-question-by-id.controller'
 import { FetchQuestionsBySurveyIdUseCase } from '@/domain/use-cases/question/fetch-questions-by-survey-id'
@@ -99,7 +97,6 @@ import { SessionController } from './controllers/authenticate/session.controller
     GenerateCrossReportWordUseCase,
     GenerateCrossReportUseCase,
     GenerateSimpleReportPdfUseCase,
-    GenerateCrossReportPdfUseCase,
     FetchQuestionByIdUseCase,
     FetchQuestionsBySurveyIdUseCase,
     GetOptionAnswerUseCase,
@@ -137,7 +134,6 @@ import { SessionController } from './controllers/authenticate/session.controller
     GenerateSimpleReportController,
     GenerateSimpleReportPdfController,
     GenerateCrossReportController,
-    GenerateCrossReportPdfController,
     FetchQuestionByIdController,
     FetchQuestionsBySurveyIdController,
     FetchOptionController,
