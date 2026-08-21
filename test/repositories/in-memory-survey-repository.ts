@@ -53,7 +53,11 @@ export class InMemorySurveyRepository implements SurveyRepository {
   }
 
   async save(survey: Survey) {
-    const itemIndex = this.items.findIndex((item) => item.id === survey.id)
+    const itemIndex = this.items.findIndex(
+      (item) => item.id.toString() === survey.id.toString(),
+    )
+
+    if (itemIndex < 0) throw new Error('Survey not found')
 
     this.items[itemIndex] = survey
   }
@@ -80,7 +84,7 @@ export class InMemorySurveyRepository implements SurveyRepository {
   }
 
   async update(survey: Survey): Promise<void> {
-    const result = this.findById(survey.id.toString())
+    const result = await this.findById(survey.id.toString())
     if (!result) {
       throw new Error('Survey not found')
     }
@@ -91,6 +95,7 @@ export class InMemorySurveyRepository implements SurveyRepository {
   async delete(id: string) {
     const itemIndex = this.items.findIndex((item) => item.id.toString() === id)
 
+    if (itemIndex < 0) throw new Error('Survey not found')
     this.items.splice(itemIndex, 1)
   }
 }

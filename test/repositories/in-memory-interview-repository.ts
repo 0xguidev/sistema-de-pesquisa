@@ -85,13 +85,17 @@ export class InMemoryInterviewRepository implements InterviewRepository {
   }
 
   async save(interview: Interview) {
-    const itemIndex = this.items.findIndex((item) => item.id === interview.id)
+    const itemIndex = this.items.findIndex(
+      (item) => item.id.toString() === interview.id.toString(),
+    )
+
+    if (itemIndex < 0) throw new Error('Interview not found')
 
     this.items[itemIndex] = interview
   }
 
   async update(interview: Interview): Promise<void> {
-    const result = this.findById(interview.id.toString())
+    const result = await this.findById(interview.id.toString())
     if (!result) {
       throw new Error('Question not found')
     }
@@ -102,6 +106,7 @@ export class InMemoryInterviewRepository implements InterviewRepository {
   async delete(id: string) {
     const itemIndex = this.items.findIndex((item) => item.id.toString() === id)
 
+    if (itemIndex < 0) throw new Error('Interview not found')
     this.items.splice(itemIndex, 1)
   }
 }

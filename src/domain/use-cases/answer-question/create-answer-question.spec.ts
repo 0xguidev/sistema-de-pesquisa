@@ -33,9 +33,18 @@ describe('create an answer question', async () => {
   it('should create a option answer', async () => {
     const account = makeAccount()
     const survey = makeSurvey({ accountId: account.id })
-    const question = makeQuestion({ surveyId: survey.id, accountId: account.id })
-    const interview = makeInterview({ surveyId: survey.id, accountId: account.id })
-    const option = makeOptionAnswer({ questionId: question.id, accountId: account.id })
+    const question = makeQuestion({
+      surveyId: survey.id,
+      accountId: account.id,
+    })
+    const interview = makeInterview({
+      surveyId: survey.id,
+      accountId: account.id,
+    })
+    const option = makeOptionAnswer({
+      questionId: question.id,
+      accountId: account.id,
+    })
     await inMemoryQuestionRepository.create(question)
     await inMemoryInterviewRepository.create(interview)
     await inMemoryOptionAnswersRepository.create(option)
@@ -58,10 +67,22 @@ describe('create an answer question', async () => {
     const attacker = makeAccount()
     const ownerSurvey = makeSurvey({ accountId: owner.id })
     const otherSurvey = makeSurvey({ accountId: owner.id })
-    const question = makeQuestion({ surveyId: ownerSurvey.id, accountId: owner.id })
-    const otherQuestion = makeQuestion({ surveyId: otherSurvey.id, accountId: owner.id })
-    const interview = makeInterview({ surveyId: ownerSurvey.id, accountId: owner.id })
-    const option = makeOptionAnswer({ questionId: question.id, accountId: owner.id })
+    const question = makeQuestion({
+      surveyId: ownerSurvey.id,
+      accountId: owner.id,
+    })
+    const otherQuestion = makeQuestion({
+      surveyId: otherSurvey.id,
+      accountId: owner.id,
+    })
+    const interview = makeInterview({
+      surveyId: ownerSurvey.id,
+      accountId: owner.id,
+    })
+    const option = makeOptionAnswer({
+      questionId: question.id,
+      accountId: owner.id,
+    })
     await inMemoryQuestionRepository.create(question)
     await inMemoryQuestionRepository.create(otherQuestion)
     await inMemoryInterviewRepository.create(interview)

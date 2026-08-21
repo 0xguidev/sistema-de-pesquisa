@@ -1,9 +1,7 @@
 import { AnswerQuestion } from '@/domain/entities/answer-question'
 import { AnswerQuestionRepository } from '@/domain/repositories/answer-question-repository'
 
-export class InMemoryAnswerQuestionRepository
-  implements AnswerQuestionRepository
-{
+export class InMemoryAnswerQuestionRepository implements AnswerQuestionRepository {
   public items: AnswerQuestion[] = []
 
   constructor() {} // private survey: InMemorySurveyRepository,
@@ -32,14 +30,15 @@ export class InMemoryAnswerQuestionRepository
 
   async save(answerquestion: AnswerQuestion) {
     const itemIndex = this.items.findIndex(
-      (item) => item.id === answerquestion.id,
+      (item) => item.id.toString() === answerquestion.id.toString(),
     )
 
+    if (itemIndex < 0) throw new Error('Answer question not found')
     this.items[itemIndex] = answerquestion
   }
 
   async update(answerquestion: AnswerQuestion): Promise<void> {
-    const result = this.findById(answerquestion.id.toString())
+    const result = await this.findById(answerquestion.id.toString())
     if (!result) {
       throw new Error('Question not found')
     }
@@ -50,6 +49,7 @@ export class InMemoryAnswerQuestionRepository
   async delete(id: string) {
     const itemIndex = this.items.findIndex((item) => item.id.toString() === id)
 
+    if (itemIndex < 0) throw new Error('Answer question not found')
     this.items.splice(itemIndex, 1)
   }
 }

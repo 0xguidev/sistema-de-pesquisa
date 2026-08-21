@@ -75,17 +75,19 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
 
   async save(optionanswer: OptionAnswer) {
     const itemIndex = this.items.findIndex(
-      (item) => item.id === optionanswer.id,
+      (item) => item.id.toString() === optionanswer.id.toString(),
     )
 
+    if (itemIndex < 0) throw new Error('Option answer not found')
     this.items[itemIndex] = optionanswer
   }
 
   async delete(optionAnswer: OptionAnswer) {
     const itemIndex = this.items.findIndex(
-      (item) => item.id === optionAnswer.id,
+      (item) => item.id.toString() === optionAnswer.id.toString(),
     )
 
+    if (itemIndex < 0) throw new Error('Option answer not found')
     this.items.splice(itemIndex, 1)
   }
 

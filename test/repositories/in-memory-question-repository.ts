@@ -63,13 +63,17 @@ export class InMemoryQuestionRepository implements QuestionRepository {
   }
 
   async save(question: Question) {
-    const itemIndex = this.items.findIndex((item) => item.id === question.id)
+    const itemIndex = this.items.findIndex(
+      (item) => item.id.toString() === question.id.toString(),
+    )
+
+    if (itemIndex < 0) throw new Error('Question not found')
 
     this.items[itemIndex] = question
   }
 
   async update(question: Question): Promise<void> {
-    const result = this.findById(question.id.toString())
+    const result = await this.findById(question.id.toString())
     if (!result) {
       throw new Error('Question not found')
     }
@@ -80,6 +84,7 @@ export class InMemoryQuestionRepository implements QuestionRepository {
   async delete(id: string) {
     const itemIndex = this.items.findIndex((item) => item.id.toString() === id)
 
+    if (itemIndex < 0) throw new Error('Question not found')
     this.items.splice(itemIndex, 1)
   }
 

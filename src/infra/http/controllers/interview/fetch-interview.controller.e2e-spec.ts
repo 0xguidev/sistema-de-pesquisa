@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { AppModule } from '@/app.module'
@@ -10,7 +10,7 @@ import { SurveyFactory } from 'test/factories/make-survey'
 
 describe('Fetch interview by ID (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let interviewFactory: InterviewFactory
   let surveyFactory: SurveyFactory
@@ -22,7 +22,7 @@ describe('Fetch interview by ID (E2E)', () => {
     }).compile()
 
     app = moduleRef.createNestApplication()
-    jwt = moduleRef.get(JwtService)
+    sessions = moduleRef.get(SessionService)
     accountFactory = moduleRef.get(AccountFactory)
     interviewFactory = moduleRef.get(InterviewFactory)
     surveyFactory = moduleRef.get(SurveyFactory)
@@ -41,7 +41,8 @@ describe('Fetch interview by ID (E2E)', () => {
       accountId: user.id,
       surveyId: survey.id,
     })
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/interviews/${interview.id.toString()}`)
@@ -59,7 +60,8 @@ describe('Fetch interview by ID (E2E)', () => {
 
   test('[GET] /interviews/:interviewId - should return 404 if interview does not exist', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/interviews/00000000-0000-4000-8000-000000000000')
@@ -76,7 +78,8 @@ describe('Fetch interview by ID (E2E)', () => {
       accountId: owner.id,
       surveyId: survey.id,
     })
-    const accessToken = jwt.sign({ sub: anotherUser.id.toString() })
+    const accessToken = (await sessions.create(anotherUser.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/interviews/${interview.id.toString()}`)
@@ -87,7 +90,8 @@ describe('Fetch interview by ID (E2E)', () => {
 
   test('[GET] /interviews/:interviewId - should return 400 for an invalid interview ID', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/interviews/invalid-id')

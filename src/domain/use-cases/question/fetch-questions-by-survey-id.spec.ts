@@ -22,9 +22,9 @@ describe('Fetch Questions By Survey Id', () => {
     })
     const question2 = Question.create({
       questionTitle: 'Question 2',
-      questionNum: 1,
-      surveyId: new UniqueEntityID('survey-2'),
-      accountId: new UniqueEntityID('account-2'),
+      questionNum: 2,
+      surveyId: new UniqueEntityID('survey-1'),
+      accountId: new UniqueEntityID('account-1'),
     })
 
     await inMemoryQuestionRepository.create(question1)

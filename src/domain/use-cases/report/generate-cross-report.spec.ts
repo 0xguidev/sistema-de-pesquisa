@@ -28,6 +28,7 @@ describe('Generate cross report', () => {
   it('should generate cross report data', async () => {
     // 1. Setup survey
     const surveyId = new UniqueEntityID('survey-1')
+    const accountId = new UniqueEntityID('account-1')
     // survey não necessário para este teste
 
     // 2. 2 questions
@@ -45,16 +46,19 @@ describe('Generate cross report', () => {
     // 3. Options para Q1 e Q2
     const option1Q1 = makeOptionAnswer({
       questionId: question1.id,
+      accountId,
       optionNum: 1,
       optionTitle: 'Azul',
     })
     const option2Q1 = makeOptionAnswer({
       questionId: question1.id,
+      accountId,
       optionNum: 2,
       optionTitle: 'Vermelho',
     })
     const option1Q2 = makeOptionAnswer({
       questionId: question2.id,
+      accountId,
       optionNum: 1,
       optionTitle: 'Cachorro',
     })

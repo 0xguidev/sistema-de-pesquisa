@@ -36,7 +36,8 @@ describe('Create interview (E2E)', () => {
       accountId: user.id,
     })
 
-    const accessToken = (await sessions.create(user.id.toString(), {})).accessToken
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .post('/interviews')
@@ -73,7 +74,10 @@ describe('Create interview (E2E)', () => {
     expect(response.statusCode).toBe(404)
     expect(
       await prisma.interview.findFirst({
-        where: { surveyId: survey.id.toString(), userId: attacker.id.toString() },
+        where: {
+          surveyId: survey.id.toString(),
+          userId: attacker.id.toString(),
+        },
       }),
     ).toBeNull()
   })

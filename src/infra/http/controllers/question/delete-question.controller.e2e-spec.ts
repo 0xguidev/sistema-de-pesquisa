@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { QuestionFactory } from 'test/factories/make-question'
@@ -13,7 +13,7 @@ import { OptionAnswerFactory } from 'test/factories/make-option-answer'
 describe('Delete question (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let questionFactory: QuestionFactory
   let accountFactory: AccountFactory
   let surveyFactory: SurveyFactory
@@ -32,7 +32,7 @@ describe('Delete question (E2E)', () => {
 
     app = modularRef.createNestApplication()
     prisma = modularRef.get(PrismaService)
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     questionFactory = modularRef.get(QuestionFactory)
     accountFactory = modularRef.get(AccountFactory)
     surveyFactory = modularRef.get(SurveyFactory)
@@ -47,7 +47,8 @@ describe('Delete question (E2E)', () => {
 
   test('[DELETE] /questions/:id', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const survey = await surveyFactory.makePrismaSurvey({
       accountId: user.id,
@@ -75,7 +76,8 @@ describe('Delete question (E2E)', () => {
 
   test('[DELETE] /questions/:id - also removes related conditional rules', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const survey = await surveyFactory.makePrismaSurvey({
       accountId: user.id,
@@ -129,7 +131,8 @@ describe('Delete question (E2E)', () => {
 
   test('[DELETE] /questions/:id - 404 if question does not exist', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .delete('/questions/non-existing-id')
@@ -141,7 +144,9 @@ describe('Delete question (E2E)', () => {
   test('[DELETE] /questions/:id - 403 if user is not the question owner', async () => {
     const owner = await accountFactory.makePrismaAccount()
     const otherUser = await accountFactory.makePrismaAccount()
-    const otherUserAccessToken = jwt.sign({ sub: otherUser.id.toString() })
+    const otherUserAccessToken = (
+      await sessions.create(otherUser.id.toString(), {})
+    ).accessToken
 
     const survey = await surveyFactory.makePrismaSurvey({
       accountId: owner.id,

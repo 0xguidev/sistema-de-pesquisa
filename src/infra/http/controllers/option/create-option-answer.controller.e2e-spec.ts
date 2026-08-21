@@ -45,7 +45,8 @@ describe('Create option answer (E2E)', () => {
       accountId: user.id,
     })
 
-    const accessToken = (await sessions.create(user.id.toString(), {})).accessToken
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .post('/option-answers')

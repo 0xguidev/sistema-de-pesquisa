@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
@@ -10,7 +10,7 @@ import { DatabaseModule } from '@/infra/database/database.module'
 describe('Edit Account (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
 
   beforeAll(async () => {
@@ -21,7 +21,7 @@ describe('Edit Account (E2E)', () => {
 
     app = moduleRef.createNestApplication()
     prisma = moduleRef.get(PrismaService)
-    jwt = moduleRef.get(JwtService)
+    sessions = moduleRef.get(SessionService)
     accountFactory = moduleRef.get(AccountFactory)
 
     await app.init()
@@ -33,7 +33,8 @@ describe('Edit Account (E2E)', () => {
       name: 'Original Name',
     })
 
-    const accessToken = jwt.sign({ sub: account.id.toString() })
+    const accessToken = (await sessions.create(account.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .put('/accounts')
@@ -63,7 +64,8 @@ describe('Edit Account (E2E)', () => {
     await accountFactory.makePrismaAccount({
       email: 'already-used@example.com',
     })
-    const accessToken = jwt.sign({ sub: account.id.toString() })
+    const accessToken = (await sessions.create(account.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .put('/accounts')
@@ -78,7 +80,8 @@ describe('Edit Account (E2E)', () => {
     ['an empty name', { name: '   ' }],
   ])('rejects %s', async (_, body) => {
     const account = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: account.id.toString() })
+    const accessToken = (await sessions.create(account.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .put('/accounts')

@@ -2,15 +2,25 @@ import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { AppModule } from '@/app.module'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { AccountFactory } from 'test/factories/make-Account'
 import { InterviewFactory } from 'test/factories/make-interview'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { IncomingMessage } from 'node:http'
+
+function parseBinary(
+  response: IncomingMessage,
+  callback: (error: Error | null, body?: Buffer) => void,
+) {
+  const chunks: Buffer[] = []
+  response.on('data', (chunk: Buffer) => chunks.push(chunk))
+  response.on('end', () => callback(null, Buffer.concat(chunks)))
+}
 
 describe('Report Controllers (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let prisma: PrismaService
   let accessToken: string
   let userId: string
@@ -25,7 +35,7 @@ describe('Report Controllers (E2E)', () => {
     app = moduleRef.createNestApplication()
     await app.init()
 
-    jwt = moduleRef.get(JwtService)
+    sessions = moduleRef.get(SessionService)
     prisma = moduleRef.get(PrismaService)
     accountFactory = new AccountFactory(prisma)
     interviewFactory = new InterviewFactory(prisma)
@@ -33,7 +43,7 @@ describe('Report Controllers (E2E)', () => {
     // Create a user and generate token
     const user = await accountFactory.makePrismaAccount()
     userId = user.id.toString()
-    accessToken = jwt.sign({ sub: userId })
+    accessToken = (await sessions.create(userId, {})).accessToken
   })
 
   afterAll(async () => {
@@ -55,16 +65,11 @@ describe('Report Controllers (E2E)', () => {
 
     // Create interview with answers
     // Criar question, option e answer para simple report
-    // Create user for question factory
-    const questionUser = await accountFactory.makePrismaAccount()
-
     const { QuestionFactory } = await import('test/factories/make-question')
-    const { OptionAnswerFactory } = await import(
-      'test/factories/make-option-answer'
-    )
-    const { AnswerQuestionFactory } = await import(
-      'test/factories/make-answer-question'
-    )
+    const { OptionAnswerFactory } =
+      await import('test/factories/make-option-answer')
+    const { AnswerQuestionFactory } =
+      await import('test/factories/make-answer-question')
 
     const questionFactory = new QuestionFactory(prisma)
     const optionFactory = new OptionAnswerFactory(prisma)
@@ -72,11 +77,11 @@ describe('Report Controllers (E2E)', () => {
 
     const question = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(surveyId),
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
     const option = await optionFactory.makePrismaOptionAnswer({
       questionId: question.id,
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
 
     const interviewSimple = await interviewFactory.makePrismaInterview({
@@ -87,12 +92,14 @@ describe('Report Controllers (E2E)', () => {
       interviewId: interviewSimple.id,
       questionId: question.id,
       optionAnswerId: option.id,
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
 
     const response = await request(app.getHttpServer())
       .get(`/reports/simple/${surveyId}/download`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .buffer(true)
+      .parse(parseBinary)
       .expect(
         'Content-Type',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -103,7 +110,9 @@ describe('Report Controllers (E2E)', () => {
       )
       .expect(200)
 
-    expect(response.body).toBeDefined()
+    expect(Buffer.isBuffer(response.body)).toBe(true)
+    expect(response.body.length).toBeGreaterThan(1_000)
+    expect(response.body.subarray(0, 2).toString()).toBe('PK')
   })
 
   it('should download cross tabulation report as Word document', async () => {
@@ -119,18 +128,12 @@ describe('Report Controllers (E2E)', () => {
 
     const surveyId = surveyResponse.body.surveyId
 
-
     // Criar 2+ questions, options e answers para cross report (min 2 questions)
-    // Create user for question factory
-    const questionUser = await accountFactory.makePrismaAccount()
-
     const { QuestionFactory } = await import('test/factories/make-question')
-    const { OptionAnswerFactory } = await import(
-      'test/factories/make-option-answer'
-    )
-    const { AnswerQuestionFactory } = await import(
-      'test/factories/make-answer-question'
-    )
+    const { OptionAnswerFactory } =
+      await import('test/factories/make-option-answer')
+    const { AnswerQuestionFactory } =
+      await import('test/factories/make-answer-question')
 
     const questionFactory = new QuestionFactory(prisma)
     const optionFactory = new OptionAnswerFactory(prisma)
@@ -138,19 +141,19 @@ describe('Report Controllers (E2E)', () => {
 
     const question1 = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(surveyId),
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
     const question2 = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(surveyId),
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
     const option1 = await optionFactory.makePrismaOptionAnswer({
       questionId: question1.id,
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
     const option2 = await optionFactory.makePrismaOptionAnswer({
       questionId: question2.id,
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
 
     const interviewCrossFinal = await interviewFactory.makePrismaInterview({
@@ -161,18 +164,20 @@ describe('Report Controllers (E2E)', () => {
       interviewId: interviewCrossFinal.id,
       questionId: question1.id,
       optionAnswerId: option1.id,
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
     await answerFactory.makePrismaAnswerQuestion({
       interviewId: interviewCrossFinal.id,
       questionId: question2.id,
       optionAnswerId: option2.id,
-      accountId: questionUser.id,
+      accountId: new UniqueEntityID(userId),
     })
 
     const response = await request(app.getHttpServer())
       .get(`/reports/cross/${surveyId}/download`)
       .set('Authorization', `Bearer ${accessToken}`)
+      .buffer(true)
+      .parse(parseBinary)
       .expect(
         'Content-Type',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -183,6 +188,8 @@ describe('Report Controllers (E2E)', () => {
       )
       .expect(200)
 
-    expect(response.body).toBeDefined()
+    expect(Buffer.isBuffer(response.body)).toBe(true)
+    expect(response.body.length).toBeGreaterThan(1_000)
+    expect(response.body.subarray(0, 2).toString()).toBe('PK')
   })
 })

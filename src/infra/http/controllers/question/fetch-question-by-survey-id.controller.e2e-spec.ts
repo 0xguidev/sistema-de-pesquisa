@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { QuestionFactory } from 'test/factories/make-question'
@@ -10,7 +10,7 @@ import { SurveyFactory } from 'test/factories/make-survey'
 
 describe('Fetch question by survey id (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let questionFactory: QuestionFactory
   let accountFactory: AccountFactory
   let surveyFactory: SurveyFactory
@@ -22,7 +22,7 @@ describe('Fetch question by survey id (E2E)', () => {
     }).compile()
 
     app = modularRef.createNestApplication()
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     questionFactory = modularRef.get(QuestionFactory)
     accountFactory = modularRef.get(AccountFactory)
     surveyFactory = modularRef.get(SurveyFactory)
@@ -36,7 +36,8 @@ describe('Fetch question by survey id (E2E)', () => {
 
   test('[GET] /questions/:surveyId', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const survey = await surveyFactory.makePrismaSurvey({
       accountId: user.id,
@@ -92,7 +93,8 @@ describe('Fetch question by survey id (E2E)', () => {
 
   test('[GET] /questions/:surveyId - 404 if question does not exist', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/questions/non-existing-id')

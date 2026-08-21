@@ -120,6 +120,7 @@ describe('create an question', async () => {
     })
 
     expect(createdQuestion.isLeft()).toBe(true)
+    expect(inMemoryQuestionRepository.items).toHaveLength(0)
   })
 
   it('should not create a question in another account survey', async () => {

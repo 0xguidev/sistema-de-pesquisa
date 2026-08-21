@@ -28,7 +28,7 @@ export class FetchQuestionsBySurveyIdUseCase {
     const question =
       await this.questionsRepository.findQuestionsBySurveyId(surveyId)
 
-    if (!question) {
+    if (!question || question.length === 0) {
       return left(new ResourceNotFoundError())
     }
 

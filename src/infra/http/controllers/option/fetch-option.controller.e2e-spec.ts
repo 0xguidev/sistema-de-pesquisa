@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { AccountFactory } from 'test/factories/make-Account'
@@ -8,10 +7,11 @@ import { AppModule } from '@/app.module'
 import { OptionAnswerFactory } from '../../../../../test/factories/make-option-answer'
 import { QuestionFactory } from '../../../../../test/factories/make-question'
 import { SurveyFactory } from '../../../../../test/factories/make-survey'
+import { SessionService } from '@/infra/auth/session.service'
 
 describe('Fetch option by ID (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let optionFactory: OptionAnswerFactory
   let questionFactory: QuestionFactory
@@ -29,7 +29,7 @@ describe('Fetch option by ID (E2E)', () => {
     }).compile()
 
     app = modularRef.createNestApplication()
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     accountFactory = modularRef.get(AccountFactory)
     optionFactory = modularRef.get(OptionAnswerFactory)
     questionFactory = modularRef.get(QuestionFactory)
@@ -52,7 +52,8 @@ describe('Fetch option by ID (E2E)', () => {
       surveyId: survey.id,
     })
 
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const option = await optionFactory.makePrismaOptionAnswer({
       accountId: user.id,
@@ -79,7 +80,8 @@ describe('Fetch option by ID (E2E)', () => {
 
   test('[GET] option-answers/:id - should return 400 for an invalid option ID', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/option-answers/invalid-id')
@@ -90,7 +92,8 @@ describe('Fetch option by ID (E2E)', () => {
 
   test('[GET] option-answers/:id - should return 404 if option does not exist', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/option-answers/00000000-0000-4000-8000-000000000000')
@@ -113,7 +116,9 @@ describe('Fetch option by ID (E2E)', () => {
       accountId: owner.id,
       questionId: question.id,
     })
-    const otherUserAccessToken = jwt.sign({ sub: otherUser.id.toString() })
+    const otherUserAccessToken = (
+      await sessions.create(otherUser.id.toString(), {})
+    ).accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/option-answers/${option.id.toString()}`)

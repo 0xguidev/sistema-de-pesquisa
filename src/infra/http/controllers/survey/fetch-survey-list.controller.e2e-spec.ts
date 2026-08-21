@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { AccountFactory } from 'test/factories/make-Account'
@@ -8,7 +8,7 @@ import { AppModule } from '@/app.module'
 
 describe('Create survey (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
 
   beforeAll(async () => {
@@ -18,14 +18,15 @@ describe('Create survey (E2E)', () => {
     }).compile()
 
     app = modularRef.createNestApplication()
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     accountFactory = modularRef.get(AccountFactory)
 
     await app.init()
   })
   test('[GET] /surveys', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     for (let i = 0; i < 15; i++) {
       await request(app.getHttpServer())
@@ -58,7 +59,8 @@ describe('Create survey (E2E)', () => {
 
   test('[GET] /surveys - should return empty list if there are no surveys', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/surveys')
@@ -71,7 +73,8 @@ describe('Create survey (E2E)', () => {
 
   test('[GET] /surveys - should return 400 if page is not a number', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/surveys')
@@ -83,7 +86,8 @@ describe('Create survey (E2E)', () => {
 
   test('[GET] /surveys - should return 400 if page is less than 1', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/surveys')

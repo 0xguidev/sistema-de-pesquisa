@@ -76,7 +76,9 @@ describe('Authenticate (E2E)', () => {
     expect(refreshExpiresAt.getTime()).toBeGreaterThan(Date.now())
 
     expect(await prisma.session.count()).toBe(1)
-    expect((await prisma.session.findFirst())?.tokenHash).not.toContain(response.body.refresh_token)
+    expect((await prisma.session.findFirst())?.tokenHash).not.toContain(
+      response.body.refresh_token,
+    )
   })
 
   test('rejects an incorrect password with 401', async () => {
@@ -130,38 +132,67 @@ describe('Authenticate (E2E)', () => {
 
   test('rotates refresh tokens and revokes the session on reuse', async () => {
     const login = await request(app.getHttpServer()).post('/sessions').send({
-      email: 'johndoe@example.com', password: '123456',
+      email: 'johndoe@example.com',
+      password: '123456',
     })
     const firstRefresh = login.body.refresh_token
-    const rotated = await request(app.getHttpServer()).post('/sessions/refresh').send({
-      refresh_token: firstRefresh,
-    })
+    const rotated = await request(app.getHttpServer())
+      .post('/sessions/refresh')
+      .send({
+        refresh_token: firstRefresh,
+      })
     expect(rotated.statusCode).toBe(201)
     expect(rotated.body.refresh_token).not.toBe(firstRefresh)
 
-    const replay = await request(app.getHttpServer()).post('/sessions/refresh').send({
-      refresh_token: firstRefresh,
-    })
+    const replay = await request(app.getHttpServer())
+      .post('/sessions/refresh')
+      .send({
+        refresh_token: firstRefresh,
+      })
     expect(replay.statusCode).toBe(401)
-    const afterReplay = await request(app.getHttpServer()).post('/sessions/refresh').send({
-      refresh_token: rotated.body.refresh_token,
-    })
+    const afterReplay = await request(app.getHttpServer())
+      .post('/sessions/refresh')
+      .send({
+        refresh_token: rotated.body.refresh_token,
+      })
     expect(afterReplay.statusCode).toBe(401)
   })
 
   test('logs out the current session and all account sessions', async () => {
-    const login = () => request(app.getHttpServer()).post('/sessions').send({
-      email: 'johndoe@example.com', password: '123456',
-    })
+    const login = () =>
+      request(app.getHttpServer()).post('/sessions').send({
+        email: 'johndoe@example.com',
+        password: '123456',
+      })
     const first = await login()
     const second = await login()
-    expect((await request(app.getHttpServer()).delete('/sessions/current')
-      .auth(first.body.access_token, { type: 'bearer' })).statusCode).toBe(200)
-    expect((await request(app.getHttpServer()).post('/sessions/refresh')
-      .send({ refresh_token: first.body.refresh_token })).statusCode).toBe(401)
-    expect((await request(app.getHttpServer()).delete('/sessions')
-      .auth(second.body.access_token, { type: 'bearer' })).statusCode).toBe(200)
-    expect((await request(app.getHttpServer()).post('/sessions/refresh')
-      .send({ refresh_token: second.body.refresh_token })).statusCode).toBe(401)
+    expect(
+      (
+        await request(app.getHttpServer())
+          .delete('/sessions/current')
+          .auth(first.body.access_token, { type: 'bearer' })
+      ).statusCode,
+    ).toBe(200)
+    expect(
+      (
+        await request(app.getHttpServer())
+          .post('/sessions/refresh')
+          .send({ refresh_token: first.body.refresh_token })
+      ).statusCode,
+    ).toBe(401)
+    expect(
+      (
+        await request(app.getHttpServer())
+          .delete('/sessions')
+          .auth(second.body.access_token, { type: 'bearer' })
+      ).statusCode,
+    ).toBe(200)
+    expect(
+      (
+        await request(app.getHttpServer())
+          .post('/sessions/refresh')
+          .send({ refresh_token: second.body.refresh_token })
+      ).statusCode,
+    ).toBe(401)
   })
 })

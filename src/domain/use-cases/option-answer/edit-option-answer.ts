@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from '@/core/types/either'
 import { OptionAnswer } from '@/domain/entities/option-answer'
@@ -13,7 +12,7 @@ interface EditOptionAnswerUseCaseRequest {
 }
 
 type EditOptionAnswerUseCaseResponse = Either<
-  ResourceNotFoundError | NotAllowedError,
+  ResourceNotFoundError,
   {
     optionAnswer: OptionAnswer
   }
@@ -36,10 +35,6 @@ export class EditOptionAnswerUseCase {
 
     if (!optionAnswer) {
       return left(new ResourceNotFoundError())
-    }
-
-    if (optionAnswer.accountId.toString() !== accountId) {
-      return left(new NotAllowedError())
     }
 
     optionAnswer.optionTitle = optionTitle ?? optionAnswer.optionTitle

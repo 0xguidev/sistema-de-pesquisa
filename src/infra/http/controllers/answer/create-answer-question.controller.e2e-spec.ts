@@ -65,7 +65,8 @@ describe('Create answerquestion (E2E)', () => {
       accountId: user.id,
     })
 
-    const accessToken = (await sessions.create(user.id.toString(), {})).accessToken
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .post('/answer-questions')
@@ -121,8 +122,12 @@ describe('Create answerquestion (E2E)', () => {
 
   test('[POST] /answer-questions - rejects incompatible survey and option', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const firstSurvey = await surveyFactory.makePrismaSurvey({ accountId: user.id })
-    const secondSurvey = await surveyFactory.makePrismaSurvey({ accountId: user.id })
+    const firstSurvey = await surveyFactory.makePrismaSurvey({
+      accountId: user.id,
+    })
+    const secondSurvey = await surveyFactory.makePrismaSurvey({
+      accountId: user.id,
+    })
     const interview = await interviewFactory.makePrismaInterview({
       accountId: user.id,
       surveyId: firstSurvey.id,

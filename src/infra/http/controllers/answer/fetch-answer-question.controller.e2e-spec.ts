@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
@@ -14,7 +14,7 @@ import { SurveyFactory } from 'test/factories/make-survey'
 
 describe('Fetch answer by ID (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let answerFactory: AnswerQuestionFactory
   let interviewFactory: InterviewFactory
@@ -36,7 +36,7 @@ describe('Fetch answer by ID (E2E)', () => {
     }).compile()
 
     app = moduleRef.createNestApplication()
-    jwt = moduleRef.get(JwtService)
+    sessions = moduleRef.get(SessionService)
     accountFactory = moduleRef.get(AccountFactory)
     answerFactory = moduleRef.get(AnswerQuestionFactory)
     interviewFactory = moduleRef.get(InterviewFactory)
@@ -83,7 +83,8 @@ describe('Fetch answer by ID (E2E)', () => {
     const { answer, interview, option, question } = await createAnswerFor(
       user.id.toString(),
     )
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/answer-questions/${answer.id.toString()}`)
@@ -103,7 +104,8 @@ describe('Fetch answer by ID (E2E)', () => {
 
   test('[GET] /answer-questions/:answerId - should return 404 if answer does not exist', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/answer-questions/00000000-0000-4000-8000-000000000000')
@@ -116,7 +118,8 @@ describe('Fetch answer by ID (E2E)', () => {
     const owner = await accountFactory.makePrismaAccount()
     const anotherUser = await accountFactory.makePrismaAccount()
     const { answer } = await createAnswerFor(owner.id.toString())
-    const accessToken = jwt.sign({ sub: anotherUser.id.toString() })
+    const accessToken = (await sessions.create(anotherUser.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/answer-questions/${answer.id.toString()}`)
@@ -127,7 +130,8 @@ describe('Fetch answer by ID (E2E)', () => {
 
   test('[GET] /answer-questions/:answerId - should return 400 for an invalid answer ID', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/answer-questions/invalid-id')

@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { AppModule } from '@/app.module'
@@ -11,7 +11,7 @@ import { SurveyFactory } from 'test/factories/make-survey'
 
 describe('Fetch options by question ID (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let optionFactory: OptionAnswerFactory
   let questionFactory: QuestionFactory
@@ -29,7 +29,7 @@ describe('Fetch options by question ID (E2E)', () => {
     }).compile()
 
     app = moduleRef.createNestApplication()
-    jwt = moduleRef.get(JwtService)
+    sessions = moduleRef.get(SessionService)
     accountFactory = moduleRef.get(AccountFactory)
     optionFactory = moduleRef.get(OptionAnswerFactory)
     questionFactory = moduleRef.get(QuestionFactory)
@@ -59,7 +59,8 @@ describe('Fetch options by question ID (E2E)', () => {
       accountId: user.id,
       questionId: question.id,
     })
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/option-answers/question/${question.id.toString()}`)
@@ -94,7 +95,8 @@ describe('Fetch options by question ID (E2E)', () => {
       accountId: user.id,
       surveyId: survey.id,
     })
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/option-answers/question/${question.id.toString()}`)
@@ -118,7 +120,9 @@ describe('Fetch options by question ID (E2E)', () => {
       accountId: owner.id,
       questionId: question.id,
     })
-    const otherUserAccessToken = jwt.sign({ sub: otherUser.id.toString() })
+    const otherUserAccessToken = (
+      await sessions.create(otherUser.id.toString(), {})
+    ).accessToken
 
     const response = await request(app.getHttpServer())
       .get(`/option-answers/question/${question.id.toString()}`)
@@ -130,7 +134,8 @@ describe('Fetch options by question ID (E2E)', () => {
 
   test('[GET] /option-answers/question/:questionId - should return 400 for an invalid question ID', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/option-answers/question/invalid-id')

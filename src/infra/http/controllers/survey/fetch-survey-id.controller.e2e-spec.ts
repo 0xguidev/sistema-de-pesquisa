@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { AccountFactory } from 'test/factories/make-Account'
@@ -9,7 +9,7 @@ import { SurveyFactory } from 'test/factories/make-survey'
 
 describe('Fetch survey by ID (E2E)', () => {
   let app: INestApplication
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let surveyFactory: SurveyFactory
 
@@ -20,7 +20,7 @@ describe('Fetch survey by ID (E2E)', () => {
     }).compile()
 
     app = modularRef.createNestApplication()
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     accountFactory = modularRef.get(AccountFactory)
     surveyFactory = modularRef.get(SurveyFactory)
 
@@ -30,7 +30,8 @@ describe('Fetch survey by ID (E2E)', () => {
   test('[GET] /surveys/:id', async () => {
     const user = await accountFactory.makePrismaAccount()
 
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const survey = await surveyFactory.makePrismaSurvey({
       accountId: user.id,
@@ -47,7 +48,8 @@ describe('Fetch survey by ID (E2E)', () => {
 
   test('[GET] /surveys/:id - should return 400 if survey does not exist', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const response = await request(app.getHttpServer())
       .get('/surveys/invalid-id')

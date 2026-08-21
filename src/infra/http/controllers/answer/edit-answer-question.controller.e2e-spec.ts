@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
@@ -15,7 +15,7 @@ import { SurveyFactory } from 'test/factories/make-survey'
 describe('Create answerquestion (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let answerquestionFactory: AnswerQuestionFactory
   let accountFactory: AccountFactory
   let interviewFactory: InterviewFactory
@@ -38,7 +38,7 @@ describe('Create answerquestion (E2E)', () => {
 
     app = modularRef.createNestApplication()
     prisma = modularRef.get(PrismaService)
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     answerquestionFactory = modularRef.get(AnswerQuestionFactory)
     accountFactory = modularRef.get(AccountFactory)
     interviewFactory = modularRef.get(InterviewFactory)
@@ -79,7 +79,8 @@ describe('Create answerquestion (E2E)', () => {
       accountId: account.id,
     })
 
-    const accessToken = jwt.sign({ sub: account.id.toString() })
+    const accessToken = (await sessions.create(account.id.toString(), {}))
+      .accessToken
 
     const answerquestion = await answerquestionFactory.makePrismaAnswerQuestion(
       {

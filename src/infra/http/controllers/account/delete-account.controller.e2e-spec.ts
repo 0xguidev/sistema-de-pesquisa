@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
@@ -10,7 +10,7 @@ import { DatabaseModule } from '@/infra/database/database.module'
 describe('Delete Account (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
 
   beforeAll(async () => {
@@ -21,7 +21,7 @@ describe('Delete Account (E2E)', () => {
 
     app = moduleRef.createNestApplication()
     prisma = moduleRef.get(PrismaService)
-    jwt = moduleRef.get(JwtService)
+    sessions = moduleRef.get(SessionService)
     accountFactory = moduleRef.get(AccountFactory)
 
     await app.init()
@@ -38,8 +38,11 @@ describe('Delete Account (E2E)', () => {
       name: 'Active User',
     })
 
-    const accessToken = jwt.sign({ sub: account.id.toString() })
-    const otherAccessToken = jwt.sign({ sub: otherAccount.id.toString() })
+    const accessToken = (await sessions.create(account.id.toString(), {}))
+      .accessToken
+    const otherAccessToken = (
+      await sessions.create(otherAccount.id.toString(), {})
+    ).accessToken
 
     const response = await request(app.getHttpServer())
       .delete('/accounts')

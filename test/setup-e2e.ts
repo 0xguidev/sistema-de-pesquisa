@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client'
 import { randomUUID } from 'node:crypto'
 import { execSync } from 'node:child_process'
 
-const prisma = new PrismaClient()
+let prisma: PrismaClient
 
 function generateUniqueDatabase(schemaId: string) {
   if (!process.env.DATABASE_URL) {
@@ -26,9 +26,14 @@ beforeAll(async () => {
   process.env.DATABASE_URL = databaseUrl
 
   execSync('pnpm prisma db push')
+  prisma = new PrismaClient({ datasourceUrl: databaseUrl })
 })
 
 afterAll(async () => {
-  await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`)
-  await prisma.$disconnect()
+  if (prisma) {
+    await prisma.$executeRawUnsafe(
+      `DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`,
+    )
+    await prisma.$disconnect()
+  }
 })

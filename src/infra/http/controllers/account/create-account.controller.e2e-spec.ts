@@ -8,7 +8,7 @@ describe('Create Account (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile()
@@ -18,6 +18,10 @@ describe('Create Account (E2E)', () => {
     prisma = moduleRef.get(PrismaService)
 
     await app.init()
+  })
+
+  afterEach(async () => {
+    await app.close()
   })
 
   test('[POST] /accounts', async () => {
@@ -43,12 +47,15 @@ describe('Create Account (E2E)', () => {
 
   test('ignores a client attempt to self-assign the ADMIN role', async () => {
     const email = 'role-escalation@example.com'
-    await request(app.getHttpServer()).post('/accounts').send({
-      name: 'Regular User',
-      email,
-      password: 'valid-password',
-      role: 'ADMIN',
-    }).expect(201)
+    await request(app.getHttpServer())
+      .post('/accounts')
+      .send({
+        name: 'Regular User',
+        email,
+        password: 'valid-password',
+        role: 'ADMIN',
+      })
+      .expect(201)
 
     const account = await prisma.user.findUnique({ where: { email } })
     expect(account?.role).toBe('USER')

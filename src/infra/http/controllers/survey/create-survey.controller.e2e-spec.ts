@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
@@ -10,7 +10,7 @@ import { AppModule } from '@/app.module'
 describe('Create survey (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
 
   beforeAll(async () => {
@@ -21,7 +21,7 @@ describe('Create survey (E2E)', () => {
 
     app = modularRef.createNestApplication()
     prisma = modularRef.get(PrismaService)
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     accountFactory = modularRef.get(AccountFactory)
 
     await app.init()
@@ -33,7 +33,8 @@ describe('Create survey (E2E)', () => {
 
   test('[POST] /surveys - should create survey with questions and options', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     // Payload com perguntas válidas para passar validação Zod
     const payload = {
@@ -66,7 +67,10 @@ describe('Create survey (E2E)', () => {
       .send(payload)
 
     expect(response.statusCode).toBe(201)
-    expect(response.body).toHaveProperty('message', 'Pesquisa criada com sucesso.')
+    expect(response.body).toHaveProperty(
+      'message',
+      'Pesquisa criada com sucesso.',
+    )
     expect(response.body).toHaveProperty('surveyId')
 
     const survey = await prisma.survey.findFirst({
@@ -90,7 +94,8 @@ describe('Create survey (E2E)', () => {
 
   test('[POST] /surveys - should create survey with conditional rules', async () => {
     const user = await accountFactory.makePrismaAccount()
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const payload = {
       title: 'Survey with conditional rules',
@@ -128,7 +133,10 @@ describe('Create survey (E2E)', () => {
       .send(payload)
 
     expect(response.statusCode).toBe(201)
-    expect(response.body).toHaveProperty('message', 'Pesquisa criada com sucesso.')
+    expect(response.body).toHaveProperty(
+      'message',
+      'Pesquisa criada com sucesso.',
+    )
     expect(response.body).toHaveProperty('surveyId')
 
     const survey = await prisma.survey.findFirst({

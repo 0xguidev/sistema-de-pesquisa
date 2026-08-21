@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
+import { SessionService } from '@/infra/auth/session.service'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { SurveyFactory } from 'test/factories/make-survey'
@@ -11,7 +11,7 @@ import { AppModule } from '@/app.module'
 describe('Delete survey (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let surveyFactory: SurveyFactory
   let accountFactory: AccountFactory
 
@@ -23,7 +23,7 @@ describe('Delete survey (E2E)', () => {
 
     app = modularRef.createNestApplication()
     prisma = modularRef.get(PrismaService)
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     surveyFactory = modularRef.get(SurveyFactory)
     accountFactory = modularRef.get(AccountFactory)
 
@@ -33,7 +33,8 @@ describe('Delete survey (E2E)', () => {
   test('[DELETE] /surveys/:id', async () => {
     const user = await accountFactory.makePrismaAccount()
 
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
 
     const survey = await surveyFactory.makePrismaSurvey({
       accountId: user.id,
