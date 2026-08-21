@@ -107,7 +107,7 @@ describe('Generate simple report PDF', () => {
     })
 
     await expect(sut.execute('survey-1', 'account-1')).rejects.toThrow(
-      'Nenhuma entrevista encontrada para gerar relatório',
+      'Nenhuma entrevista encontrada',
     )
   })
 })
