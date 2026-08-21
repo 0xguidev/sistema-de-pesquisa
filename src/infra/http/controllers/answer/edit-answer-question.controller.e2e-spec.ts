@@ -103,13 +103,14 @@ describe('Create answerquestion (E2E)', () => {
 
     expect(response.statusCode).toBe(204)
 
-    const answerquestionOnDatabase = await prisma.answerQuestion.findFirst({
-      where: {
-        questionId: question2.id.toString(),
-        optionAnswerId: option2.id.toString(),
-      },
+    const answerquestionOnDatabase = await prisma.answerQuestion.findUnique({
+      where: { id: answerquestionId },
     })
 
-    expect(answerquestionOnDatabase).toBeTruthy()
+    expect(answerquestionOnDatabase).toMatchObject({
+      id: answerquestionId,
+      questionId: question2.id.toString(),
+      optionAnswerId: option2.id.toString(),
+    })
   })
 })

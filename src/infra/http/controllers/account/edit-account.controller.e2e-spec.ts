@@ -48,13 +48,14 @@ describe('Edit Account (E2E)', () => {
     expect(response.statusCode).toBe(204)
 
     const accountOnDatabase = await prisma.user.findUnique({
-      where: {
-        email: 'new-email@example.com',
-      },
+      where: { id: account.id.toString() },
     })
 
-    expect(accountOnDatabase).toBeTruthy()
-    expect(accountOnDatabase?.name).toBe('Updated Name')
+    expect(accountOnDatabase).toMatchObject({
+      id: account.id.toString(),
+      email: 'new-email@example.com',
+      name: 'Updated Name',
+    })
   })
 
   test('normalizes email and rejects an email already used by another account', async () => {

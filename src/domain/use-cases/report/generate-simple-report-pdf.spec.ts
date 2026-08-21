@@ -131,7 +131,7 @@ describe('Generate simple report PDF', () => {
 
     inMemoryInterviewRepository.findBySurveyId = vi
       .fn()
-      .mockResolvedValue(mockData as any)
+      .mockResolvedValue(mockData)
 
     const result = await sut.execute('survey-1', 'account-1')
 

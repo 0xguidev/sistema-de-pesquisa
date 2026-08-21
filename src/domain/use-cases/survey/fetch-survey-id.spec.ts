@@ -17,8 +17,6 @@ describe('Get Survey', () => {
     const survey = makeSurvey({ title: 'any_title', accountId: account.id })
 
     await inMemorySurveysRepository.create(survey)
-    ;(inMemorySurveysRepository.items[0] as any).questions = []
-
     const existsSurvey = await sut.execute({
       surveyId: survey.id.toString(),
       accountId: account.id.toString(),
@@ -26,9 +24,31 @@ describe('Get Survey', () => {
 
     expect(existsSurvey.isRight()).toBe(true)
     if (!(existsSurvey.value instanceof Error)) {
-      expect(inMemorySurveysRepository.items[0]).toEqual(
-        existsSurvey.value.survey,
-      )
+      expect(existsSurvey.value.survey).toMatchObject({
+        title: 'any_title',
+        accountId: account.id.toString(),
+        questions: [],
+      })
     }
+  })
+
+  it('returns an error for a missing survey', async () => {
+    const result = await sut.execute({
+      surveyId: 'missing',
+      accountId: 'account-1',
+    })
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(Error)
+  })
+
+  it('does not expose another account survey', async () => {
+    const survey = makeSurvey()
+    await inMemorySurveysRepository.create(survey)
+    const result = await sut.execute({
+      surveyId: survey.id.toString(),
+      accountId: 'attacker',
+    })
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(Error)
   })
 })

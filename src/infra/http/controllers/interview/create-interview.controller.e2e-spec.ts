@@ -52,10 +52,14 @@ describe('Create interview (E2E)', () => {
     const interviewOnDatabase = await prisma.interview.findFirst({
       where: {
         surveyId: survey.id.toString(),
+        userId: user.id.toString(),
       },
     })
 
-    expect(interviewOnDatabase).toBeTruthy()
+    expect(interviewOnDatabase).toMatchObject({
+      surveyId: survey.id.toString(),
+      userId: user.id.toString(),
+    })
   })
 
   test('[POST] /interviews - 404 for another account survey', async () => {

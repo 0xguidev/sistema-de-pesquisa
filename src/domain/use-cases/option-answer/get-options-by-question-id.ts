@@ -25,8 +25,10 @@ export class GetOptionsByQuestionIdUseCase {
     questionId,
     userId,
   }: GetOptionsByQuestionIdUseCaseRequest): Promise<GetOptionsByQuestionIdUseCaseResponse> {
-    const options =
-      await this.optionAnswerRepository.findManyByQuestionId(questionId, userId)
+    const options = await this.optionAnswerRepository.findManyByQuestionId(
+      questionId,
+      userId,
+    )
 
     if (!options) {
       return left(new Error('OptionAnswer not found'))

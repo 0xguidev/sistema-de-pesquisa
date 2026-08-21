@@ -2,12 +2,14 @@ import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-rep
 import { DeleteSurveyUseCase } from './delete-survey'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { makeSurvey } from 'test/factories/make-survey'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 
 let inMemorySurveyRepository: InMemorySurveyRepository
 let sut: DeleteSurveyUseCase
 
 describe('Delete an survey', () => {
-  beforeAll(() => {
+  beforeEach(() => {
     inMemorySurveyRepository = new InMemorySurveyRepository()
 
     sut = new DeleteSurveyUseCase(inMemorySurveyRepository)
@@ -21,11 +23,33 @@ describe('Delete an survey', () => {
 
     await inMemorySurveyRepository.create(survey)
 
-    await sut.execute({
+    const result = await sut.execute({
       surveyId: survey.id.toString(),
       accountId: survey.accountId.toString(),
     })
 
     expect(inMemorySurveyRepository.items).toHaveLength(0)
+    expect(result.isRight()).toBe(true)
+  })
+
+  it('returns not found for a missing survey', async () => {
+    const result = await sut.execute({
+      surveyId: 'missing',
+      accountId: 'owner',
+    })
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+  })
+
+  it('does not delete another account survey', async () => {
+    const survey = makeSurvey()
+    await inMemorySurveyRepository.create(survey)
+    const result = await sut.execute({
+      surveyId: survey.id.toString(),
+      accountId: 'attacker',
+    })
+    expect(result.isLeft()).toBe(true)
+    expect(result.value).toBeInstanceOf(NotAllowedError)
+    expect(inMemorySurveyRepository.items).toHaveLength(1)
   })
 })

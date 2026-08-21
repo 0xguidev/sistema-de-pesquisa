@@ -25,12 +25,12 @@ export class DeleteAnswerQuestionUseCase {
     const answerQuestion =
       await this.answerquestionsRepository.findById(answerQuestionId)
 
-    if (answerQuestion?.accountId.toString() !== accountId) {
-      return left(new NotAllowedError())
-    }
-
     if (!answerQuestion) {
       return left(new ResourceNotFoundError())
+    }
+
+    if (answerQuestion.accountId.toString() !== accountId) {
+      return left(new NotAllowedError())
     }
 
     await this.answerquestionsRepository.delete(answerQuestion.id.toString())

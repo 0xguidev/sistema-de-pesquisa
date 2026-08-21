@@ -54,4 +54,14 @@ describe('Fetch answers by interview ID', () => {
       ]),
     )
   })
+
+  it('returns an empty list when the interview has no answers', async () => {
+    const result = await sut.execute({
+      interviewId: 'interview-without-answers',
+      accountId: 'account-1',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(result.value).toEqual([])
+  })
 })

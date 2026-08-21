@@ -1,6 +1,6 @@
 import { Survey } from '@/domain/entities/survey'
 import { SurveyRepository } from '@/domain/repositories/survey-repository'
-import { InMemoryQuestionRepository } from './in-memory-question-repository'
+import { SurveyDetails } from '@/domain/use-cases/survey/interfaces/survey.interface'
 
 export class InMemorySurveyRepository implements SurveyRepository {
   public items: Survey[] = []
@@ -62,7 +62,10 @@ export class InMemorySurveyRepository implements SurveyRepository {
     this.items[itemIndex] = survey
   }
 
-  async findSurveydetails(id: string, accountId: string): Promise<any> {
+  async findSurveydetails(
+    id: string,
+    accountId: string,
+  ): Promise<SurveyDetails | null> {
     const survey = this.items.find(
       (item) =>
         item.id.toString() === id && item.accountId.toString() === accountId,
@@ -72,15 +75,16 @@ export class InMemorySurveyRepository implements SurveyRepository {
       return null
     }
 
-    const questionRepository = new InMemoryQuestionRepository()
-    const questions = await questionRepository.findQuestionsBySurveyId(id)
-
-    const surveyWithQuestions = {
-      ...survey,
-      questions,
+    return {
+      title: survey.title,
+      location: survey.location,
+      type: survey.type,
+      accountId: survey.accountId.toString(),
+      slug: survey.slug.value,
+      createdAt: survey.createdAt,
+      updatedAt: survey.updatedAt,
+      questions: [],
     }
-
-    return surveyWithQuestions
   }
 
   async update(survey: Survey): Promise<void> {

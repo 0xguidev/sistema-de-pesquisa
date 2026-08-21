@@ -6,6 +6,24 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
+    coverage: {
+      include: [
+        'src/core/entities/**/*.ts',
+        'src/core/types/**/*.ts',
+        'src/domain/entities/**/*.ts',
+        'src/domain/use-cases/**/*.ts',
+      ],
+      exclude: [
+        'src/domain/use-cases/**/interfaces/**/*.ts',
+        'src/domain/types/**/*.ts',
+      ],
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 75,
+        lines: 80,
+      },
+    },
   },
   plugins: [
     tsConfigPaths(),

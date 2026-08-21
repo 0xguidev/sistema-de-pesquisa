@@ -52,13 +52,14 @@ describe('Create survey (E2E)', () => {
 
     expect(response.statusCode).toBe(204)
 
-    const surveyOnDatabase = await prisma.survey.findFirst({
-      where: {
-        title: 'New title',
-        location: 'New location',
-      },
+    const surveyOnDatabase = await prisma.survey.findUnique({
+      where: { id: surveyId },
     })
 
-    expect(surveyOnDatabase).toBeTruthy()
+    expect(surveyOnDatabase).toMatchObject({
+      id: surveyId,
+      title: 'New title',
+      location: 'New location',
+    })
   })
 })

@@ -28,25 +28,30 @@ describe('Generate Cross Report Word', () => {
   it('should generate a Word document buffer', async () => {
     // Setup data
     const surveyId = new UniqueEntityID('survey-1')
+    const accountId = new UniqueEntityID('account-1')
 
     const question1 = makeQuestion({
       surveyId: surveyId,
+      accountId,
       questionNum: 1,
       questionTitle: 'Qual sua cor favorita?',
     })
     const question2 = makeQuestion({
       surveyId: surveyId,
+      accountId,
       questionNum: 2,
       questionTitle: 'Qual seu animal favorito?',
     })
 
     const option1Q1 = makeOptionAnswer({
       questionId: question1.id,
+      accountId,
       optionNum: 1,
       optionTitle: 'Azul',
     })
     const option1Q2 = makeOptionAnswer({
       questionId: question2.id,
+      accountId,
       optionNum: 1,
       optionTitle: 'Cachorro',
     })
@@ -104,7 +109,8 @@ describe('Generate Cross Report Word', () => {
     const result = await sut.execute('survey-1', 'account-1')
 
     expect(result).toBeInstanceOf(Buffer)
-    expect(result.length).toBeGreaterThan(0)
+    expect(result.length).toBeGreaterThan(1_000)
+    expect(result.subarray(0, 2).toString()).toBe('PK')
     expect(inMemoryInterviewRepository.findBySurveyId).toHaveBeenCalledWith(
       'survey-1',
       'account-1',

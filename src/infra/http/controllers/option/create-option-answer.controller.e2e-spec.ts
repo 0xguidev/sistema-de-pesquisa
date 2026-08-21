@@ -59,13 +59,20 @@ describe('Create option answer (E2E)', () => {
 
     expect(response.statusCode).toBe(201)
 
-    const questionOnDatabase = await prisma.optionAnswer.findFirst({
+    const optionOnDatabase = await prisma.optionAnswer.findFirst({
       where: {
         option: 'new option',
+        questionId: question.id.toString(),
+        userId: user.id.toString(),
       },
     })
 
-    expect(questionOnDatabase).toBeTruthy()
+    expect(optionOnDatabase).toMatchObject({
+      option: 'new option',
+      number: 1,
+      questionId: question.id.toString(),
+      userId: user.id.toString(),
+    })
   })
 
   test('[POST] /option-answers - 404 for another account question', async () => {

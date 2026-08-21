@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import { Either, left, right } from '@/core/types/either'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
@@ -9,10 +8,7 @@ interface DeleteOptionAnswerUseCaseRequest {
   accountId: string
 }
 
-type DeleteOptionAnswerUseCaseResponse = Either<
-  ResourceNotFoundError | NotAllowedError,
-  null
->
+type DeleteOptionAnswerUseCaseResponse = Either<ResourceNotFoundError, null>
 
 @Injectable()
 export class DeleteOptionAnswerUseCase {
@@ -29,10 +25,6 @@ export class DeleteOptionAnswerUseCase {
 
     if (!optionAnswer) {
       return left(new ResourceNotFoundError())
-    }
-
-    if (accountId !== optionAnswer.accountId.toString()) {
-      return left(new NotAllowedError())
     }
 
     // Delete conditional rules that depend on this option
