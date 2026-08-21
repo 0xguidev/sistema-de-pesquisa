@@ -68,6 +68,8 @@ export class GenerateCrossReportWordUseCase {
       )
     }
 
+    questions.sort((a, b) => a.questionNum - b.questionNum)
+
     // -----------------------------------------------------------------------
     // Montar estrutura de resultados
     // -----------------------------------------------------------------------

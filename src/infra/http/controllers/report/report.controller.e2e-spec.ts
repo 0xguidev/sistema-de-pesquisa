@@ -8,6 +8,7 @@ import { AccountFactory } from 'test/factories/make-Account'
 import { InterviewFactory } from 'test/factories/make-interview'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { IncomingMessage } from 'node:http'
+import JSZip from 'jszip'
 
 function parseBinary(
   response: IncomingMessage,
@@ -78,10 +79,14 @@ describe('Report Controllers (E2E)', () => {
     const question = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(surveyId),
       accountId: new UniqueEntityID(userId),
+      questionTitle: '<b>Preferred option</b>',
+      questionNum: 1,
     })
     const option = await optionFactory.makePrismaOptionAnswer({
       questionId: question.id,
       accountId: new UniqueEntityID(userId),
+      optionTitle: 'Deterministic blue',
+      optionNum: 1,
     })
 
     const interviewSimple = await interviewFactory.makePrismaInterview({
@@ -93,6 +98,32 @@ describe('Report Controllers (E2E)', () => {
       questionId: question.id,
       optionAnswerId: option.id,
       accountId: new UniqueEntityID(userId),
+    })
+
+    const outsider = await accountFactory.makePrismaAccount({
+      email: 'docx-simple-outsider@example.com',
+    })
+    const outsiderQuestion = await questionFactory.makePrismaQuestion({
+      surveyId: new UniqueEntityID(surveyId),
+      accountId: outsider.id,
+      questionTitle: 'OUTSIDER SECRET',
+      questionNum: 99,
+    })
+    const outsiderOption = await optionFactory.makePrismaOptionAnswer({
+      questionId: outsiderQuestion.id,
+      accountId: outsider.id,
+      optionTitle: 'OUTSIDER OPTION',
+      optionNum: 1,
+    })
+    const outsiderInterview = await interviewFactory.makePrismaInterview({
+      surveyId: new UniqueEntityID(surveyId),
+      accountId: outsider.id,
+    })
+    await answerFactory.makePrismaAnswerQuestion({
+      interviewId: outsiderInterview.id,
+      questionId: outsiderQuestion.id,
+      optionAnswerId: outsiderOption.id,
+      accountId: outsider.id,
     })
 
     const response = await request(app.getHttpServer())
@@ -113,6 +144,13 @@ describe('Report Controllers (E2E)', () => {
     expect(Buffer.isBuffer(response.body)).toBe(true)
     expect(response.body.length).toBeGreaterThan(1_000)
     expect(response.body.subarray(0, 2).toString()).toBe('PK')
+    const documentXml = await readDocumentXml(response.body)
+    expect(documentXml).toContain('Relatório Simples da Pesquisa')
+    expect(documentXml).toContain('&lt;b&gt;Preferred option&lt;/b&gt;')
+    expect(documentXml).toContain('Deterministic blue')
+    expect(documentXml).toContain('100.00%')
+    expect(documentXml).not.toContain('<b>Preferred option</b>')
+    expect(documentXml).not.toContain('OUTSIDER SECRET')
   })
 
   it('should download cross tabulation report as Word document', async () => {
@@ -142,18 +180,26 @@ describe('Report Controllers (E2E)', () => {
     const question1 = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(surveyId),
       accountId: new UniqueEntityID(userId),
+      questionTitle: 'Deterministic age',
+      questionNum: 1,
     })
     const question2 = await questionFactory.makePrismaQuestion({
       surveyId: new UniqueEntityID(surveyId),
       accountId: new UniqueEntityID(userId),
+      questionTitle: 'Deterministic candidate',
+      questionNum: 2,
     })
     const option1 = await optionFactory.makePrismaOptionAnswer({
       questionId: question1.id,
       accountId: new UniqueEntityID(userId),
+      optionTitle: 'Age 18-29',
+      optionNum: 1,
     })
     const option2 = await optionFactory.makePrismaOptionAnswer({
       questionId: question2.id,
       accountId: new UniqueEntityID(userId),
+      optionTitle: 'Candidate A',
+      optionNum: 1,
     })
 
     const interviewCrossFinal = await interviewFactory.makePrismaInterview({
@@ -165,6 +211,22 @@ describe('Report Controllers (E2E)', () => {
       questionId: question1.id,
       optionAnswerId: option1.id,
       accountId: new UniqueEntityID(userId),
+    })
+
+    const outsider = await accountFactory.makePrismaAccount({
+      email: 'docx-cross-outsider@example.com',
+    })
+    const outsiderQuestion = await questionFactory.makePrismaQuestion({
+      surveyId: new UniqueEntityID(surveyId),
+      accountId: outsider.id,
+      questionTitle: 'OUTSIDER SECRET',
+      questionNum: 99,
+    })
+    await optionFactory.makePrismaOptionAnswer({
+      questionId: outsiderQuestion.id,
+      accountId: outsider.id,
+      optionTitle: 'OUTSIDER OPTION',
+      optionNum: 1,
     })
     await answerFactory.makePrismaAnswerQuestion({
       interviewId: interviewCrossFinal.id,
@@ -191,5 +253,20 @@ describe('Report Controllers (E2E)', () => {
     expect(Buffer.isBuffer(response.body)).toBe(true)
     expect(response.body.length).toBeGreaterThan(1_000)
     expect(response.body.subarray(0, 2).toString()).toBe('PK')
+    const documentXml = await readDocumentXml(response.body)
+    expect(documentXml).toContain('Relatório Cruzado da Pesquisa')
+    expect(documentXml).toContain('Deterministic age')
+    expect(documentXml).toContain('Deterministic candidate')
+    expect(documentXml).toContain('Age 18-29')
+    expect(documentXml).toContain('Candidate A')
+    expect(documentXml).toContain('100.0%')
+    expect(documentXml).not.toContain('OUTSIDER SECRET')
   })
 })
+
+async function readDocumentXml(document: Buffer): Promise<string> {
+  const zip = await JSZip.loadAsync(document)
+  const entry = zip.file('word/document.xml')
+  if (!entry) throw new Error('DOCX does not contain word/document.xml')
+  return entry.async('string')
+}

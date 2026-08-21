@@ -1,103 +1,250 @@
 import { INestApplication } from '@nestjs/common'
-import { Test, TestingModule } from '@nestjs/testing'
+import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { AppModule } from '@/app.module'
+import { SessionService } from '@/infra/auth/session.service'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
-import { hash } from 'bcryptjs'
 
-describe('GenerateSimpleReportController (e2e)', () => {
+const IDS = {
+  owner: '10000000-0000-4000-8000-000000000001',
+  outsider: '10000000-0000-4000-8000-000000000002',
+  survey: '20000000-0000-4000-8000-000000000001',
+  emptySurvey: '20000000-0000-4000-8000-000000000002',
+  qColor: '30000000-0000-4000-8000-000000000001',
+  qRegion: '30000000-0000-4000-8000-000000000002',
+  qWithoutOptions: '30000000-0000-4000-8000-000000000003',
+  blue: '40000000-0000-4000-8000-000000000001',
+  red: '40000000-0000-4000-8000-000000000002',
+  north: '40000000-0000-4000-8000-000000000003',
+  south: '40000000-0000-4000-8000-000000000004',
+}
+
+describe('Generate simple report (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
+  let token: string
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile()
-
-    app = moduleFixture.createNestApplication()
-    prisma = moduleFixture.get(PrismaService)
+    app = moduleRef.createNestApplication()
+    prisma = moduleRef.get(PrismaService)
     await app.init()
+
+    await prisma.user.createMany({
+      data: [
+        {
+          id: IDS.owner,
+          email: 'simple-owner@example.com',
+          password: 'unused',
+          name: 'Owner',
+          slug: 'simple-owner',
+        },
+        {
+          id: IDS.outsider,
+          email: 'simple-outsider@example.com',
+          password: 'unused',
+          name: 'Outsider',
+          slug: 'simple-outsider',
+        },
+      ],
+    })
+    token = (await moduleRef.get(SessionService).create(IDS.owner, {}))
+      .accessToken
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
+  afterAll(async () => app.close())
 
-  it('should generate simple report', async () => {
-    const user = await prisma.user.create({
+  async function arrangeReport() {
+    await prisma.survey.createMany({
+      data: [
+        {
+          id: IDS.survey,
+          title: 'Simple survey',
+          location: 'Recife',
+          type: 'Opinion',
+          userId: IDS.owner,
+          slug: 'simple-survey',
+        },
+        {
+          id: IDS.emptySurvey,
+          title: 'Empty survey',
+          location: 'Recife',
+          type: 'Opinion',
+          userId: IDS.owner,
+          slug: 'empty-simple-survey',
+        },
+      ],
+    })
+    await prisma.question.createMany({
+      data: [
+        {
+          id: IDS.qColor,
+          title: 'Favorite color',
+          number: 2,
+          surveyId: IDS.survey,
+          userId: IDS.owner,
+          slug: 'simple-color',
+        },
+        {
+          id: IDS.qRegion,
+          title: 'Region',
+          number: 1,
+          surveyId: IDS.survey,
+          userId: IDS.owner,
+          slug: 'simple-region',
+        },
+        {
+          id: IDS.qWithoutOptions,
+          title: 'Question without options',
+          number: 3,
+          surveyId: IDS.survey,
+          userId: IDS.owner,
+          slug: 'simple-no-options',
+        },
+      ],
+    })
+    await prisma.optionAnswer.createMany({
+      data: [
+        {
+          id: IDS.blue,
+          option: 'Blue',
+          number: 2,
+          questionId: IDS.qColor,
+          userId: IDS.owner,
+          slug: 'simple-blue',
+        },
+        {
+          id: IDS.red,
+          option: 'Red',
+          number: 1,
+          questionId: IDS.qColor,
+          userId: IDS.owner,
+          slug: 'simple-red',
+        },
+        {
+          id: IDS.north,
+          option: 'North',
+          number: 2,
+          questionId: IDS.qRegion,
+          userId: IDS.owner,
+          slug: 'simple-north',
+        },
+        {
+          id: IDS.south,
+          option: 'South',
+          number: 1,
+          questionId: IDS.qRegion,
+          userId: IDS.owner,
+          slug: 'simple-south',
+        },
+      ],
+    })
+    const interviewIds = [1, 2, 3].map(
+      (n) => `50000000-0000-4000-8000-00000000000${n}`,
+    )
+    await prisma.interview.createMany({
+      data: interviewIds.map((id) => ({
+        id,
+        surveyId: IDS.survey,
+        userId: IDS.owner,
+      })),
+    })
+    await prisma.answerQuestion.createMany({
+      data: [
+        {
+          id: '60000000-0000-4000-8000-000000000001',
+          interviewId: interviewIds[0],
+          questionId: IDS.qColor,
+          optionAnswerId: IDS.blue,
+          userId: IDS.owner,
+        },
+        {
+          id: '60000000-0000-4000-8000-000000000002',
+          interviewId: interviewIds[0],
+          questionId: IDS.qRegion,
+          optionAnswerId: IDS.south,
+          userId: IDS.owner,
+        },
+        {
+          id: '60000000-0000-4000-8000-000000000003',
+          interviewId: interviewIds[1],
+          questionId: IDS.qColor,
+          optionAnswerId: IDS.red,
+          userId: IDS.owner,
+        },
+        {
+          id: '60000000-0000-4000-8000-000000000004',
+          interviewId: interviewIds[1],
+          questionId: IDS.qRegion,
+          optionAnswerId: IDS.north,
+          userId: IDS.owner,
+        },
+        {
+          id: '60000000-0000-4000-8000-000000000005',
+          interviewId: interviewIds[2],
+          questionId: IDS.qColor,
+          optionAnswerId: IDS.blue,
+          userId: IDS.owner,
+        },
+      ],
+    })
+    await prisma.interview.create({
       data: {
-        email: 'test@example.com',
-        password: await hash('password', 8),
-        name: 'Test User',
-        slug: 'test-user',
+        id: '50000000-0000-4000-8000-000000000009',
+        surveyId: IDS.survey,
+        userId: IDS.outsider,
       },
     })
-
-    const survey = await prisma.survey.create({
-      data: {
-        title: 'Test Survey',
-        location: 'Test Location',
-        type: 'Test Type',
-        userId: user.id,
-        slug: 'test-survey',
-      },
-    })
-
-    const question = await prisma.question.create({
-      data: {
-        title: 'Test Question',
-        number: 1,
-        surveyId: survey.id,
-        userId: user.id,
-        slug: 'test-question',
-      },
-    })
-
-    const option1 = await prisma.optionAnswer.create({
-      data: {
-        option: 'Yes',
-        number: 1,
-        questionId: question.id,
-        userId: user.id,
-        slug: 'yes-option',
-      },
-    })
-
-    const interview = await prisma.interview.create({
-      data: {
-        surveyId: survey.id,
-        userId: user.id,
-      },
-    })
-
     await prisma.answerQuestion.create({
       data: {
-        interviewId: interview.id,
-        questionId: question.id,
-        optionAnswerId: option1.id,
-        userId: user.id,
+        id: '60000000-0000-4000-8000-000000000009',
+        interviewId: '50000000-0000-4000-8000-000000000009',
+        questionId: IDS.qColor,
+        optionAnswerId: IDS.red,
+        userId: IDS.outsider,
       },
     })
+  }
 
-    const authResponse = await request(app.getHttpServer())
-      .post('/sessions')
-      .send({
-        email: 'test@example.com',
-        password: 'password',
-      })
-
-    const accessToken = authResponse.body.access_token
-
+  it('returns complete ordered content, handles incomplete answers and excludes another tenant', async () => {
+    await arrangeReport()
     const response = await request(app.getHttpServer())
-      .get(`/reports/simple/${survey.id}`)
-      .set('Authorization', `Bearer ${accessToken}`)
+      .get(`/reports/simple/${IDS.survey}`)
+      .auth(token, { type: 'bearer' })
       .expect(200)
 
-    expect(response.body).toBeInstanceOf(Array)
-    expect(response.body.length).toBeGreaterThan(0)
-    expect(response.body[0]).toHaveProperty('questionId')
-    expect(response.body[0]).toHaveProperty('questionNum')
-    expect(response.body[0]).toHaveProperty('options')
-    expect(response.body[0].options[0]).toHaveProperty('num')
+    expect(response.body).toEqual([
+      {
+        questionId: IDS.qRegion,
+        questionNum: 1,
+        questionTitle: 'Region',
+        options: [
+          { num: 1, answer: 'South', percentage: 33.33 },
+          { num: 2, answer: 'North', percentage: 33.33 },
+        ],
+      },
+      {
+        questionId: IDS.qColor,
+        questionNum: 2,
+        questionTitle: 'Favorite color',
+        options: [
+          { num: 1, answer: 'Red', percentage: 33.33 },
+          { num: 2, answer: 'Blue', percentage: 66.67 },
+        ],
+      },
+    ])
+    expect(JSON.stringify(response.body)).not.toContain(
+      'Question without options',
+    )
+  })
+
+  it('returns an empty array when there are no interviews', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/reports/simple/${IDS.emptySurvey}`)
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+    expect(response.body).toEqual([])
   })
 })

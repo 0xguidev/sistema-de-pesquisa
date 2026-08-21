@@ -63,6 +63,8 @@ export class GenerateCrossReportUseCase {
       )
     }
 
+    questions.sort((a, b) => a.questionNum - b.questionNum)
+
     const result: InternalCrossReportData[] = []
 
     // Gerar pares de perguntas e suas combinações de opções

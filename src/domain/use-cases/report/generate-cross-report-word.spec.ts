@@ -7,6 +7,7 @@ import { makeQuestion } from 'test/factories/make-question'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import JSZip from 'jszip'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let inMemoryQuestionRepository: InMemoryQuestionRepository
@@ -112,6 +113,13 @@ describe('Generate Cross Report Word', () => {
     expect(result).toBeInstanceOf(Buffer)
     expect(result.length).toBeGreaterThan(1_000)
     expect(result.subarray(0, 2).toString()).toBe('PK')
+    const documentXml = await readDocumentXml(result)
+    expect(documentXml).toContain('Relatório Cruzado da Pesquisa')
+    expect(documentXml).toContain('Qual sua cor favorita?')
+    expect(documentXml).toContain('Qual seu animal favorito?')
+    expect(documentXml).toContain('Azul')
+    expect(documentXml).toContain('Cachorro')
+    expect(documentXml).toContain('100.0%')
     expect(inMemoryInterviewRepository.findBySurveyId).toHaveBeenCalledWith(
       'survey-1',
       'account-1',
@@ -131,3 +139,10 @@ describe('Generate Cross Report Word', () => {
     )
   })
 })
+
+async function readDocumentXml(document: Buffer): Promise<string> {
+  const zip = await JSZip.loadAsync(document)
+  const entry = zip.file('word/document.xml')
+  if (!entry) throw new Error('DOCX does not contain word/document.xml')
+  return entry.async('string')
+}

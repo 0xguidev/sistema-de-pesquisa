@@ -17,7 +17,11 @@ const chromium = vi.hoisted(() => {
       if (event === 'request') requestHandler = handler
     }),
     setContent: vi.fn().mockResolvedValue(undefined),
-    pdf: vi.fn().mockResolvedValue(new Uint8Array(2_000)),
+    pdf: vi
+      .fn()
+      .mockResolvedValue(
+        Buffer.concat([Buffer.from('%PDF-1.7'), Buffer.alloc(1_992)]),
+      ),
     isClosed: vi.fn().mockReturnValue(false),
     close: vi.fn().mockResolvedValue(undefined),
   }
@@ -50,7 +54,9 @@ describe('Generate simple report PDF', () => {
     chromium.resetRequestHandler()
     chromium.page.setRequestInterception.mockResolvedValue(undefined)
     chromium.page.setContent.mockResolvedValue(undefined)
-    chromium.page.pdf.mockResolvedValue(new Uint8Array(2_000))
+    chromium.page.pdf.mockResolvedValue(
+      Buffer.concat([Buffer.from('%PDF-1.7'), Buffer.alloc(1_992)]),
+    )
     chromium.page.isClosed.mockReturnValue(false)
     chromium.page.close.mockResolvedValue(undefined)
     chromium.browser.newPage.mockResolvedValue(chromium.page)
@@ -138,6 +144,12 @@ describe('Generate simple report PDF', () => {
 
     expect(result).toBeInstanceOf(Buffer)
     expect(result.length).toBeGreaterThan(1500) // PDF mínimo realista com charts
+    expect(result.subarray(0, 5).toString()).toBe('%PDF-')
+    const generatedHtml = chromium.page.setContent.mock.calls[0][0]
+    expect(generatedHtml).toContain('Qual sua cor favorita?')
+    expect(generatedHtml).toContain('Azul')
+    expect(generatedHtml).toContain('Vermelho')
+    expect(generatedHtml).toContain('50%')
     expect(inMemoryInterviewRepository.findBySurveyId).toHaveBeenCalledWith(
       'survey-1',
       'account-1',

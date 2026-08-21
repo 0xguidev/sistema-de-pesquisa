@@ -5,6 +5,7 @@ import { InMemoryInterviewRepository } from '../../../../test/repositories/in-me
 import { makeQuestion } from '../../../../test/factories/make-question'
 import { makeOptionAnswer } from '../../../../test/factories/make-option-answer'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import JSZip from 'jszip'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let sut: GenerateSimpleReportWordUseCase
@@ -21,7 +22,7 @@ describe('Generate simple report word', () => {
     const question = makeQuestion({
       surveyId,
       questionNum: 1,
-      questionTitle: 'Qual sua cor favorita?',
+      questionTitle: '<script>alert("x")</script> Qual sua cor favorita?',
     })
     const option = makeOptionAnswer({
       questionId: question.id,
@@ -65,7 +66,16 @@ describe('Generate simple report word', () => {
     const result = await sut.execute('survey-1', 'account-1')
 
     expect(result).toBeInstanceOf(Buffer)
-    expect(result.length).toBeGreaterThan(0)
+    expect(result.length).toBeGreaterThan(1_000)
+    expect(result.subarray(0, 2).toString()).toBe('PK')
+    const documentXml = await readDocumentXml(result)
+    expect(documentXml).toContain('Relatório Simples da Pesquisa')
+    expect(documentXml).toContain(
+      '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; Qual sua cor favorita?',
+    )
+    expect(documentXml).toContain('Azul')
+    expect(documentXml).toContain('100.00%')
+    expect(documentXml).not.toContain('<script>')
     expect(inMemoryInterviewRepository.findBySurveyId).toHaveBeenCalledWith(
       'survey-1',
       'account-1',
@@ -85,3 +95,10 @@ describe('Generate simple report word', () => {
     )
   })
 })
+
+async function readDocumentXml(document: Buffer): Promise<string> {
+  const zip = await JSZip.loadAsync(document)
+  const entry = zip.file('word/document.xml')
+  if (!entry) throw new Error('DOCX does not contain word/document.xml')
+  return entry.async('string')
+}
