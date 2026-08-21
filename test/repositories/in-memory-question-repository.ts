@@ -16,6 +16,30 @@ export class InMemoryQuestionRepository implements QuestionRepository {
     return question
   }
 
+  async findByIdAndAccountId(id: string, accountId: string) {
+    return (
+      this.items.find(
+        (item) =>
+          item.id.toString() === id && item.accountId.toString() === accountId,
+      ) ?? null
+    )
+  }
+
+  async findByQuestionNumAndAccountId(
+    surveyId: string,
+    questionNum: number,
+    accountId: string,
+  ) {
+    return (
+      this.items.find(
+        (item) =>
+          item.surveyId.toString() === surveyId &&
+          item.questionNum === questionNum &&
+          item.accountId.toString() === accountId,
+      ) ?? null
+    )
+  }
+
   async findByQuestionNum(surveyId: string, questionNum: number) {
     const question = this.items.find(
       (item) =>

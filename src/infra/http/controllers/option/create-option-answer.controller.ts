@@ -1,9 +1,10 @@
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common'
+import { Body, Controller, NotFoundException, Post } from '@nestjs/common'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { z } from 'zod'
 import { CreateOptionAnswerUseCase } from '@/domain/use-cases/option-answer/create-option-answer'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 const createOptionAnswerBodySchema = z.object({
   optionTitle: z.string(),
@@ -35,7 +36,9 @@ export class CreateOptionAnswerController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      if (result.value instanceof ResourceNotFoundError) {
+        throw new NotFoundException(result.value.message)
+      }
     }
   }
 }

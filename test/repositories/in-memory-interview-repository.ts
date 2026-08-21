@@ -71,6 +71,15 @@ export class InMemoryInterviewRepository implements InterviewRepository {
     return interview
   }
 
+  async findByIdAndAccountId(id: string, accountId: string) {
+    return (
+      this.items.find(
+        (item) =>
+          item.id.toString() === id && item.accountId.toString() === accountId,
+      ) ?? null
+    )
+  }
+
   async create(interview: Interview) {
     this.items.push(interview)
   }

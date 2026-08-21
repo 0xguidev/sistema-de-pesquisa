@@ -26,6 +26,18 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
     return PrismaOptionAnswerMapper.toDomain(optionAnswer)
   }
 
+  async findByIdAndQuestionIdAndAccountId(
+    optionId: string,
+    questionId: string,
+    accountId: string,
+  ): Promise<OptionAnswer | null> {
+    const option = await this.prisma.optionAnswer.findFirst({
+      where: { id: optionId, questionId, userId: accountId },
+    })
+
+    return option ? PrismaOptionAnswerMapper.toDomain(option) : null
+  }
+
   async findManyByQuestionId(
     questionId: string,
     userId: string,
@@ -58,6 +70,18 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
     }
 
     return PrismaOptionAnswerMapper.toDomain(option)
+  }
+
+  async findOptionByQuestionIdAndOptionNumAndAccountId(
+    questionId: string,
+    optionNum: number,
+    accountId: string,
+  ): Promise<OptionAnswer | null> {
+    const option = await this.prisma.optionAnswer.findFirst({
+      where: { questionId, number: optionNum, userId: accountId },
+    })
+
+    return option ? PrismaOptionAnswerMapper.toDomain(option) : null
   }
 
   async create(optionanswer: OptionAnswer): Promise<void> {

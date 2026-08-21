@@ -6,6 +6,7 @@ import { Either, left, right } from '@/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { ConditionalRule } from '../../entities/conditional-rule'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { SurveyRepository } from '../../repositories/survey-repository'
  
 interface CreateQuestionUseCaseRequest {
   questionTitle: string
@@ -30,6 +31,7 @@ export class CreateQuestionUseCase {
   constructor(
     private questionRepository: QuestionRepository,
     private optionAnswerRepository: OptionAnswerRepository,
+    private surveyRepository: SurveyRepository,
   ) {}
  
   async execute({
@@ -39,6 +41,15 @@ export class CreateQuestionUseCase {
     accountId,
     conditionalRules,
   }: CreateQuestionUseCaseRequest): Promise<CreateQuestionUseCaseResponse> {
+    const survey = await this.surveyRepository.findByIdAndAccountId(
+      surveyId,
+      accountId,
+    )
+
+    if (!survey) {
+      return left(new ResourceNotFoundError())
+    }
+
     const question = Question.create({
       questionTitle,
       questionNum,
@@ -51,9 +62,10 @@ export class CreateQuestionUseCase {
     if (conditionalRules) {
       for (const rule of conditionalRules) {
         const dependsOnQuestion =
-          await this.questionRepository.findByQuestionNum(
+          await this.questionRepository.findByQuestionNumAndAccountId(
             surveyId,
             rule.dependsOnQuestionNumber,
+            accountId,
           )
  
         if (!dependsOnQuestion) {
@@ -61,9 +73,10 @@ export class CreateQuestionUseCase {
         }
  
         const optionAnswer =
-          await this.optionAnswerRepository.findOptionByQuestionIdAndOptionNum(
+          await this.optionAnswerRepository.findOptionByQuestionIdAndOptionNumAndAccountId(
             dependsOnQuestion.id.toString(),
             rule.dependsOnOptionNumber,
+            accountId,
           )
  
         if (!optionAnswer) {

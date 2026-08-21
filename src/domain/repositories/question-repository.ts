@@ -4,6 +4,12 @@ import { Question } from '../entities/question'
 export abstract class QuestionRepository {
   abstract create(question: Question): Promise<void>
   abstract findById(id: string): Promise<Question | null>
+  abstract findByIdAndAccountId(id: string, accountId: string): Promise<Question | null>
+  abstract findByQuestionNumAndAccountId(
+    surveyId: string,
+    questionNum: number,
+    accountId: string,
+  ): Promise<Question | null>
   abstract findByQuestionNum(
     surveyId: string,
     questionNum: number,

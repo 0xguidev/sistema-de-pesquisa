@@ -6,26 +6,31 @@ import { makeAccount } from 'test/factories/make-Account'
 import { makeSurvey } from 'test/factories/make-survey'
 import { makeQuestion } from 'test/factories/make-question'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
+import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
 
 let inMemoryQuestionRepository: InMemoryQuestionRepository
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
+let inMemorySurveyRepository: InMemorySurveyRepository
 let sut: CreateQuestionUseCase
 
 describe('create an question', async () => {
   beforeEach(() => {
     inMemoryQuestionRepository = new InMemoryQuestionRepository()
     inMemoryOptionAnswersRepository = new InMemoryOptionAnswersRepository()
+    inMemorySurveyRepository = new InMemorySurveyRepository()
 
     sut = new CreateQuestionUseCase(
       inMemoryQuestionRepository,
       inMemoryOptionAnswersRepository,
+      inMemorySurveyRepository,
     )
   })
 
   it('should create a question', async () => {
     const account = makeAccount()
 
-    const survey = makeSurvey()
+    const survey = makeSurvey({ accountId: account.id })
+    await inMemorySurveyRepository.create(survey)
 
     const createdQuestion = await sut.execute({
       questionTitle: 'What is your favorite color?',
@@ -54,6 +59,7 @@ describe('create an question', async () => {
     const account = makeAccount()
 
     const survey = makeSurvey({ accountId: account.id })
+    await inMemorySurveyRepository.create(survey)
 
     const dependsOnQuestion = makeQuestion({
       surveyId: survey.id,
@@ -97,7 +103,8 @@ describe('create an question', async () => {
   it('should return an error if dependsOnQuestion is not found', async () => {
     const account = makeAccount()
 
-    const survey = makeSurvey()
+    const survey = makeSurvey({ accountId: account.id })
+    await inMemorySurveyRepository.create(survey)
 
     const createdQuestion = await sut.execute({
       questionTitle: 'What is your favorite color?',
@@ -113,5 +120,22 @@ describe('create an question', async () => {
     })
 
     expect(createdQuestion.isLeft()).toBe(true)
+  })
+
+  it('should not create a question in another account survey', async () => {
+    const owner = makeAccount()
+    const attacker = makeAccount()
+    const survey = makeSurvey({ accountId: owner.id })
+    await inMemorySurveyRepository.create(survey)
+
+    const result = await sut.execute({
+      questionTitle: 'Cross tenant question',
+      questionNum: 1,
+      surveyId: survey.id.toString(),
+      accountId: attacker.id.toString(),
+    })
+
+    expect(result.isLeft()).toBe(true)
+    expect(inMemoryQuestionRepository.items).toHaveLength(0)
   })
 })

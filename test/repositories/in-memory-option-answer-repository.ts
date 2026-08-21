@@ -22,6 +22,21 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
     )
   }
 
+  async findByIdAndQuestionIdAndAccountId(
+    optionId: string,
+    questionId: string,
+    accountId: string,
+  ) {
+    return (
+      this.items.find(
+        (item) =>
+          item.id.toString() === optionId &&
+          item.questionId.toString() === questionId &&
+          item.accountId.toString() === accountId,
+      ) ?? null
+    )
+  }
+
   async findOptionByQuestionIdAndOptionNum(
     questionId: string,
     optionNum: number,
@@ -37,6 +52,21 @@ export class InMemoryOptionAnswersRepository implements OptionAnswerRepository {
     }
 
     return optionAnswer
+  }
+
+  async findOptionByQuestionIdAndOptionNumAndAccountId(
+    questionId: string,
+    optionNum: number,
+    accountId: string,
+  ): Promise<OptionAnswer | null> {
+    return (
+      this.items.find(
+        (item) =>
+          item.questionId.toString() === questionId &&
+          item.optionNum === optionNum &&
+          item.accountId.toString() === accountId,
+      ) ?? null
+    )
   }
 
   async create(optionanswer: OptionAnswer) {

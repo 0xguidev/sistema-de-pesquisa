@@ -1,10 +1,17 @@
 import { CreateInterviewUseCase } from '@/domain/use-cases/interview/create-interview'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  NotFoundException,
+  Post,
+} from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { CreateAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/create-answer-question'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 const interviewBodySchema = z.object({
   surveyId: z.string().uuid(),
@@ -39,6 +46,10 @@ export class CreateInterviewController {
     })
 
     if (result.isLeft()) {
+      if (result.value instanceof ResourceNotFoundError) {
+        throw new NotFoundException(result.value.message)
+      }
+
       throw new BadRequestException()
     }
 
@@ -55,6 +66,10 @@ export class CreateInterviewController {
         })
 
         if (answerResponse.isLeft()) {
+          if (answerResponse.value instanceof ResourceNotFoundError) {
+            throw new NotFoundException(answerResponse.value.message)
+          }
+
           throw new BadRequestException('Failed to create answer question')
         }
       }),

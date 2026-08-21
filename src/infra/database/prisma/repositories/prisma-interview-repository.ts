@@ -83,6 +83,17 @@ export class PrismaInterviewRepository implements InterviewRepository {
     return PrismaInterviewMapper.toDomain(interview)
   }
 
+  async findByIdAndAccountId(
+    id: string,
+    accountId: string,
+  ): Promise<Interview | null> {
+    const interview = await this.prisma.interview.findFirst({
+      where: { id, userId: accountId },
+    })
+
+    return interview ? PrismaInterviewMapper.toDomain(interview) : null
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.interview.delete({
       where: {

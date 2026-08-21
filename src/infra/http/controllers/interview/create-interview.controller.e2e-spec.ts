@@ -1,17 +1,17 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
 import { SurveyFactory } from 'test/factories/make-survey'
+import { SessionService } from '@/infra/auth/session.service'
 
 describe('Create interview (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let surveyFactory: SurveyFactory
 
@@ -23,7 +23,7 @@ describe('Create interview (E2E)', () => {
 
     app = modularRef.createNestApplication()
     prisma = modularRef.get(PrismaService)
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     accountFactory = modularRef.get(AccountFactory)
     surveyFactory = modularRef.get(SurveyFactory)
 
@@ -36,7 +36,7 @@ describe('Create interview (E2E)', () => {
       accountId: user.id,
     })
 
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {})).accessToken
 
     const response = await request(app.getHttpServer())
       .post('/interviews')
@@ -55,5 +55,26 @@ describe('Create interview (E2E)', () => {
     })
 
     expect(interviewOnDatabase).toBeTruthy()
+  })
+
+  test('[POST] /interviews - 404 for another account survey', async () => {
+    const owner = await accountFactory.makePrismaAccount()
+    const attacker = await accountFactory.makePrismaAccount()
+    const survey = await surveyFactory.makePrismaSurvey({ accountId: owner.id })
+
+    const response = await request(app.getHttpServer())
+      .post('/interviews')
+      .set(
+        'Authorization',
+        `Bearer ${(await sessions.create(attacker.id.toString(), {})).accessToken}`,
+      )
+      .send({ surveyId: survey.id.toString(), answers: [] })
+
+    expect(response.statusCode).toBe(404)
+    expect(
+      await prisma.interview.findFirst({
+        where: { surveyId: survey.id.toString(), userId: attacker.id.toString() },
+      }),
+    ).toBeNull()
   })
 })

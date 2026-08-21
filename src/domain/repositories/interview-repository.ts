@@ -3,6 +3,7 @@ import { Interview } from '../entities/interview'
 export abstract class InterviewRepository {
   abstract create(interview: Interview): Promise<void>
   abstract findById(id: string): Promise<Interview | null>
+  abstract findByIdAndAccountId(id: string, accountId: string): Promise<Interview | null>
   abstract findBySurveyId(
     surveyId: string,
     accountId: string,

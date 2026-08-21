@@ -32,6 +32,17 @@ export class PrismaSurveyRepository implements SurveyRepository {
     return PrismaSurveyMapper.toDomain(survey)
   }
 
+  async findByIdAndAccountId(
+    id: string,
+    accountId: string,
+  ): Promise<Survey | null> {
+    const survey = await this.prisma.survey.findFirst({
+      where: { id, userId: accountId },
+    })
+
+    return survey ? PrismaSurveyMapper.toDomain(survey) : null
+  }
+
   async findSurveydetails(
     id: string,
     accountId: string,

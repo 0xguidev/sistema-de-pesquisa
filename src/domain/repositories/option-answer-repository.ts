@@ -5,6 +5,11 @@ export abstract class OptionAnswerRepository {
     optionId: string,
     accountId: string,
   ): Promise<OptionAnswer | null>
+  abstract findByIdAndQuestionIdAndAccountId(
+    optionId: string,
+    questionId: string,
+    accountId: string,
+  ): Promise<OptionAnswer | null>
   abstract findManyByQuestionId(
     questionId: string,
     accountId: string,
@@ -12,6 +17,11 @@ export abstract class OptionAnswerRepository {
   abstract findOptionByQuestionIdAndOptionNum(
     questionId: string,
     optionNum: number,
+  ): Promise<OptionAnswer | null>
+  abstract findOptionByQuestionIdAndOptionNumAndAccountId(
+    questionId: string,
+    optionNum: number,
+    accountId: string,
   ): Promise<OptionAnswer | null>
   abstract create(optionanswer: OptionAnswer): Promise<void>
   abstract save(optionanswer: OptionAnswer): Promise<void>

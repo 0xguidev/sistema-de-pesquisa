@@ -36,6 +36,29 @@ export class PrismaQuestionRepository implements QuestionRepository {
     return PrismaQuestionMapper.toDomain(question)
   }
 
+  async findByIdAndAccountId(
+    id: string,
+    accountId: string,
+  ): Promise<Question | null> {
+    const question = await this.prisma.question.findFirst({
+      where: { id, userId: accountId },
+    })
+
+    return question ? PrismaQuestionMapper.toDomain(question) : null
+  }
+
+  async findByQuestionNumAndAccountId(
+    surveyId: string,
+    questionNum: number,
+    accountId: string,
+  ): Promise<Question | null> {
+    const question = await this.prisma.question.findFirst({
+      where: { surveyId, number: questionNum, userId: accountId },
+    })
+
+    return question ? PrismaQuestionMapper.toDomain(question) : null
+  }
+
   async findByQuestionNum(
     surveyId: string,
     questionNum: number,

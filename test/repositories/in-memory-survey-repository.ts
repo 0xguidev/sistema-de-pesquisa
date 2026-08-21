@@ -17,6 +17,15 @@ export class InMemorySurveyRepository implements SurveyRepository {
     return survey
   }
 
+  async findByIdAndAccountId(id: string, accountId: string) {
+    return (
+      this.items.find(
+        (item) =>
+          item.id.toString() === id && item.accountId.toString() === accountId,
+      ) ?? null
+    )
+  }
+
   async findManyWithPagination(
     page: number,
     accountId: string,

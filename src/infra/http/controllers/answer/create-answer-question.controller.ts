@@ -1,9 +1,16 @@
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  NotFoundException,
+  Post,
+} from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { CreateAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/create-answer-question'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 const answerquestionBodySchema = z.object({
   interviewId: z.string().uuid(),
@@ -34,6 +41,10 @@ export class CreateAnswerQuestionController {
     })
 
     if (result.isLeft()) {
+      if (result.value instanceof ResourceNotFoundError) {
+        throw new NotFoundException(result.value.message)
+      }
+
       throw new BadRequestException()
     }
   }

@@ -1,8 +1,10 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { Either, right } from '@/core/types/either'
+import { Either, left, right } from '@/core/types/either'
 import { OptionAnswerRepository } from '../../repositories/option-answer-repository'
 import { OptionAnswer } from '../../entities/option-answer'
 import { Injectable } from '@nestjs/common'
+import { QuestionRepository } from '../../repositories/question-repository'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 interface CreateOptionAnswerUseCaseRequest {
   optionTitle: string
@@ -12,7 +14,7 @@ interface CreateOptionAnswerUseCaseRequest {
 }
 
 type CreateOptionAnswerUseCaseResponse = Either<
-  null,
+  ResourceNotFoundError,
   {
     optionAnswer: OptionAnswer
   }
@@ -20,7 +22,10 @@ type CreateOptionAnswerUseCaseResponse = Either<
 
 @Injectable()
 export class CreateOptionAnswerUseCase {
-  constructor(private optionanswerRepository: OptionAnswerRepository) {}
+  constructor(
+    private optionanswerRepository: OptionAnswerRepository,
+    private questionRepository: QuestionRepository,
+  ) {}
 
   async execute({
     optionTitle,
@@ -28,6 +33,15 @@ export class CreateOptionAnswerUseCase {
     accountId,
     questionId,
   }: CreateOptionAnswerUseCaseRequest): Promise<CreateOptionAnswerUseCaseResponse> {
+    const question = await this.questionRepository.findByIdAndAccountId(
+      questionId,
+      accountId,
+    )
+
+    if (!question) {
+      return left(new ResourceNotFoundError())
+    }
+
     const optionAnswer = OptionAnswer.create({
       optionTitle,
       optionNum,

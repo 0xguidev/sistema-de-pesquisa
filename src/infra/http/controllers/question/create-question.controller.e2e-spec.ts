@@ -1,7 +1,6 @@
 
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
 import { AppModule } from '@/app.module'
 import { DatabaseModule } from '@/infra/database/database.module'
@@ -10,11 +9,12 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { AccountFactory } from 'test/factories/make-Account'
 import { QuestionFactory } from 'test/factories/make-question'
 import { OptionAnswerFactory } from 'test/factories/make-option-answer'
+import { SessionService } from '@/infra/auth/session.service'
  
 describe('Create Question Controller (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let questionFactory: QuestionFactory
   let optionAnswerFactory: OptionAnswerFactory
@@ -31,14 +31,14 @@ describe('Create Question Controller (E2E)', () => {
     await app.init()
  
     prisma = moduleRef.get(PrismaService)
-    jwt = moduleRef.get(JwtService)
+    sessions = moduleRef.get(SessionService)
     accountFactory = moduleRef.get(AccountFactory)
     questionFactory = moduleRef.get(QuestionFactory)
     optionAnswerFactory = moduleRef.get(OptionAnswerFactory)
  
     const user = await accountFactory.makePrismaAccount()
     userId = user.id.toString()
-    accessToken = jwt.sign({ sub: userId })
+    accessToken = (await sessions.create(userId, {})).accessToken
   })
  
   afterAll(async () => {
@@ -224,6 +224,32 @@ describe('Create Question Controller (E2E)', () => {
       })
  
     expect(response.statusCode).toBe(401)
+  })
+
+  test('[POST] /questions - 404 for another account survey', async () => {
+    const otherUser = await accountFactory.makePrismaAccount()
+    const otherToken = (await sessions.create(otherUser.id.toString(), {}))
+      .accessToken
+    const survey = await request(app.getHttpServer())
+      .post('/surveys')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ title: 'Private survey', location: 'X', type: 'Y' })
+
+    const response = await request(app.getHttpServer())
+      .post('/questions')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({
+        questionTitle: 'Forbidden question',
+        questionNum: 1,
+        surveyId: survey.body.surveyId,
+      })
+
+    expect(response.statusCode).toBe(404)
+    expect(
+      await prisma.question.findFirst({
+        where: { title: 'Forbidden question' },
+      }),
+    ).toBeNull()
   })
 })
  

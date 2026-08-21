@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { JwtService } from '@nestjs/jwt'
 import request from 'supertest'
 import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
@@ -10,11 +9,12 @@ import { QuestionFactory } from 'test/factories/make-question'
 import { OptionAnswerFactory } from 'test/factories/make-option-answer'
 import { InterviewFactory } from 'test/factories/make-interview'
 import { SurveyFactory } from 'test/factories/make-survey'
+import { SessionService } from '@/infra/auth/session.service'
 
 describe('Create answerquestion (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
-  let jwt: JwtService
+  let sessions: SessionService
   let accountFactory: AccountFactory
   let interviewFactory: InterviewFactory
   let questionFactory: QuestionFactory
@@ -35,7 +35,7 @@ describe('Create answerquestion (E2E)', () => {
 
     app = modularRef.createNestApplication()
     prisma = modularRef.get(PrismaService)
-    jwt = modularRef.get(JwtService)
+    sessions = modularRef.get(SessionService)
     accountFactory = modularRef.get(AccountFactory)
     interviewFactory = modularRef.get(InterviewFactory)
     questionFactory = modularRef.get(QuestionFactory)
@@ -65,7 +65,7 @@ describe('Create answerquestion (E2E)', () => {
       accountId: user.id,
     })
 
-    const accessToken = jwt.sign({ sub: user.id.toString() })
+    const accessToken = (await sessions.create(user.id.toString(), {})).accessToken
 
     const response = await request(app.getHttpServer())
       .post('/answer-questions')
@@ -85,5 +85,76 @@ describe('Create answerquestion (E2E)', () => {
     })
 
     expect(answerquestionOnDatabase).toBeTruthy()
+  })
+
+  test('[POST] /answer-questions - rejects cross-tenant resources', async () => {
+    const owner = await accountFactory.makePrismaAccount()
+    const attacker = await accountFactory.makePrismaAccount()
+    const survey = await surveyFactory.makePrismaSurvey({ accountId: owner.id })
+    const interview = await interviewFactory.makePrismaInterview({
+      accountId: owner.id,
+      surveyId: survey.id,
+    })
+    const question = await questionFactory.makePrismaQuestion({
+      accountId: owner.id,
+      surveyId: survey.id,
+    })
+    const option = await optionAnswerFactory.makePrismaOptionAnswer({
+      accountId: owner.id,
+      questionId: question.id,
+    })
+
+    const response = await request(app.getHttpServer())
+      .post('/answer-questions')
+      .set(
+        'Authorization',
+        `Bearer ${(await sessions.create(attacker.id.toString(), {})).accessToken}`,
+      )
+      .send({
+        interviewId: interview.id.toString(),
+        questionId: question.id.toString(),
+        optionAnswerId: option.id.toString(),
+      })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  test('[POST] /answer-questions - rejects incompatible survey and option', async () => {
+    const user = await accountFactory.makePrismaAccount()
+    const firstSurvey = await surveyFactory.makePrismaSurvey({ accountId: user.id })
+    const secondSurvey = await surveyFactory.makePrismaSurvey({ accountId: user.id })
+    const interview = await interviewFactory.makePrismaInterview({
+      accountId: user.id,
+      surveyId: firstSurvey.id,
+    })
+    const question = await questionFactory.makePrismaQuestion({
+      accountId: user.id,
+      surveyId: secondSurvey.id,
+    })
+    const anotherQuestion = await questionFactory.makePrismaQuestion({
+      accountId: user.id,
+      surveyId: secondSurvey.id,
+    })
+    const wrongOption = await optionAnswerFactory.makePrismaOptionAnswer({
+      accountId: user.id,
+      questionId: anotherQuestion.id,
+    })
+    const token = (await sessions.create(user.id.toString(), {})).accessToken
+
+    const response = await request(app.getHttpServer())
+      .post('/answer-questions')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        interviewId: interview.id.toString(),
+        questionId: question.id.toString(),
+        optionAnswerId: wrongOption.id.toString(),
+      })
+
+    expect(response.statusCode).toBe(404)
+    expect(
+      await prisma.answerQuestion.findFirst({
+        where: { interviewId: interview.id.toString() },
+      }),
+    ).toBeNull()
   })
 })

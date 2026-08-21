@@ -4,6 +4,7 @@ import { SurveyDetails } from '../use-cases/survey/interfaces/survey.interface'
 export abstract class SurveyRepository {
   abstract create(survey: Survey): Promise<void>
   abstract findById(id: string): Promise<Survey | null>
+  abstract findByIdAndAccountId(id: string, accountId: string): Promise<Survey | null>
   abstract findSurveydetails(
     id: string,
     accountId: string,
