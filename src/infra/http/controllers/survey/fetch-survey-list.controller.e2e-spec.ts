@@ -6,7 +6,7 @@ import { DatabaseModule } from '@/infra/database/database.module'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
 
-describe('Create survey (E2E)', () => {
+describe('List surveys (E2E)', () => {
   let app: INestApplication
   let sessions: SessionService
   let accountFactory: AccountFactory

@@ -3,13 +3,14 @@ import { InMemoryAccountRepository } from 'test/repositories/in-memory-account-r
 import { AccountAlreadyExistsError } from '../error/account-already-exists.error'
 import { RegisterAccountUseCase } from './create-account'
 import { InvalidAccountDataError } from '../error/invalid-account-data.error'
+import { unwrapLeft, unwrapRight } from 'test/utils/either'
 
 let inMemoryAccountRepository: InMemoryAccountRepository
 let fakeHasher: FakeHasher
 
 let sut: RegisterAccountUseCase
 
-describe('Create acoount', () => {
+describe('Create account', () => {
   beforeEach(() => {
     inMemoryAccountRepository = new InMemoryAccountRepository()
     fakeHasher = new FakeHasher()
@@ -17,15 +18,14 @@ describe('Create acoount', () => {
     sut = new RegisterAccountUseCase(inMemoryAccountRepository, fakeHasher)
   })
 
-  it('should be able to register a new student', async () => {
+  it('should register a new account', async () => {
     const result = await sut.execute({
       name: 'John Doe',
       email: 'johndoe@example.com',
       password: 'valid-password',
     })
 
-    expect(result.isRight()).toBe(true)
-    expect(result.value).toEqual({
+    expect(unwrapRight(result)).toEqual({
       account: inMemoryAccountRepository.items[0],
     })
   })
@@ -37,12 +37,7 @@ describe('Create acoount', () => {
       password: 'valid-password',
     })
 
-    expect(result.isRight()).toBe(true)
-    if (result.isLeft()) {
-      throw new Error('Expected registration to succeed')
-    }
-
-    expect(result.value.account.email).toBe('john@example.com')
+    expect(unwrapRight(result).account.email).toBe('john@example.com')
     expect(inMemoryAccountRepository.items[0].email).toBe('john@example.com')
   })
 
@@ -59,12 +54,7 @@ describe('Create acoount', () => {
       password: 'another-valid-password',
     })
 
-    expect(result.isLeft()).toBe(true)
-    if (result.isRight()) {
-      throw new Error('Expected duplicate email error')
-    }
-
-    expect(result.value).toBeInstanceOf(AccountAlreadyExistsError)
+    expect(unwrapLeft(result)).toBeInstanceOf(AccountAlreadyExistsError)
   })
 
   it('should hash student password upon registration', async () => {

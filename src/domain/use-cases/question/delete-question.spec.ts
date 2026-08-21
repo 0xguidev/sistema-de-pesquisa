@@ -8,14 +8,14 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 let inMemoryQuestionRepository: InMemoryQuestionRepository
 let sut: DeleteQuestionUseCase
 
-describe('Delete an question', () => {
+describe('Delete question', () => {
   beforeEach(() => {
     inMemoryQuestionRepository = new InMemoryQuestionRepository()
 
     sut = new DeleteQuestionUseCase(inMemoryQuestionRepository)
   })
 
-  it('should delete an question', async () => {
+  it('should delete a question', async () => {
     const question = makeQuestion(
       { questionTitle: 'any_title', questionNum: 1 },
       new UniqueEntityID('question_id'),

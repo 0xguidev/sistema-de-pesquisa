@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common'
+import { Controller, Get, NotFoundException, Param } from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
@@ -32,7 +32,7 @@ export class FetchSurveyByIdController {
     })
 
     if (survey.isLeft()) {
-      throw new Error('Failed to fetch survey')
+      throw new NotFoundException(survey.value.message)
     }
 
     return survey.value.survey

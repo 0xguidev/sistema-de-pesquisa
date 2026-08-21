@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common'
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+} from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
@@ -6,15 +12,13 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { FetchInterviewsBySurveyIdUseCase } from '@/domain/use-cases/interview/fetch-interview-by-survey-id'
 import { InterviewResponse } from './interfaces/interview.interfaces'
 
-// Validação do parâmetro surveyId
 const surveyIdParamSchema = z.object({
   surveyId: z.string().uuid(),
 })
 
-// Validação para paginação (opcional)
 const paginationQuerySchema = z.object({
-  page: z.string().optional(),
-  limit: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).default(10),
 })
 
 type SurveyIdParam = z.infer<typeof surveyIdParamSchema>
@@ -40,8 +44,7 @@ export class FetchInterviewsController {
     const { surveyId } = params
     const userId = user.sub
 
-    const page = query.page ? parseInt(query.page, 10) : 1
-    const limit = query.limit ? parseInt(query.limit, 10) : 10
+    const { page, limit } = query
 
     const result = await this.fetchInterviewsBySurveyIdUseCase.execute({
       surveyId,
@@ -51,7 +54,7 @@ export class FetchInterviewsController {
     })
 
     if (result.isLeft()) {
-      throw new Error('Failed to fetch interviews')
+      throw new BadRequestException(result.value.message)
     }
 
     const interviews = result.value.interviews.map((interview) => ({

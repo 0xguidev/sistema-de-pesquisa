@@ -41,16 +41,13 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
   async findManyByQuestionId(
     questionId: string,
     userId: string,
-  ): Promise<OptionAnswer[] | null> {
+  ): Promise<OptionAnswer[]> {
     const options = await this.prisma.optionAnswer.findMany({
       where: {
         questionId,
         userId,
       },
     })
-    if (!options) {
-      return null
-    }
     return options.map(PrismaOptionAnswerMapper.toDomain)
   }
 

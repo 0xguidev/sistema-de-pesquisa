@@ -1,9 +1,17 @@
-import { Controller, Get, Param, Res, Header } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  Header,
+  NotFoundException,
+} from '@nestjs/common'
 import { GenerateSimpleReportWordUseCase } from '@/domain/use-cases/report/generate-simple-report-word'
 import { GenerateSimpleReportUseCase } from '@/domain/use-cases/report/generate-simple-report'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { SurveyRepository } from '@/domain/repositories/survey-repository'
+import { throwReportHttpError } from './report-error-mapper'
 
 @Controller('/reports')
 export class GenerateSimpleReportController {
@@ -14,16 +22,29 @@ export class GenerateSimpleReportController {
   ) {}
 
   @Get('/simple/:surveyId')
-  async getData(@Param('surveyId') surveyId: string, @CurrentUser() user: UserPayload) {
+  async getData(
+    @Param('surveyId') surveyId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
     return this.generateSimpleReportUseCase.execute(surveyId, user.sub)
   }
 
   @Get('/simple/:surveyId/download')
-  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-  async handle(@Param('surveyId') surveyId: string, @CurrentUser() user: UserPayload, @Res() res: any) {
-    const survey = await this.surveyRepository.findById(surveyId)
+  @Header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  )
+  async handle(
+    @Param('surveyId') surveyId: string,
+    @CurrentUser() user: UserPayload,
+    @Res() res: any,
+  ) {
+    const survey = await this.surveyRepository.findByIdAndAccountId(
+      surveyId,
+      user.sub,
+    )
     if (!survey) {
-      throw new Error('Pesquisa não encontrada')
+      throw new NotFoundException('Resource not found')
     }
 
     const currentDate = new Date()
@@ -36,7 +57,14 @@ export class GenerateSimpleReportController {
 
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 
-    const buffer = await this.generateSimpleReportWordUseCase.execute(surveyId, user.sub)
-    res.send(buffer)
+    try {
+      const buffer = await this.generateSimpleReportWordUseCase.execute(
+        surveyId,
+        user.sub,
+      )
+      res.send(buffer)
+    } catch (error) {
+      throwReportHttpError(error)
+    }
   }
 }

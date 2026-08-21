@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   HttpCode,
+  NotFoundException,
   Param,
   Put,
 } from '@nestjs/common'
@@ -11,6 +12,7 @@ import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { EditOptionAnswerUseCase } from '@/domain/use-cases/option-answer/edit-option-answer'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 const editOptionAnswerBodySchema = z.object({
   title: z.string().optional(),
@@ -47,7 +49,9 @@ export class EditOptionAnswerController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      if (result.value instanceof ResourceNotFoundError) {
+        throw new NotFoundException(result.value.message)
+      }
     }
   }
 }

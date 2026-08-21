@@ -6,6 +6,7 @@ import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-opt
 import { makeQuestion } from 'test/factories/make-question'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let inMemoryQuestionRepository: InMemoryQuestionRepository
@@ -126,7 +127,7 @@ describe('Generate Cross Report Word', () => {
     })
 
     await expect(sut.execute('survey-1', 'account-1')).rejects.toThrow(
-      'Nenhuma entrevista encontrada para gerar relatório',
+      ResourceNotFoundError,
     )
   })
 })

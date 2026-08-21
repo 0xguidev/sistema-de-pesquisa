@@ -10,7 +10,7 @@ import { SurveyFactory } from 'test/factories/make-survey'
 import { OptionAnswerFactory } from 'test/factories/make-option-answer'
 import { QuestionFactory } from 'test/factories/make-question'
 
-describe('Delete optionanswer (E2E)', () => {
+describe('Delete option answer (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let sessions: SessionService

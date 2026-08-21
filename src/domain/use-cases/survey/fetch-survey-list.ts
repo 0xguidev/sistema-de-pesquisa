@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { SurveyRepository } from '../../repositories/survey-repository'
 import { Either, right, left } from '@/core/types/either'
+import { RepositoryError } from '@/core/errors/errors/repository-error'
 
 interface SurveyListUseCaseRequest {
   page: number
@@ -8,7 +9,7 @@ interface SurveyListUseCaseRequest {
 }
 
 type FetchSurveyListUseCaseResponse = Either<
-  Error,
+  RepositoryError,
   {
     surveys: { id: string; title: string }[]
     total: number
@@ -34,7 +35,7 @@ export class FetchSurveyListUseCase {
         total: result.total,
       })
     } catch {
-      return left(new Error('Failed to fetch surveys'))
+      return left(new RepositoryError('Failed to fetch surveys'))
     }
   }
 }

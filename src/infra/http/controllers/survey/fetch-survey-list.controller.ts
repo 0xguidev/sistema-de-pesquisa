@@ -1,4 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  InternalServerErrorException,
+  Query,
+} from '@nestjs/common'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../../pipes/zod-validation-pipe'
 import { FetchSurveyListUseCase } from '@/domain/use-cases/survey/fetch-survey-list'
@@ -31,7 +36,7 @@ export class FetchSurveyListController {
     })
 
     if (result.isLeft()) {
-      throw new Error('Failed to fetch surveys')
+      throw new InternalServerErrorException(result.value.message)
     }
 
     return result.value.surveys

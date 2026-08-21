@@ -1,8 +1,16 @@
-import { Controller, Get, Param, Res, Header } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  Header,
+  NotFoundException,
+} from '@nestjs/common'
 import { GenerateSimpleReportPdfUseCase } from '@/domain/use-cases/report/generate-simple-report-pdf'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { SurveyRepository } from '@/domain/repositories/survey-repository'
+import { throwReportHttpError } from './report-error-mapper'
 
 @Controller('/reports')
 export class GenerateSimpleReportPdfController {
@@ -18,9 +26,12 @@ export class GenerateSimpleReportPdfController {
     @CurrentUser() user: UserPayload,
     @Res() res: any,
   ) {
-    const survey = await this.surveyRepository.findById(surveyId)
+    const survey = await this.surveyRepository.findByIdAndAccountId(
+      surveyId,
+      user.sub,
+    )
     if (!survey) {
-      throw new Error('Pesquisa não encontrada')
+      throw new NotFoundException('Resource not found')
     }
 
     const currentDate = new Date()
@@ -33,10 +44,14 @@ export class GenerateSimpleReportPdfController {
 
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 
-    const buffer = await this.generateSimpleReportPdfUseCase.execute(
-      surveyId,
-      user.sub,
-    )
-    res.send(buffer)
+    try {
+      const buffer = await this.generateSimpleReportPdfUseCase.execute(
+        surveyId,
+        user.sub,
+      )
+      res.send(buffer)
+    } catch (error) {
+      throwReportHttpError(error)
+    }
   }
 }

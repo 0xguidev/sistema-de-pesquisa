@@ -4,6 +4,7 @@ import { InMemoryAccountRepository } from 'test/repositories/in-memory-account-r
 import { makeAccount } from 'test/factories/make-Account'
 import { EditAccountUseCase } from './edit-account'
 import { InvalidAccountDataError } from '../error/invalid-account-data.error'
+import { unwrapRight } from 'test/utils/either'
 
 describe('Edit account', () => {
   let inMemoryAccountRepository: InMemoryAccountRepository
@@ -31,20 +32,15 @@ describe('Edit account', () => {
       password: 'new-password',
     })
 
-    expect(result.isRight()).toBe(true)
-
-    if (result.isRight()) {
-      expect(inMemoryAccountRepository.items[0].name).toBe('John Updated')
-      expect(inMemoryAccountRepository.items[0].email).toBe(
-        'updated@example.com',
-      )
-      expect(inMemoryAccountRepository.items[0].password).toBe(
-        await fakeHasher.hash('new-password'),
-      )
-      expect(
-        inMemoryAccountRepository.tokenRevocations.get(account.id.toString()),
-      ).toBeInstanceOf(Date)
-    }
+    unwrapRight(result)
+    expect(inMemoryAccountRepository.items[0].name).toBe('John Updated')
+    expect(inMemoryAccountRepository.items[0].email).toBe('updated@example.com')
+    expect(inMemoryAccountRepository.items[0].password).toBe(
+      await fakeHasher.hash('new-password'),
+    )
+    expect(
+      inMemoryAccountRepository.tokenRevocations.get(account.id.toString()),
+    ).toBeInstanceOf(Date)
   })
 
   it('should keep existing tokens valid when changing only the email', async () => {

@@ -8,7 +8,7 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
 
-describe('Create survey (E2E)', () => {
+describe('Edit survey (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let sessions: SessionService

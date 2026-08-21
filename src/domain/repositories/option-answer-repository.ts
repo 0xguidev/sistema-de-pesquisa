@@ -13,7 +13,7 @@ export abstract class OptionAnswerRepository {
   abstract findManyByQuestionId(
     questionId: string,
     accountId: string,
-  ): Promise<OptionAnswer[] | null>
+  ): Promise<OptionAnswer[]>
   abstract findOptionByQuestionIdAndOptionNum(
     questionId: string,
     optionNum: number,

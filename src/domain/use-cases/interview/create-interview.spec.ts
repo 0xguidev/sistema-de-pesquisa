@@ -9,7 +9,7 @@ let inMemoryInterviewRepository: InMemoryInterviewRepository
 let inMemorySurveyRepository: InMemorySurveyRepository
 let sut: CreateInterviewUseCase
 
-describe('create an interview', async () => {
+describe('Create interview', () => {
   beforeEach(() => {
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
     inMemorySurveyRepository = new InMemorySurveyRepository()

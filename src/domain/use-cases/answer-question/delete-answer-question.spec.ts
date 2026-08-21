@@ -8,14 +8,14 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 let inMemoryAnswerQuestionRepository: InMemoryAnswerQuestionRepository
 let sut: DeleteAnswerQuestionUseCase
 
-describe('Delete an answer answerquestion', () => {
+describe('Delete answer question', () => {
   beforeEach(() => {
     inMemoryAnswerQuestionRepository = new InMemoryAnswerQuestionRepository()
 
     sut = new DeleteAnswerQuestionUseCase(inMemoryAnswerQuestionRepository)
   })
 
-  it('should delete an answerquestion', async () => {
+  it('should delete an answer question', async () => {
     const account = makeAccount()
     const answerQuestion = makeAnswerQuestion({
       accountId: account.id,

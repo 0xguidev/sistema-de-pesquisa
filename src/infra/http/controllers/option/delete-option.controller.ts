@@ -2,12 +2,13 @@ import { DeleteOptionAnswerUseCase } from '@/domain/use-cases/option-answer/dele
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import {
-  BadRequestException,
   Controller,
   Delete,
   HttpCode,
   Param,
+  NotFoundException,
 } from '@nestjs/common'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 @Controller('/option-answers/:id')
 export class DeleteOptionAnswerController {
@@ -27,7 +28,9 @@ export class DeleteOptionAnswerController {
     })
 
     if (result.isLeft()) {
-      throw new BadRequestException()
+      if (result.value instanceof ResourceNotFoundError) {
+        throw new NotFoundException(result.value.message)
+      }
     }
   }
 }

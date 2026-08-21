@@ -16,7 +16,7 @@ let inMemoryQuestionRepository: InMemoryQuestionRepository
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
 let sut: CreateAnswerQuestionUseCase
 
-describe('create an answer question', async () => {
+describe('Create answer question', () => {
   beforeEach(() => {
     inMemoryAnswerQuestionsRepository = new InMemoryAnswerQuestionRepository()
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
@@ -30,7 +30,7 @@ describe('create an answer question', async () => {
     )
   })
 
-  it('should create a option answer', async () => {
+  it('should create an answer', async () => {
     const account = makeAccount()
     const survey = makeSurvey({ accountId: account.id })
     const question = makeQuestion({

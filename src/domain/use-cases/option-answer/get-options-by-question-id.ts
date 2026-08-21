@@ -1,4 +1,4 @@
-import { Either, right, left } from '@/core/types/either'
+import { Either, right } from '@/core/types/either'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 import { Injectable } from '@nestjs/common'
 
@@ -8,7 +8,7 @@ interface GetOptionsByQuestionIdUseCaseRequest {
 }
 
 type GetOptionsByQuestionIdUseCaseResponse = Either<
-  Error,
+  never,
   Array<{
     id: string
     questionId: string
@@ -29,10 +29,6 @@ export class GetOptionsByQuestionIdUseCase {
       questionId,
       userId,
     )
-
-    if (!options) {
-      return left(new Error('OptionAnswer not found'))
-    }
 
     return right(
       options.map((option) => ({

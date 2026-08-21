@@ -4,6 +4,7 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { Question } from '@/domain/entities/question'
 import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
 import { FetchQuestionByIdUseCase } from './fetch-question-by-id'
+import { unwrapRight } from 'test/utils/either'
 
 let inMemoryQuestionRepository: InMemoryQuestionRepository
 let sut: FetchQuestionByIdUseCase
@@ -29,13 +30,10 @@ describe('Fetch Question By Id', () => {
       accountId: 'account-1',
     })
 
-    expect(result.isRight()).toBe(true)
-
-    if (result.isRight()) {
-      expect(result.value.question.id.toString()).toBe(question.id.toString())
-      expect(result.value.question.questionTitle).toBe('Question 1')
-      expect(result.value.question.questionNum).toBe(1)
-    }
+    const { question: fetchedQuestion } = unwrapRight(result)
+    expect(fetchedQuestion.id.toString()).toBe(question.id.toString())
+    expect(fetchedQuestion.questionTitle).toBe('Question 1')
+    expect(fetchedQuestion.questionNum).toBe(1)
   })
 
   it('should not be able to fetch a question that does not exist', async () => {

@@ -8,14 +8,14 @@ import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 let inMemorySurveyRepository: InMemorySurveyRepository
 let sut: DeleteSurveyUseCase
 
-describe('Delete an survey', () => {
+describe('Delete survey', () => {
   beforeEach(() => {
     inMemorySurveyRepository = new InMemorySurveyRepository()
 
     sut = new DeleteSurveyUseCase(inMemorySurveyRepository)
   })
 
-  it('should delete an survey', async () => {
+  it('should delete a survey', async () => {
     const survey = makeSurvey(
       { title: 'any_title' },
       new UniqueEntityID('survey_id'),

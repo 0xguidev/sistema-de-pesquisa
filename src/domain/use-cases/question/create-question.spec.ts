@@ -7,13 +7,14 @@ import { makeSurvey } from 'test/factories/make-survey'
 import { makeQuestion } from 'test/factories/make-question'
 import { makeOptionAnswer } from 'test/factories/make-option-answer'
 import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
+import { unwrapRight } from 'test/utils/either'
 
 let inMemoryQuestionRepository: InMemoryQuestionRepository
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
 let inMemorySurveyRepository: InMemorySurveyRepository
 let sut: CreateQuestionUseCase
 
-describe('create an question', async () => {
+describe('Create question', () => {
   beforeEach(() => {
     inMemoryQuestionRepository = new InMemoryQuestionRepository()
     inMemoryOptionAnswersRepository = new InMemoryOptionAnswersRepository()
@@ -39,20 +40,11 @@ describe('create an question', async () => {
       surveyId: survey.id.toString(),
     })
 
-    expect(createdQuestion.isRight()).toBe(true)
-
-    if (createdQuestion.isRight()) {
-      expect(createdQuestion.value.question.questionTitle).toBe(
-        'What is your favorite color?',
-      )
-      expect(createdQuestion.value.question.questionNum).toBe(1)
-      expect(createdQuestion.value.question.accountId.toString()).toBe(
-        account.id.toString(),
-      )
-      expect(createdQuestion.value.question.surveyId.toString()).toBe(
-        survey.id.toString(),
-      )
-    }
+    const { question } = unwrapRight(createdQuestion)
+    expect(question.questionTitle).toBe('What is your favorite color?')
+    expect(question.questionNum).toBe(1)
+    expect(question.accountId.toString()).toBe(account.id.toString())
+    expect(question.surveyId.toString()).toBe(survey.id.toString())
   })
 
   it('should create a question with conditional rules', async () => {
@@ -90,14 +82,9 @@ describe('create an question', async () => {
       ],
     })
 
-    expect(createdQuestion.isRight()).toBe(true)
-
-    if (createdQuestion.isRight()) {
-      expect(inMemoryQuestionRepository.items[1]).toEqual(
-        createdQuestion.value.question,
-      )
-      expect(inMemoryQuestionRepository.conditionalRules.length).toBe(1)
-    }
+    const { question } = unwrapRight(createdQuestion)
+    expect(inMemoryQuestionRepository.items[1]).toEqual(question)
+    expect(inMemoryQuestionRepository.conditionalRules).toHaveLength(1)
   })
 
   it('should return an error if dependsOnQuestion is not found', async () => {

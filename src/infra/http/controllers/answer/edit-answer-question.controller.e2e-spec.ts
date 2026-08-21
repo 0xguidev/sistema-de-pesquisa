@@ -12,7 +12,7 @@ import { QuestionFactory } from 'test/factories/make-question'
 import { OptionAnswerFactory } from 'test/factories/make-option-answer'
 import { SurveyFactory } from 'test/factories/make-survey'
 
-describe('Create answerquestion (E2E)', () => {
+describe('Edit answer question (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let sessions: SessionService

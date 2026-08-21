@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import { QuestionRepository } from '@/domain/repositories/question-repository'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { InvalidRequestError } from '@/core/errors/errors/invalid-request-error'
 import {
   Document,
   Packer,
@@ -55,13 +57,13 @@ export class GenerateCrossReportWordUseCase {
       1000,
     )
     if (!interviews || interviews.data.length === 0) {
-      throw new Error('Nenhuma entrevista encontrada para gerar relatório')
+      throw new ResourceNotFoundError()
     }
 
     const questions =
       await this.questionRepository.findQuestionsBySurveyId(surveyId)
     if (!questions || questions.length < 2) {
-      throw new Error(
+      throw new InvalidRequestError(
         'São necessárias pelo menos duas perguntas para gerar relatório cruzado',
       )
     }

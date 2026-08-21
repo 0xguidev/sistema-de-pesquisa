@@ -3,6 +3,7 @@ import { InMemoryInterviewRepository } from 'test/repositories/in-memory-intervi
 import { FetchInterviewsBySurveyIdUseCase } from './fetch-interview-by-survey-id'
 import { makeAccount } from 'test/factories/make-Account'
 import { makeSurvey } from 'test/factories/make-survey'
+import { unwrapRight } from 'test/utils/either'
 
 let inMemoryInterviewsRepository: InMemoryInterviewRepository
 let sut: FetchInterviewsBySurveyIdUseCase
@@ -29,10 +30,7 @@ describe('Fetch Interviews by Survey ID', () => {
       limit: 10,
     })
 
-    expect(result.isRight()).toBe(true)
-    if (result.isRight()) {
-      expect(result.value.interviews).toHaveLength(2)
-    }
+    expect(unwrapRight(result).interviews).toHaveLength(2)
   })
 
   it('should return an empty array if no interviews match the surveyId', async () => {
@@ -43,10 +41,7 @@ describe('Fetch Interviews by Survey ID', () => {
       limit: 10,
     })
 
-    expect(result.isRight()).toBe(true)
-    if (result.isRight()) {
-      expect(result.value.interviews).toHaveLength(0)
-    }
+    expect(unwrapRight(result).interviews).toHaveLength(0)
   })
 
   it('should be able to fetch interviews with correct pagination', async () => {
@@ -75,13 +70,10 @@ describe('Fetch Interviews by Survey ID', () => {
       limit: 10,
     })
 
-    expect(resultPage1.isRight()).toBe(true)
-    expect(resultPage2.isRight()).toBe(true)
-
-    if (resultPage1.isRight() && resultPage2.isRight()) {
-      expect(resultPage1.value.interviews).toHaveLength(10)
-      expect(resultPage2.value.interviews).toHaveLength(5)
-      expect(resultPage1.value.totalPages).toBe(2)
-    }
+    const page1 = unwrapRight(resultPage1)
+    const page2 = unwrapRight(resultPage2)
+    expect(page1.interviews).toHaveLength(10)
+    expect(page2.interviews).toHaveLength(5)
+    expect(page1.totalPages).toBe(2)
   })
 })

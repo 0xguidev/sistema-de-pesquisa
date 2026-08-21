@@ -12,7 +12,7 @@ describe('CreateSurveyUseCase', () => {
     sut = new CreateSurveyUseCase(inMemorySurveyRepository)
   })
 
-  it('should create a survey with questions and options', async () => {
+  it('should create a survey', async () => {
     const account = makeAccount()
 
     const result = await sut.execute({

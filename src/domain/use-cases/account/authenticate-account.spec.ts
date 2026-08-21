@@ -2,12 +2,13 @@ import { FakeHasher } from 'test/cryptography/fake-hasher'
 import { InMemoryAccountRepository } from 'test/repositories/in-memory-account-repository'
 import { makeAccount } from 'test/factories/make-Account'
 import { AuthenticateAccountUseCase } from './authenticate-account'
+import { unwrapRight } from 'test/utils/either'
 
 let inMemoryAccountRepository: InMemoryAccountRepository
 let fakeHasher: FakeHasher
 let sut: AuthenticateAccountUseCase
 
-describe('Authenticate Student', () => {
+describe('Authenticate account', () => {
   beforeEach(() => {
     inMemoryAccountRepository = new InMemoryAccountRepository()
     fakeHasher = new FakeHasher()
@@ -18,7 +19,7 @@ describe('Authenticate Student', () => {
     )
   })
 
-  it('should be able to authenticate a student', async () => {
+  it('should authenticate an account', async () => {
     const student = makeAccount({
       email: 'johndoe@example.com',
       password: await fakeHasher.hash('123456'),
@@ -31,13 +32,7 @@ describe('Authenticate Student', () => {
       password: '123456',
     })
 
-    expect(result.isRight()).toBe(true)
-
-    if (result.isLeft()) {
-      throw new Error('Expected authentication to succeed')
-    }
-
-    expect(result.value).toEqual({
+    expect(unwrapRight(result)).toEqual({
       accountId: student.id.toString(),
     })
   })
@@ -55,13 +50,7 @@ describe('Authenticate Student', () => {
       password: '123456',
     })
 
-    expect(result.isRight()).toBe(true)
-
-    if (result.isLeft()) {
-      throw new Error('Expected authentication to succeed')
-    }
-
-    expect(result.value).toEqual({
+    expect(unwrapRight(result)).toEqual({
       accountId: student.id.toString(),
     })
   })

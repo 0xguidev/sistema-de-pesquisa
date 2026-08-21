@@ -2,6 +2,7 @@ import { Either, right, left } from '@/core/types/either'
 import { OptionAnswer } from '@/domain/entities/option-answer'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
 import { Injectable } from '@nestjs/common'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 interface GetOptionAnswerUseCaseRequest {
   optionId: string
@@ -9,7 +10,7 @@ interface GetOptionAnswerUseCaseRequest {
 }
 
 type GetOptionAnswerUseCaseResponse = Either<
-  Error,
+  ResourceNotFoundError,
   {
     optionanswer: OptionAnswer
   }
@@ -29,7 +30,7 @@ export class GetOptionAnswerUseCase {
     )
 
     if (!optionanswer) {
-      return left(new Error('OptionAnswer not found'))
+      return left(new ResourceNotFoundError())
     }
 
     return right({

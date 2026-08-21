@@ -3,6 +3,7 @@ import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import puppeteer from 'puppeteer'
 import type { HTTPRequest } from 'puppeteer'
 import { buildHtml } from './utils/build-html'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 const PDF_OPERATION_TIMEOUT_MS = 30_000
 
@@ -37,7 +38,7 @@ export class GenerateSimpleReportPdfUseCase {
     )
 
     if (!interviews || interviews.data.length === 0) {
-      throw new Error('Nenhuma entrevista encontrada')
+      throw new ResourceNotFoundError()
     }
 
     const questionMeta = new Map<string, { title: string; number: number }>()

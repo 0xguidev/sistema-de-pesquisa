@@ -93,7 +93,7 @@ describe('Edit option answer (E2E)', () => {
       .put(`/option-answers/${option.id.toString()}`)
       .auth(token, { type: 'bearer' })
       .send({ title: 'Forbidden' })
-      .expect(400)
+      .expect(404)
 
     const persisted = await prisma.optionAnswer.findUnique({
       where: { id: option.id.toString() },

@@ -9,7 +9,7 @@ let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
 let inMemoryQuestionRepository: InMemoryQuestionRepository
 let sut: CreateOptionAnswerUseCase
 
-describe('create an option answer', async () => {
+describe('Create option answer', () => {
   beforeEach(() => {
     inMemoryOptionAnswersRepository = new InMemoryOptionAnswersRepository()
     inMemoryQuestionRepository = new InMemoryQuestionRepository()
@@ -20,7 +20,7 @@ describe('create an option answer', async () => {
     )
   })
 
-  it('should create a option answer', async () => {
+  it('should create an option answer', async () => {
     const account = makeAccount()
     const question = makeQuestion({ accountId: account.id })
     await inMemoryQuestionRepository.create(question)

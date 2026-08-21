@@ -11,7 +11,7 @@ import { InterviewFactory } from 'test/factories/make-interview'
 import { SurveyFactory } from 'test/factories/make-survey'
 import { SessionService } from '@/infra/auth/session.service'
 
-describe('Create answerquestion (E2E)', () => {
+describe('Create answer question (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let sessions: SessionService

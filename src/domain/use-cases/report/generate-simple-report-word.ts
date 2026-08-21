@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 import {
   Document,
   Packer,
@@ -28,7 +29,7 @@ export class GenerateSimpleReportWordUseCase {
     )
 
     if (!interviews || interviews.data.length === 0) {
-      throw new Error('Nenhuma entrevista encontrada para gerar relatório')
+      throw new ResourceNotFoundError()
     }
 
     // FIX 1: Montar mapa de metadados das perguntas em uma única passagem (evita O(n²))

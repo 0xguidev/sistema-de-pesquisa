@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { SurveyRepository } from '../../repositories/survey-repository'
 import { Either, right, left } from '@/core/types/either'
 import { SurveyDetails } from './interfaces/survey.interface'
+import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
 
 interface FetchSurveyUseCaseRequest {
   surveyId: string
@@ -9,7 +10,7 @@ interface FetchSurveyUseCaseRequest {
 }
 
 type FetchSurveyUseCaseResponse = Either<
-  Error,
+  ResourceNotFoundError,
   {
     survey: SurveyDetails
   }
@@ -28,7 +29,7 @@ export class FetchSurveyIdUseCase {
     )
 
     if (!survey) {
-      return left(new Error('Survey not found'))
+      return left(new ResourceNotFoundError())
     }
 
     return right({

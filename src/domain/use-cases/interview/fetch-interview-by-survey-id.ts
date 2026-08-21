@@ -2,6 +2,7 @@ import { InterviewRepository } from '../../repositories/interview-repository'
 import { Either, right, left } from '@/core/types/either'
 import { Injectable } from '@nestjs/common'
 import { InterviewResponse } from '@/infra/http/controllers/interview/interfaces/interview.interfaces'
+import { InvalidRequestError } from '@/core/errors/errors/invalid-request-error'
 
 interface FetchInterviewsBySurveyIdUseCaseRequest {
   surveyId: string
@@ -11,7 +12,7 @@ interface FetchInterviewsBySurveyIdUseCaseRequest {
 }
 
 type FetchInterviewsBySurveyIdUseCaseResponse = Either<
-  Error,
+  InvalidRequestError,
   {
     interviews: InterviewResponse[]
     total: number
@@ -32,11 +33,11 @@ export class FetchInterviewsBySurveyIdUseCase {
     limit,
   }: FetchInterviewsBySurveyIdUseCaseRequest): Promise<FetchInterviewsBySurveyIdUseCaseResponse> {
     if (!surveyId || !accountId) {
-      return left(new Error('Missing surveyId or accountId'))
+      return left(new InvalidRequestError('Missing surveyId or accountId'))
     }
 
     if (page < 1 || limit < 1) {
-      return left(new Error('Invalid pagination parameters'))
+      return left(new InvalidRequestError('Invalid pagination parameters'))
     }
 
     const { data, total } = await this.interviewRepository.findBySurveyId(
