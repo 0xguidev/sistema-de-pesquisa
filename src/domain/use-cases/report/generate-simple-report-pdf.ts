@@ -1,7 +1,28 @@
 import { Injectable } from '@nestjs/common'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import puppeteer from 'puppeteer'
+import type { HTTPRequest } from 'puppeteer'
 import { buildHtml } from './utils/build-html'
+
+const PDF_OPERATION_TIMEOUT_MS = 30_000
+
+export function isAllowedPdfResource(url: string): boolean {
+  if (url === 'about:blank') return true
+
+  try {
+    return new URL(url).protocol === 'data:'
+  } catch {
+    return false
+  }
+}
+
+function interceptPdfRequest(request: HTTPRequest): void {
+  const action = isAllowedPdfResource(request.url())
+    ? request.continue()
+    : request.abort('blockedbyclient')
+
+  void action.catch(() => undefined)
+}
 
 @Injectable()
 export class GenerateSimpleReportPdfUseCase {
@@ -67,9 +88,7 @@ export class GenerateSimpleReportPdfUseCase {
       const options = Object.values(answers)
         .map((o) => ({
           ...o,
-          percentage: parseFloat(
-            ((o.count / totalVotes) * 100).toFixed(1),
-          ),
+          percentage: parseFloat(((o.count / totalVotes) * 100).toFixed(1)),
         }))
         // 🔥 ORDENAÇÃO GARANTIDA AQUI TAMBÉM
         .sort((a, b) => a.num - b.num)
@@ -86,27 +105,42 @@ export class GenerateSimpleReportPdfUseCase {
     const browser = await puppeteer.launch({
       executablePath: '/usr/bin/chromium',
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      timeout: PDF_OPERATION_TIMEOUT_MS,
     })
+    let page: Awaited<ReturnType<typeof browser.newPage>> | undefined
 
-    const page = await browser.newPage()
+    try {
+      page = await browser.newPage()
+      page.setDefaultNavigationTimeout(PDF_OPERATION_TIMEOUT_MS)
+      page.setDefaultTimeout(PDF_OPERATION_TIMEOUT_MS)
+      await page.setRequestInterception(true)
+      page.on('request', interceptPdfRequest)
 
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+      await page.setContent(html, {
+        waitUntil: 'networkidle0',
+        timeout: PDF_OPERATION_TIMEOUT_MS,
+      })
 
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      displayHeaderFooter: false,
-      margin: {
-        top: '20px',
-        bottom: '20px',
-        left: '20px',
-        right: '20px',
-      },
-    })
+      const pdf = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        displayHeaderFooter: false,
+        timeout: PDF_OPERATION_TIMEOUT_MS,
+        margin: {
+          top: '20px',
+          bottom: '20px',
+          left: '20px',
+          right: '20px',
+        },
+      })
 
-    await browser.close()
-
-    return Buffer.from(pdf)
+      return Buffer.from(pdf)
+    } finally {
+      try {
+        if (page && !page.isClosed()) await page.close()
+      } finally {
+        await browser.close()
+      }
+    }
   }
 }

@@ -34,6 +34,10 @@ export function buildHtml(questions: Question[]) {
   <html>
   <head>
     <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+    />
     <style>
       * {
         box-sizing: border-box;
