@@ -1,39 +1,54 @@
 import 'dotenv/config'
 
 import { PrismaClient } from '@prisma/client'
-import { randomUUID } from 'node:crypto'
-import { execSync } from 'node:child_process'
 
-let prisma: PrismaClient
+const TEST_DATABASE_SUFFIX = '_test'
+const TEST_SCHEMA_PATTERN = /^vitest_test_[a-z0-9_]+_w[12]$/
 
-function generateUniqueDatabase(schemaId: string) {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('Please, provide a DATABASE_URL environment variable.')
+function workerDatabaseUrl(): string {
+  const baseUrl = process.env.E2E_DATABASE_URL
+  const prefix = process.env.E2E_SCHEMA_PREFIX
+  const poolId = Number(process.env.VITEST_POOL_ID ?? '1')
+
+  if (!baseUrl || !prefix || ![1, 2].includes(poolId)) {
+    throw new Error('E2E global setup did not provide a valid worker database')
   }
 
-  const url = new URL(process.env.DATABASE_URL)
+  const url = new URL(baseUrl)
+  const schema = `${prefix}_w${poolId}`
+  if (!url.pathname.slice(1).endsWith(TEST_DATABASE_SUFFIX)) {
+    throw new Error('Refusing to run E2E outside a dedicated test database')
+  }
+  if (!TEST_SCHEMA_PATTERN.test(schema)) {
+    throw new Error(`Refusing to use unsafe E2E schema: ${schema}`)
+  }
 
-  url.searchParams.set('schema', schemaId)
-
+  url.searchParams.set('schema', schema)
+  url.searchParams.set('connection_limit', '5')
   return url.toString()
 }
 
-const schemaId = randomUUID()
+const databaseUrl = workerDatabaseUrl()
+process.env.DATABASE_URL = databaseUrl
+
+let prisma: PrismaClient
 
 beforeAll(async () => {
-  const databaseUrl = generateUniqueDatabase(schemaId)
-
-  process.env.DATABASE_URL = databaseUrl
-
-  execSync('pnpm prisma db push')
   prisma = new PrismaClient({ datasourceUrl: databaseUrl })
+  const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
+    SELECT tablename FROM pg_tables WHERE schemaname = current_schema()
+  `
+
+  if (tables.length > 0) {
+    const quotedTables = tables
+      .map(({ tablename }) => `"${tablename.replaceAll('"', '""')}"`)
+      .join(', ')
+    await prisma.$executeRawUnsafe(
+      `TRUNCATE TABLE ${quotedTables} RESTART IDENTITY CASCADE`,
+    )
+  }
 })
 
 afterAll(async () => {
-  if (prisma) {
-    await prisma.$executeRawUnsafe(
-      `DROP SCHEMA IF EXISTS "${schemaId}" CASCADE`,
-    )
-    await prisma.$disconnect()
-  }
+  await prisma?.$disconnect()
 })

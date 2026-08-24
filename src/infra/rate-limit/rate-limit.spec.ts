@@ -6,7 +6,15 @@ import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { ThrottlerModule } from '@nestjs/throttler'
 import request from 'supertest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import { EnvService } from '../env/env.service'
 import { AuthenticateController } from '../http/controllers/authenticate/authenticate.controller'
 import { CreateAccountController } from '../http/controllers/account/create-account.controller'
@@ -17,16 +25,15 @@ import {
 import { RATE_LIMIT_MESSAGE } from './rate-limit.constants'
 import { PublicRateLimitGuard } from './public-rate-limit.guard'
 import { SessionService } from '../auth/session.service'
+import { ControllableThrottlerStorage } from 'test/rate-limit/controllable-throttler-storage'
 
 describe('public endpoint rate limiting', () => {
   let app: INestApplication
+  const throttlerStorage = new ControllableThrottlerStorage()
   const authenticate = vi.fn()
   const register = vi.fn()
 
-  beforeEach(async () => {
-    authenticate.mockResolvedValue(left(new WrongCredentialsError()))
-    register.mockResolvedValue(right({ account: null as never }))
-
+  beforeAll(async () => {
     const values = {
       LOGIN_RATE_LIMIT_IP_MAX: 2,
       LOGIN_RATE_LIMIT_IDENTIFIER_MAX: 2,
@@ -39,7 +46,12 @@ describe('public endpoint rate limiting', () => {
     } as EnvService
 
     const moduleRef = await Test.createTestingModule({
-      imports: [ThrottlerModule.forRoot(createRateLimitOptions(env))],
+      imports: [
+        ThrottlerModule.forRoot({
+          ...createRateLimitOptions(env),
+          storage: throttlerStorage,
+        }),
+      ],
       controllers: [AuthenticateController, CreateAccountController],
       providers: [
         PublicRateLimitGuard,
@@ -62,9 +74,16 @@ describe('public endpoint rate limiting', () => {
     await app.init()
   })
 
-  afterEach(async () => {
+  beforeEach(() => {
+    throttlerStorage.reset()
+    authenticate.mockReset()
+    register.mockReset()
+    authenticate.mockResolvedValue(left(new WrongCredentialsError()))
+    register.mockResolvedValue(right({ account: null as never }))
+  })
+
+  afterAll(async () => {
     await app.close()
-    vi.clearAllMocks()
   })
 
   function attempt(email = 'user@example.com', forwardedFor?: string) {
@@ -106,7 +125,7 @@ describe('public endpoint rate limiting', () => {
     await attempt().expect(401)
     await attempt().expect(429)
 
-    await new Promise((resolve) => setTimeout(resolve, 1100))
+    throttlerStorage.advanceBy(1_100)
 
     await attempt().expect(401)
   })

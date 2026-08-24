@@ -3,12 +3,15 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { Test } from '@nestjs/testing'
 import { AppModule } from '@/app.module'
 import request from 'supertest'
+import { getStorageToken, ThrottlerStorageService } from '@nestjs/throttler'
+import { resetThrottlerStorage } from 'test/rate-limit/reset-throttler-storage'
 
 describe('Create Account (E2E)', () => {
   let app: INestApplication
   let prisma: PrismaService
+  let throttlerStorage: ThrottlerStorageService
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile()
@@ -16,11 +19,16 @@ describe('Create Account (E2E)', () => {
     app = moduleRef.createNestApplication()
 
     prisma = moduleRef.get(PrismaService)
+    throttlerStorage = moduleRef.get(getStorageToken())
 
     await app.init()
   })
 
-  afterEach(async () => {
+  beforeEach(() => {
+    resetThrottlerStorage(throttlerStorage)
+  })
+
+  afterAll(async () => {
     await app.close()
   })
 

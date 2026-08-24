@@ -5,10 +5,13 @@ import tsConfigPaths from 'vite-tsconfig-paths'
 export default defineConfig({
   test: {
     include: ['**/*.e2e-spec.ts'],
-    fileParallelism: false,
+    fileParallelism: true,
+    maxWorkers: 2,
+    minWorkers: 2,
     globals: true,
     root: './',
     setupFiles: ['./test/setup-e2e.ts'],
+    globalSetup: ['./test/global-setup-e2e.ts'],
     testTimeout: 30_000,
     hookTimeout: 30_000,
     teardownTimeout: 10_000,
