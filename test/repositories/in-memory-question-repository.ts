@@ -58,6 +58,17 @@ export class InMemoryQuestionRepository implements QuestionRepository {
     return this.items.filter((item) => item.surveyId.toString() === surveyId)
   }
 
+  async findQuestionsBySurveyIdAndAccountId(
+    surveyId: string,
+    accountId: string,
+  ): Promise<Question[]> {
+    return this.items.filter(
+      (item) =>
+        item.surveyId.toString() === surveyId &&
+        item.accountId.toString() === accountId,
+    )
+  }
+
   async create(question: Question) {
     this.items.push(question)
   }

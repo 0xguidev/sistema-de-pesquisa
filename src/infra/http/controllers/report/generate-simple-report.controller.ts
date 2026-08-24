@@ -12,6 +12,7 @@ import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { SurveyRepository } from '@/domain/repositories/survey-repository'
 import { throwReportHttpError } from './report-error-mapper'
+import { attachmentContentDisposition } from './content-disposition'
 
 @Controller('/reports')
 export class GenerateSimpleReportController {
@@ -26,6 +27,14 @@ export class GenerateSimpleReportController {
     @Param('surveyId') surveyId: string,
     @CurrentUser() user: UserPayload,
   ) {
+    const survey = await this.surveyRepository.findByIdAndAccountId(
+      surveyId,
+      user.sub,
+    )
+    if (!survey) {
+      throw new NotFoundException('Resource not found')
+    }
+
     return this.generateSimpleReportUseCase.execute(surveyId, user.sub)
   }
 
@@ -52,10 +61,10 @@ export class GenerateSimpleReportController {
     const year = currentDate.getFullYear()
     const dateSuffix = `${month}-${year}`
 
-    const surveyName = survey.title.replace(/\s+/g, '-')
+    const surveyName = survey.title
     const filename = `relatorio-simples-${surveyName}-${dateSuffix}.docx`
 
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.setHeader('Content-Disposition', attachmentContentDisposition(filename))
 
     try {
       const buffer = await this.generateSimpleReportWordUseCase.execute(

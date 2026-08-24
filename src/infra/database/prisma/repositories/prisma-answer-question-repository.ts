@@ -5,9 +5,7 @@ import { PrismaAnswerMapper } from '../mappers/prisma-answer-mapper'
 import { PrismaService } from '../prisma.service'
 
 @Injectable()
-export class PrismaAnswerQuestionRepository
-  implements AnswerQuestionRepository
-{
+export class PrismaAnswerQuestionRepository implements AnswerQuestionRepository {
   constructor(private prisma: PrismaService) {}
   async create(answerQuestion: AnswerQuestion): Promise<void> {
     const data = PrismaAnswerMapper.toPrisma(answerQuestion)
@@ -28,6 +26,16 @@ export class PrismaAnswerQuestionRepository
     }
 
     return PrismaAnswerMapper.toDomain(answer)
+  }
+  async findByIdAndAccountId(
+    id: string,
+    accountId: string,
+  ): Promise<AnswerQuestion | null> {
+    const answer = await this.prisma.answerQuestion.findFirst({
+      where: { id, userId: accountId },
+    })
+
+    return answer ? PrismaAnswerMapper.toDomain(answer) : null
   }
   async findManyByInterviewId(
     interviewId: string,

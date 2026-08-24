@@ -4,7 +4,10 @@ import { Question } from '../entities/question'
 export abstract class QuestionRepository {
   abstract create(question: Question): Promise<void>
   abstract findById(id: string): Promise<Question | null>
-  abstract findByIdAndAccountId(id: string, accountId: string): Promise<Question | null>
+  abstract findByIdAndAccountId(
+    id: string,
+    accountId: string,
+  ): Promise<Question | null>
   abstract findByQuestionNumAndAccountId(
     surveyId: string,
     questionNum: number,
@@ -15,6 +18,10 @@ export abstract class QuestionRepository {
     questionNum: number,
   ): Promise<Question | null>
   abstract findQuestionsBySurveyId(surveyId: string): Promise<Question[]>
+  abstract findQuestionsBySurveyIdAndAccountId(
+    surveyId: string,
+    accountId: string,
+  ): Promise<Question[]>
   abstract delete(id: string): Promise<void>
   abstract update(question: Question): Promise<void>
 
@@ -24,6 +31,8 @@ export abstract class QuestionRepository {
   ): Promise<ConditionalRule[]>
   abstract deleteConditionalRule(id: string): Promise<void>
   abstract deleteConditionalRulesByQuestionId(questionId: string): Promise<void>
-  abstract deleteConditionalRulesByDependsOnQuestionId(dependsOnQuestionId: string): Promise<void>
+  abstract deleteConditionalRulesByDependsOnQuestionId(
+    dependsOnQuestionId: string,
+  ): Promise<void>
   abstract updateConditionalRule(rule: ConditionalRule): Promise<void>
 }

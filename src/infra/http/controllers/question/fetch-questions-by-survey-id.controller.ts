@@ -1,16 +1,13 @@
-
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import {
   BadRequestException,
   Controller,
-  ForbiddenException,
   Get,
   NotFoundException,
   Param,
 } from '@nestjs/common'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
-import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 import { FetchQuestionsBySurveyIdUseCase } from '@/domain/use-cases/question/fetch-questions-by-survey-id'
 
 @Controller('/questions/survey/:id')
@@ -36,10 +33,6 @@ export class FetchQuestionsBySurveyIdController {
 
       if (error instanceof ResourceNotFoundError) {
         throw new NotFoundException(error.message)
-      }
-
-      if (error instanceof NotAllowedError) {
-        throw new ForbiddenException(error.message)
       }
 
       throw new BadRequestException()

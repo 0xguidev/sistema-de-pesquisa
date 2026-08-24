@@ -11,6 +11,7 @@ import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { SurveyRepository } from '@/domain/repositories/survey-repository'
 import { throwReportHttpError } from './report-error-mapper'
+import { attachmentContentDisposition } from './content-disposition'
 
 @Controller('/reports')
 export class GenerateSimpleReportPdfController {
@@ -39,10 +40,10 @@ export class GenerateSimpleReportPdfController {
     const year = currentDate.getFullYear()
     const dateSuffix = `${month}-${year}`
 
-    const surveyName = survey.title.replace(/\s+/g, '-')
+    const surveyName = survey.title
     const filename = `relatorio-simples-${surveyName}-${dateSuffix}.pdf`
 
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.setHeader('Content-Disposition', attachmentContentDisposition(filename))
 
     try {
       const buffer = await this.generateSimpleReportPdfUseCase.execute(

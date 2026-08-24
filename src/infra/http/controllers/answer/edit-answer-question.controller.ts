@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Body,
   Controller,
-  ForbiddenException,
   HttpCode,
   Param,
   Put,
@@ -14,7 +13,6 @@ import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { EditAnswerQuestionUseCase } from '@/domain/use-cases/answer-question/edit-answer-question'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
-import { NotAllowedError } from '@/core/errors/errors/not-allowed-error'
 
 const editAnswerQuestionBodySchema = z.object({
   questionId: z.string().optional(),
@@ -53,9 +51,6 @@ export class EditAnswerQuestionController {
     if (result.isLeft()) {
       if (result.value instanceof ResourceNotFoundError) {
         throw new NotFoundException(result.value.message)
-      }
-      if (result.value instanceof NotAllowedError) {
-        throw new ForbiddenException(result.value.message)
       }
     }
   }

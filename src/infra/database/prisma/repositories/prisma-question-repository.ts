@@ -91,6 +91,18 @@ export class PrismaQuestionRepository implements QuestionRepository {
     return questions.map(PrismaQuestionMapper.toDomain)
   }
 
+  async findQuestionsBySurveyIdAndAccountId(
+    surveyId: string,
+    accountId: string,
+  ): Promise<Question[]> {
+    const questions = await this.prisma.question.findMany({
+      where: { surveyId, userId: accountId },
+      orderBy: { number: 'asc' },
+    })
+
+    return questions.map(PrismaQuestionMapper.toDomain)
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.question.delete({
       where: {
@@ -201,7 +213,9 @@ export class PrismaQuestionRepository implements QuestionRepository {
     })
   }
 
-  async deleteConditionalRulesByDependsOnQuestionId(dependsOnQuestionId: string): Promise<void> {
+  async deleteConditionalRulesByDependsOnQuestionId(
+    dependsOnQuestionId: string,
+  ): Promise<void> {
     await this.prisma.conditionalRule.deleteMany({
       where: {
         dependsOnQuestionId,

@@ -103,6 +103,34 @@ describe('Fetch question by survey id (E2E)', () => {
     expect(response.statusCode).toBe(404)
   })
 
+  test('[GET] /questions/survey/:surveyId - returns an empty owned survey', async () => {
+    const user = await accountFactory.makePrismaAccount()
+    const token = (await sessions.create(user.id.toString(), {})).accessToken
+    const survey = await surveyFactory.makePrismaSurvey({ accountId: user.id })
+
+    await request(app.getHttpServer())
+      .get(`/questions/survey/${survey.id.toString()}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200, [])
+  })
+
+  test('[GET] /questions/survey/:surveyId - hides another account survey', async () => {
+    const owner = await accountFactory.makePrismaAccount()
+    const otherUser = await accountFactory.makePrismaAccount()
+    const token = (await sessions.create(otherUser.id.toString(), {}))
+      .accessToken
+    const survey = await surveyFactory.makePrismaSurvey({ accountId: owner.id })
+    await questionFactory.makePrismaQuestion({
+      accountId: owner.id,
+      surveyId: survey.id,
+    })
+
+    await request(app.getHttpServer())
+      .get(`/questions/survey/${survey.id.toString()}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(404)
+  })
+
   test('[GET] /questions/:id - 401 without access token', async () => {
     const response = await request(app.getHttpServer()).get(
       '/questions/survey/any-id',

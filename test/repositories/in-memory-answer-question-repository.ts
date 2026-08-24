@@ -16,6 +16,15 @@ export class InMemoryAnswerQuestionRepository implements AnswerQuestionRepositor
     return answerquestion
   }
 
+  async findByIdAndAccountId(id: string, accountId: string) {
+    return (
+      this.items.find(
+        (item) =>
+          item.id.toString() === id && item.accountId.toString() === accountId,
+      ) ?? null
+    )
+  }
+
   async findManyByInterviewId(interviewId: string, accountId: string) {
     return this.items.filter(
       (item) =>

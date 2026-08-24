@@ -113,4 +113,60 @@ describe('Edit answer question (E2E)', () => {
       optionAnswerId: option2.id.toString(),
     })
   })
+
+  test('[PUT] /answer-questions/:id rejects foreign and cross-survey resources', async () => {
+    const owner = await accountFactory.makePrismaAccount()
+    const otherUser = await accountFactory.makePrismaAccount()
+    const ownerToken = (await sessions.create(owner.id.toString(), {}))
+      .accessToken
+    const otherToken = (await sessions.create(otherUser.id.toString(), {}))
+      .accessToken
+    const survey = await surveyFactory.makePrismaSurvey({ accountId: owner.id })
+    const otherSurvey = await surveyFactory.makePrismaSurvey({
+      accountId: owner.id,
+    })
+    const interview = await interviewFactory.makePrismaInterview({
+      accountId: owner.id,
+      surveyId: survey.id,
+    })
+    const question = await questionFactory.makePrismaQuestion({
+      accountId: owner.id,
+      surveyId: survey.id,
+    })
+    const option = await optionAnswerFactory.makePrismaOptionAnswer({
+      accountId: owner.id,
+      questionId: question.id,
+    })
+    const answer = await answerquestionFactory.makePrismaAnswerQuestion({
+      accountId: owner.id,
+      interviewId: interview.id,
+      questionId: question.id,
+      optionAnswerId: option.id,
+    })
+    const crossSurveyQuestion = await questionFactory.makePrismaQuestion({
+      accountId: owner.id,
+      surveyId: otherSurvey.id,
+    })
+    const crossSurveyOption = await optionAnswerFactory.makePrismaOptionAnswer({
+      accountId: owner.id,
+      questionId: crossSurveyQuestion.id,
+    })
+
+    await request(app.getHttpServer())
+      .put(`/answer-questions/${answer.id.toString()}`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ optionAnswerId: option.id.toString() })
+      .expect(404)
+
+    await request(app.getHttpServer())
+      .put(`/answer-questions/${answer.id.toString()}`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        questionId: crossSurveyQuestion.id.toString(),
+        optionAnswerId: crossSurveyOption.id.toString(),
+      })
+      .expect(404)
+  })
+
+  afterAll(async () => app.close())
 })

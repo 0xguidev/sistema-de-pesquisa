@@ -51,6 +51,34 @@ describe('Report Controllers (E2E)', () => {
     await app.close()
   })
 
+  it('hides report data and downloads from another account', async () => {
+    const otherUser = await accountFactory.makePrismaAccount()
+    const otherToken = (await sessions.create(otherUser.id.toString(), {}))
+      .accessToken
+    const survey = await prisma.survey.create({
+      data: {
+        title: 'Confidential résumé',
+        location: 'Private',
+        type: 'Private',
+        slug: `private-${Date.now()}`,
+        userId,
+      },
+    })
+
+    for (const path of [
+      `/reports/simple/${survey.id}`,
+      `/reports/cross/${survey.id}`,
+      `/reports/simple/${survey.id}/download`,
+      `/reports/cross/${survey.id}/download`,
+      `/reports/simple-pdf/${survey.id}`,
+    ]) {
+      await request(app.getHttpServer())
+        .get(path)
+        .set('Authorization', `Bearer ${otherToken}`)
+        .expect(404)
+    }
+  })
+
   it('should download simple report as Word document', async () => {
     // Create a survey and interview data
     const surveyResponse = await request(app.getHttpServer())
