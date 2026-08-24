@@ -156,6 +156,7 @@ describe('Generate simple report (E2E)', () => {
         {
           id: '60000000-0000-4000-8000-000000000001',
           interviewId: interviewIds[0],
+          surveyId: IDS.survey,
           questionId: IDS.qColor,
           optionAnswerId: IDS.blue,
           userId: IDS.owner,
@@ -163,6 +164,7 @@ describe('Generate simple report (E2E)', () => {
         {
           id: '60000000-0000-4000-8000-000000000002',
           interviewId: interviewIds[0],
+          surveyId: IDS.survey,
           questionId: IDS.qRegion,
           optionAnswerId: IDS.south,
           userId: IDS.owner,
@@ -170,6 +172,7 @@ describe('Generate simple report (E2E)', () => {
         {
           id: '60000000-0000-4000-8000-000000000003',
           interviewId: interviewIds[1],
+          surveyId: IDS.survey,
           questionId: IDS.qColor,
           optionAnswerId: IDS.red,
           userId: IDS.owner,
@@ -177,6 +180,7 @@ describe('Generate simple report (E2E)', () => {
         {
           id: '60000000-0000-4000-8000-000000000004',
           interviewId: interviewIds[1],
+          surveyId: IDS.survey,
           questionId: IDS.qRegion,
           optionAnswerId: IDS.north,
           userId: IDS.owner,
@@ -184,27 +188,12 @@ describe('Generate simple report (E2E)', () => {
         {
           id: '60000000-0000-4000-8000-000000000005',
           interviewId: interviewIds[2],
+          surveyId: IDS.survey,
           questionId: IDS.qColor,
           optionAnswerId: IDS.blue,
           userId: IDS.owner,
         },
       ],
-    })
-    await prisma.interview.create({
-      data: {
-        id: '50000000-0000-4000-8000-000000000009',
-        surveyId: IDS.survey,
-        userId: IDS.outsider,
-      },
-    })
-    await prisma.answerQuestion.create({
-      data: {
-        id: '60000000-0000-4000-8000-000000000009',
-        interviewId: '50000000-0000-4000-8000-000000000009',
-        questionId: IDS.qColor,
-        optionAnswerId: IDS.red,
-        userId: IDS.outsider,
-      },
     })
   }
 

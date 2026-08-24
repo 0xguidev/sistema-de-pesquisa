@@ -40,8 +40,8 @@ export class PrismaQuestionRepository implements QuestionRepository {
     id: string,
     accountId: string,
   ): Promise<Question | null> {
-    const question = await this.prisma.question.findFirst({
-      where: { id, userId: accountId },
+    const question = await this.prisma.question.findUnique({
+      where: { id_userId: { id, userId: accountId } },
     })
 
     return question ? PrismaQuestionMapper.toDomain(question) : null

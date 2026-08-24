@@ -43,7 +43,7 @@ model Session {
   userAgent  String?   @map("user_agent") @db.VarChar(200)
   ipHash     String?   @map("ip_hash") @db.VarChar(64)
 
-  account User @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account    User               @relation(fields: [accountId], references: [id], onDelete: Cascade)
   usedTokens SessionUsedToken[]
 
   @@index([accountId, revokedAt])
@@ -85,6 +85,7 @@ model Survey {
   interviews       Interview[]
   conditionalRules ConditionalRule[]
 
+  @@unique([id, userId])
   @@map("surveys")
 }
 
@@ -102,10 +103,13 @@ model Question {
   dependsOnConditionalRules ConditionalRule[] @relation("dependsOnQuestion")
 
   user             User             @relation(fields: [userId], references: [id])
-  survey           Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  survey           Survey           @relation(fields: [surveyId, userId], references: [id, userId], onDelete: Cascade)
   option_answers   OptionAnswer[]
   answer_questions AnswerQuestion[]
 
+  @@unique([id, userId])
+  @@unique([id, surveyId, userId])
+  @@index([surveyId, userId])
   @@map("questions")
 }
 
@@ -120,11 +124,14 @@ model OptionAnswer {
   updatedAt  DateTime? @updatedAt @map("updated_at")
 
   user     User     @relation(fields: [userId], references: [id])
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId, userId], references: [id, userId], onDelete: Cascade)
 
   answer_questions          AnswerQuestion[]
   dependsOnConditionalRules ConditionalRule[] @relation("dependsOnOption")
 
+  @@unique([id, userId])
+  @@unique([id, questionId, userId])
+  @@index([questionId, userId])
   @@map("option_answers")
 }
 
@@ -135,16 +142,20 @@ model Interview {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  survey           Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  survey           Survey           @relation(fields: [surveyId, userId], references: [id, userId], onDelete: Cascade)
   user             User             @relation(fields: [userId], references: [id])
   answer_questions AnswerQuestion[]
 
+  @@unique([id, userId])
+  @@unique([id, surveyId, userId])
+  @@index([surveyId, userId])
   @@map("interviews")
 }
 
 model AnswerQuestion {
   id             String    @id @unique @default(uuid())
   interviewId    String
+  surveyId       String
   questionId     String
   optionAnswerId String
   userId         String
@@ -152,10 +163,14 @@ model AnswerQuestion {
   updatedAt      DateTime? @updatedAt @map("updated_at")
 
   user         User         @relation(fields: [userId], references: [id])
-  interview    Interview    @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  question     Question     @relation(fields: [questionId], references: [id])
-  optionAnswer OptionAnswer @relation(fields: [optionAnswerId], references: [id])
+  interview    Interview    @relation(fields: [interviewId, surveyId, userId], references: [id, surveyId, userId], onDelete: Cascade)
+  question     Question     @relation(fields: [questionId, surveyId, userId], references: [id, surveyId, userId])
+  optionAnswer OptionAnswer @relation(fields: [optionAnswerId, questionId, userId], references: [id, questionId, userId])
 
+  @@unique([interviewId, questionId])
+  @@index([interviewId, surveyId, userId])
+  @@index([questionId, surveyId, userId])
+  @@index([optionAnswerId, questionId, userId])
   @@map("answer_questions")
 }
 

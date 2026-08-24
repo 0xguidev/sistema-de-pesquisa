@@ -8,7 +8,16 @@ import { PrismaService } from '../prisma.service'
 export class PrismaAnswerQuestionRepository implements AnswerQuestionRepository {
   constructor(private prisma: PrismaService) {}
   async create(answerQuestion: AnswerQuestion): Promise<void> {
-    const data = PrismaAnswerMapper.toPrisma(answerQuestion)
+    const interview = await this.prisma.interview.findUniqueOrThrow({
+      where: {
+        id_userId: {
+          id: answerQuestion.interviewId.toString(),
+          userId: answerQuestion.accountId.toString(),
+        },
+      },
+      select: { surveyId: true },
+    })
+    const data = PrismaAnswerMapper.toPrisma(answerQuestion, interview.surveyId)
 
     await this.prisma.answerQuestion.create({
       data,
@@ -61,7 +70,16 @@ export class PrismaAnswerQuestionRepository implements AnswerQuestionRepository 
     })
   }
   async update(answerQuestion: AnswerQuestion): Promise<void> {
-    const data = PrismaAnswerMapper.toPrisma(answerQuestion)
+    const interview = await this.prisma.interview.findUniqueOrThrow({
+      where: {
+        id_userId: {
+          id: answerQuestion.interviewId.toString(),
+          userId: answerQuestion.accountId.toString(),
+        },
+      },
+      select: { surveyId: true },
+    })
+    const data = PrismaAnswerMapper.toPrisma(answerQuestion, interview.surveyId)
 
     await this.prisma.answerQuestion.update({
       where: {

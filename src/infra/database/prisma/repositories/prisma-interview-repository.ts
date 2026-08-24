@@ -87,8 +87,8 @@ export class PrismaInterviewRepository implements InterviewRepository {
     id: string,
     accountId: string,
   ): Promise<Interview | null> {
-    const interview = await this.prisma.interview.findFirst({
-      where: { id, userId: accountId },
+    const interview = await this.prisma.interview.findUnique({
+      where: { id_userId: { id, userId: accountId } },
     })
 
     return interview ? PrismaInterviewMapper.toDomain(interview) : null

@@ -34,8 +34,13 @@ export class AnswerQuestionFactory {
   ): Promise<AnswerQuestion> {
     const account = makeAnswerQuestion(data)
 
+    const interview = await this.prisma.interview.findUniqueOrThrow({
+      where: { id: account.interviewId.toString() },
+      select: { surveyId: true },
+    })
+
     await this.prisma.answerQuestion.create({
-      data: PrismaAnswerMapper.toPrisma(account),
+      data: PrismaAnswerMapper.toPrisma(account, interview.surveyId),
     })
 
     return account

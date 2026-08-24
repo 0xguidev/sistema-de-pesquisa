@@ -14,8 +14,7 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
   ): Promise<OptionAnswer | null> {
     const optionAnswer = await this.prisma.optionAnswer.findUnique({
       where: {
-        id: optionId,
-        userId: accountId,
+        id_userId: { id: optionId, userId: accountId },
       },
     })
 
@@ -31,8 +30,14 @@ export class PrismaOptionAnswerRepository implements OptionAnswerRepository {
     questionId: string,
     accountId: string,
   ): Promise<OptionAnswer | null> {
-    const option = await this.prisma.optionAnswer.findFirst({
-      where: { id: optionId, questionId, userId: accountId },
+    const option = await this.prisma.optionAnswer.findUnique({
+      where: {
+        id_questionId_userId: {
+          id: optionId,
+          questionId,
+          userId: accountId,
+        },
+      },
     })
 
     return option ? PrismaOptionAnswerMapper.toDomain(option) : null

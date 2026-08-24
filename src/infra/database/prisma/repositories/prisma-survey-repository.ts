@@ -36,8 +36,8 @@ export class PrismaSurveyRepository implements SurveyRepository {
     id: string,
     accountId: string,
   ): Promise<Survey | null> {
-    const survey = await this.prisma.survey.findFirst({
-      where: { id, userId: accountId },
+    const survey = await this.prisma.survey.findUnique({
+      where: { id_userId: { id, userId: accountId } },
     })
 
     return survey ? PrismaSurveyMapper.toDomain(survey) : null
@@ -48,10 +48,7 @@ export class PrismaSurveyRepository implements SurveyRepository {
     accountId: string,
   ): Promise<SurveyDetails | null> {
     const survey = await this.prisma.survey.findUnique({
-      where: {
-        id,
-        userId: accountId,
-      },
+      where: { id_userId: { id, userId: accountId } },
       include: {
         questions: {
           include: {

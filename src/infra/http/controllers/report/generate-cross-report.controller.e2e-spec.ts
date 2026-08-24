@@ -182,6 +182,7 @@ describe('Generate cross report (E2E)', () => {
         {
           id: '61000000-0000-4000-8000-000000000001',
           interviewId: interviews[0],
+          surveyId: ID.survey,
           questionId: ID.qA,
           optionAnswerId: ID.a1,
           userId: ID.owner,
@@ -189,6 +190,7 @@ describe('Generate cross report (E2E)', () => {
         {
           id: '61000000-0000-4000-8000-000000000002',
           interviewId: interviews[0],
+          surveyId: ID.survey,
           questionId: ID.qB,
           optionAnswerId: ID.b1,
           userId: ID.owner,
@@ -196,6 +198,7 @@ describe('Generate cross report (E2E)', () => {
         {
           id: '61000000-0000-4000-8000-000000000003',
           interviewId: interviews[1],
+          surveyId: ID.survey,
           questionId: ID.qA,
           optionAnswerId: ID.a1,
           userId: ID.owner,
@@ -203,6 +206,7 @@ describe('Generate cross report (E2E)', () => {
         {
           id: '61000000-0000-4000-8000-000000000004',
           interviewId: interviews[1],
+          surveyId: ID.survey,
           questionId: ID.qB,
           optionAnswerId: ID.b2,
           userId: ID.owner,
@@ -210,34 +214,10 @@ describe('Generate cross report (E2E)', () => {
         {
           id: '61000000-0000-4000-8000-000000000005',
           interviewId: interviews[2],
+          surveyId: ID.survey,
           questionId: ID.qA,
           optionAnswerId: ID.a2,
           userId: ID.owner,
-        },
-      ],
-    })
-    await prisma.interview.create({
-      data: {
-        id: '51000000-0000-4000-8000-000000000009',
-        surveyId: ID.survey,
-        userId: ID.outsider,
-      },
-    })
-    await prisma.answerQuestion.createMany({
-      data: [
-        {
-          id: '61000000-0000-4000-8000-000000000009',
-          interviewId: '51000000-0000-4000-8000-000000000009',
-          questionId: ID.qA,
-          optionAnswerId: ID.a2,
-          userId: ID.outsider,
-        },
-        {
-          id: '61000000-0000-4000-8000-000000000010',
-          interviewId: '51000000-0000-4000-8000-000000000009',
-          questionId: ID.qB,
-          optionAnswerId: ID.b2,
-          userId: ID.outsider,
         },
       ],
     })

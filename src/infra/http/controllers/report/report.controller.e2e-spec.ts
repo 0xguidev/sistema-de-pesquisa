@@ -128,31 +128,6 @@ describe('Report Controllers (E2E)', () => {
       accountId: new UniqueEntityID(userId),
     })
 
-    const outsider = await accountFactory.makePrismaAccount({
-      email: 'docx-simple-outsider@example.com',
-    })
-    const outsiderQuestion = await questionFactory.makePrismaQuestion({
-      surveyId: new UniqueEntityID(surveyId),
-      accountId: outsider.id,
-      questionTitle: 'OUTSIDER SECRET',
-      questionNum: 99,
-    })
-    const outsiderOption = await optionFactory.makePrismaOptionAnswer({
-      questionId: outsiderQuestion.id,
-      accountId: outsider.id,
-      optionTitle: 'OUTSIDER OPTION',
-      optionNum: 1,
-    })
-    const outsiderInterview = await interviewFactory.makePrismaInterview({
-      surveyId: new UniqueEntityID(surveyId),
-      accountId: outsider.id,
-    })
-    await answerFactory.makePrismaAnswerQuestion({
-      interviewId: outsiderInterview.id,
-      questionId: outsiderQuestion.id,
-      optionAnswerId: outsiderOption.id,
-      accountId: outsider.id,
-    })
 
     const response = await request(app.getHttpServer())
       .get(`/reports/simple/${surveyId}/download`)
@@ -241,21 +216,6 @@ describe('Report Controllers (E2E)', () => {
       accountId: new UniqueEntityID(userId),
     })
 
-    const outsider = await accountFactory.makePrismaAccount({
-      email: 'docx-cross-outsider@example.com',
-    })
-    const outsiderQuestion = await questionFactory.makePrismaQuestion({
-      surveyId: new UniqueEntityID(surveyId),
-      accountId: outsider.id,
-      questionTitle: 'OUTSIDER SECRET',
-      questionNum: 99,
-    })
-    await optionFactory.makePrismaOptionAnswer({
-      questionId: outsiderQuestion.id,
-      accountId: outsider.id,
-      optionTitle: 'OUTSIDER OPTION',
-      optionNum: 1,
-    })
     await answerFactory.makePrismaAnswerQuestion({
       interviewId: interviewCrossFinal.id,
       questionId: question2.id,
