@@ -4,6 +4,7 @@ import { Injectable, Optional } from '@nestjs/common'
 import { SecurityLogger } from '@/infra/observability/security-logger.service'
 import { SecurityMetrics } from '@/infra/observability/security-metrics.service'
 import { SecurityEvent } from '@/infra/observability/security-events'
+import { PdfCapacityStore } from './pdf-capacity-store'
 
 export class ReportUserCapacityError extends Error {}
 export class ReportGlobalCapacityError extends Error {}
@@ -11,11 +12,9 @@ export class ReportTimeoutError extends Error {}
 
 @Injectable()
 export class ReportProtection {
-  private globalPdf = 0
-  private readonly userPdf = new Map<string, number>()
-
   constructor(
     private readonly env: EnvService,
+    private readonly capacity: PdfCapacityStore,
     @Optional() private readonly logger?: SecurityLogger,
     @Optional() private readonly metrics?: SecurityMetrics,
   ) {}
@@ -113,8 +112,15 @@ export class ReportProtection {
     accountId: string,
     operation: (signal: AbortSignal) => Promise<T>,
   ): Promise<T> {
-    const currentUser = this.userPdf.get(accountId) ?? 0
-    if (currentUser >= this.env.get('REPORT_PDF_USER_CONCURRENCY')) {
+    const slot = await this.capacity.acquire({
+      accountId,
+      globalLimit: this.env.get('REPORT_PDF_GLOBAL_CONCURRENCY'),
+      userLimit: this.env.get('REPORT_PDF_USER_CONCURRENCY'),
+      // A crashed replica cannot release its lease. Keep it slightly longer
+      // than the enforced render timeout, then let another acquisition reap it.
+      leaseMs: this.timeoutMs + 30_000,
+    })
+    if (!slot.acquired && slot.reason === 'user') {
       this.logger?.audit(SecurityEvent.REPORT_CAPACITY_REJECTED, {
         scope: 'user',
         principal_id: this.logger?.pseudonym(accountId),
@@ -123,7 +129,7 @@ export class ReportProtection {
         'Já existe uma geração de PDF em andamento para este usuário.',
       )
     }
-    if (this.globalPdf >= this.env.get('REPORT_PDF_GLOBAL_CONCURRENCY')) {
+    if (!slot.acquired) {
       this.logger?.audit(SecurityEvent.REPORT_CAPACITY_REJECTED, {
         scope: 'global',
       })
@@ -131,11 +137,11 @@ export class ReportProtection {
         'A capacidade de geração de PDF está temporariamente esgotada.',
       )
     }
-    this.globalPdf++
-    this.userPdf.set(accountId, currentUser + 1)
     let timer: ReturnType<typeof setTimeout> | undefined
     const abort = new AbortController()
-    const running = operation(abort.signal)
+    // Convert synchronous renderer failures into a rejected promise so the
+    // finally block always releases the distributed lease.
+    const running = Promise.resolve().then(() => operation(abort.signal))
     try {
       return await Promise.race([
         running,
@@ -160,10 +166,7 @@ export class ReportProtection {
       // The timed-out operation may ignore cancellation. Observe its eventual
       // rejection without delaying the HTTP response or retaining capacity.
       void running.catch(() => undefined)
-      this.globalPdf--
-      const remaining = (this.userPdf.get(accountId) ?? 1) - 1
-      if (remaining === 0) this.userPdf.delete(accountId)
-      else this.userPdf.set(accountId, remaining)
+      await this.capacity.release(slot.leaseId)
     }
   }
 }

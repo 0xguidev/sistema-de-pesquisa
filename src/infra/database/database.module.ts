@@ -16,10 +16,13 @@ import { TokenRevocation } from '@/domain/auth/token-revocation'
 import { TokenRevocationService } from './token-revocation.service'
 import { CompleteSurveyRepository } from '@/domain/repositories/complete-survey-repository'
 import { PrismaCompleteSurveyRepository } from './prisma/repositories/prisma-complete-survey-repository'
+import { PdfCapacityStore } from '@/domain/use-cases/report/pdf-capacity-store'
+import { PrismaPdfCapacityStore } from './prisma/prisma-pdf-capacity-store'
 
 @Module({
   providers: [
     PrismaService,
+    { provide: PdfCapacityStore, useClass: PrismaPdfCapacityStore },
     {
       provide: CompleteSurveyRepository,
       useClass: PrismaCompleteSurveyRepository,
@@ -55,6 +58,7 @@ import { PrismaCompleteSurveyRepository } from './prisma/repositories/prisma-com
   ],
   exports: [
     PrismaService,
+    PdfCapacityStore,
     CompleteSurveyRepository,
     TokenRevocation,
     AccountRepository,
