@@ -4,6 +4,7 @@ import { CreateOptionAnswerUseCase } from './create-option-answer'
 import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
 import { makeAccount } from 'test/factories/make-Account'
 import { makeQuestion } from 'test/factories/make-question'
+import { unwrapRight } from 'test/utils/either'
 
 let inMemoryOptionAnswersRepository: InMemoryOptionAnswersRepository
 let inMemoryQuestionRepository: InMemoryQuestionRepository
@@ -32,10 +33,8 @@ describe('Create option answer', () => {
       questionId: question.id.toString(),
     })
 
-    expect(result.isRight()).toBe(true)
-    expect(inMemoryOptionAnswersRepository.items[0]).toEqual(
-      result.value?.optionAnswer,
-    )
+    const { optionAnswer } = unwrapRight(result)
+    expect(inMemoryOptionAnswersRepository.items[0]).toEqual(optionAnswer)
     expect(inMemoryOptionAnswersRepository.items[0].optionTitle).toEqual(
       'any_title',
     )

@@ -4,6 +4,7 @@ import { CreateInterviewUseCase } from './create-interview'
 import { makeSurvey } from 'test/factories/make-survey'
 import { InMemorySurveyRepository } from 'test/repositories/in-memory-survey-repository'
 import { makeAccount } from 'test/factories/make-Account'
+import { unwrapRight } from 'test/utils/either'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
 let inMemorySurveyRepository: InMemorySurveyRepository
@@ -28,10 +29,8 @@ describe('Create interview', () => {
       accountId: survey.accountId.toString(),
     })
 
-    expect(createdInterview.isRight()).toBe(true)
-    expect(inMemoryInterviewRepository.items[0]).toEqual(
-      createdInterview.value?.interview,
-    )
+    const { interview } = unwrapRight(createdInterview)
+    expect(inMemoryInterviewRepository.items[0]).toEqual(interview)
   })
 
   it('should not create an interview for another account survey', async () => {

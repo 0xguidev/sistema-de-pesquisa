@@ -7,10 +7,9 @@ import { AccountFactory } from 'test/factories/make-Account'
 import { SurveyFactory } from 'test/factories/make-survey'
 import { InterviewFactory } from 'test/factories/make-interview'
 import { DatabaseModule } from '@/infra/database/database.module'
-import { IncomingMessage } from 'node:http'
 
 function parseBinary(
-  response: IncomingMessage,
+  response: request.Response,
   callback: (error: Error | null, body?: Buffer) => void,
 ) {
   const chunks: Buffer[] = []

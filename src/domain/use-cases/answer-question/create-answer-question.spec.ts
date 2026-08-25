@@ -9,6 +9,7 @@ import { InMemoryInterviewRepository } from 'test/repositories/in-memory-intervi
 import { InMemoryQuestionRepository } from 'test/repositories/in-memory-question-repository'
 import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { makeSurvey } from 'test/factories/make-survey'
+import { unwrapRight } from 'test/utils/either'
 
 let inMemoryAnswerQuestionsRepository: InMemoryAnswerQuestionRepository
 let inMemoryInterviewRepository: InMemoryInterviewRepository
@@ -56,10 +57,8 @@ describe('Create answer question', () => {
       accountId: account.id.toString(),
     })
 
-    expect(createdAnswerQuestion.isRight()).toBe(true)
-    expect(inMemoryAnswerQuestionsRepository.items[0]).toEqual(
-      createdAnswerQuestion.value?.answerQuestion,
-    )
+    const { answerQuestion } = unwrapRight(createdAnswerQuestion)
+    expect(inMemoryAnswerQuestionsRepository.items[0]).toEqual(answerQuestion)
   })
 
   it('should reject cross-tenant and incompatible answer resources', async () => {

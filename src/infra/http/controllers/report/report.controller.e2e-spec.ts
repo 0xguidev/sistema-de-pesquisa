@@ -7,11 +7,10 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { AccountFactory } from 'test/factories/make-Account'
 import { InterviewFactory } from 'test/factories/make-interview'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
-import { IncomingMessage } from 'node:http'
 import JSZip from 'jszip'
 
 function parseBinary(
-  response: IncomingMessage,
+  response: request.Response,
   callback: (error: Error | null, body?: Buffer) => void,
 ) {
   const chunks: Buffer[] = []
@@ -127,7 +126,6 @@ describe('Report Controllers (E2E)', () => {
       optionAnswerId: option.id,
       accountId: new UniqueEntityID(userId),
     })
-
 
     const response = await request(app.getHttpServer())
       .get(`/reports/simple/${surveyId}/download`)

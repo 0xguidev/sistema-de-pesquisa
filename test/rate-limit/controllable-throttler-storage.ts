@@ -1,4 +1,6 @@
-import { ThrottlerStorage, ThrottlerStorageRecord } from '@nestjs/throttler'
+import { ThrottlerStorage } from '@nestjs/throttler'
+
+type ThrottlerStorageResult = Awaited<ReturnType<ThrottlerStorage['increment']>>
 
 interface Bucket {
   hits: number
@@ -37,7 +39,7 @@ export class ControllableThrottlerStorage implements ThrottlerStorage {
     limit: number,
     blockDuration: number,
     throttlerName: string,
-  ): Promise<ThrottlerStorageRecord> {
+  ): Promise<ThrottlerStorageResult> {
     const bucketKey = `${throttlerName}:${key}`
     let bucket = this.buckets.get(bucketKey)
 

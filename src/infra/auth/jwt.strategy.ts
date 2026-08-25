@@ -51,7 +51,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     })
   }
 
-  async validate(payload: UserPayload) {
+  async validate(payload: unknown): Promise<UserPayload> {
     const parsedPayload = tokenPayloadSchema.safeParse(payload)
     if (!parsedPayload.success) {
       throw new UnauthorizedException('Invalid token claims')
@@ -68,7 +68,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Token has been revoked')
     }
 
-    if (!(await this.sessions.isActive(validatedPayload.sid, validatedPayload.sub))) {
+    if (
+      !(await this.sessions.isActive(
+        validatedPayload.sid,
+        validatedPayload.sub,
+      ))
+    ) {
       throw new UnauthorizedException('Session is not active')
     }
 

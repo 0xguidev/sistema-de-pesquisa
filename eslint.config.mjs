@@ -10,7 +10,7 @@ export default [
     languageOptions: {
       parser: tsparser,
       parserOptions: {
-        project: 'tsconfig.json',
+        project: ['./tsconfig.build.json', './tsconfig.spec.json'],
         tsconfigRootDir: import.meta.dirname,
         sourceType: 'module',
       },
@@ -26,7 +26,10 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
       'no-unused-vars': 'off',
       semi: ['error', 'never'],
     },

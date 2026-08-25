@@ -70,9 +70,9 @@ model RevokedTokenSubject {
 }
 
 model RateLimitBucket {
-  key          String   @id
-  totalHits    Int      @map("total_hits")
-  expiresAt    DateTime @map("expires_at")
+  key          String    @id
+  totalHits    Int       @map("total_hits")
+  expiresAt    DateTime  @map("expires_at")
   blockedUntil DateTime? @map("blocked_until")
 
   @@index([expiresAt])

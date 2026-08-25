@@ -18,5 +18,7 @@
       "test/*": ["./test/*"]
     },
     "types": ["vitest/globals", "node"]
-  }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "*.mts"],
+  "exclude": ["node_modules", "dist"]
 }
