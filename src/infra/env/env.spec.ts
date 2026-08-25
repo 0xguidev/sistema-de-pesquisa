@@ -19,6 +19,32 @@ describe('environment validation', () => {
     ).toBe(12)
   })
 
+  it('uses a 15-minute access token by default and accepts a safe override', () => {
+    expect(envSchema.parse(requiredEnvironment).ACCESS_TOKEN_TTL_SECONDS).toBe(
+      900,
+    )
+    expect(
+      envSchema.parse({
+        ...requiredEnvironment,
+        ACCESS_TOKEN_TTL_SECONDS: '1800',
+      }).ACCESS_TOKEN_TTL_SECONDS,
+    ).toBe(1800)
+  })
+
+  it('rejects process-local rate limiting in production', () => {
+    expect(
+      envSchema.safeParse({
+        ...requiredEnvironment,
+        NODE_ENV: 'production',
+        RATE_LIMIT_STORE: 'memory',
+      }).success,
+    ).toBe(false)
+    expect(
+      envSchema.parse({ ...requiredEnvironment, NODE_ENV: 'production' })
+        .RATE_LIMIT_STORE,
+    ).toBe('database')
+  })
+
   it('reads rate limits and trusted proxy hops from the environment', () => {
     const parsed = envSchema.parse({
       ...requiredEnvironment,

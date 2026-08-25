@@ -14,6 +14,7 @@ import {
   normalizeAccountName,
 } from '@/domain/account/account-policy'
 import { InvalidAccountDataError } from '../error/invalid-account-data.error'
+import { PasswordCompromiseChecker } from '@/domain/account/password-compromise-checker'
 
 interface EditAccountUseCaseRequest {
   accountId: string
@@ -37,6 +38,7 @@ export class EditAccountUseCase {
   constructor(
     private accountRepository: AccountRepository,
     private hashGenerator: HashGenerator,
+    private passwordCompromiseChecker: PasswordCompromiseChecker,
   ) {}
 
   async execute({
@@ -68,6 +70,13 @@ export class EditAccountUseCase {
     }
 
     if (password !== undefined && !isAccountPasswordValid(password)) {
+      return left(new InvalidAccountDataError('Invalid account password'))
+    }
+
+    if (
+      password !== undefined &&
+      (await this.passwordCompromiseChecker.isCompromised(password))
+    ) {
       return left(new InvalidAccountDataError('Invalid account password'))
     }
 

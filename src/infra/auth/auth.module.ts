@@ -25,7 +25,7 @@ import { RolesGuard } from './roles.guard'
         return {
           signOptions: {
             algorithm: 'RS256',
-            expiresIn: '1d',
+            expiresIn: env.get('ACCESS_TOKEN_TTL_SECONDS'),
             issuer: 'sistema-de-pesquisa',
             audience: 'sistema-de-pesquisa',
           },

@@ -15,7 +15,11 @@ import { Public } from '@/infra/auth/public'
 import { AuthenticateAccountUseCase } from '@/domain/use-cases/account/authenticate-account'
 import { WrongCredentialsError } from '@/domain/use-cases/error/wrong-credentials-error'
 import { SkipThrottle } from '@nestjs/throttler'
-import { REGISTER_IP_THROTTLER } from '@/infra/rate-limit/rate-limit.constants'
+import {
+  REFRESH_IP_THROTTLER,
+  REFRESH_SESSION_THROTTLER,
+  REGISTER_IP_THROTTLER,
+} from '@/infra/rate-limit/rate-limit.constants'
 import { PublicRateLimitGuard } from '@/infra/rate-limit/public-rate-limit.guard'
 import { SessionService } from '@/infra/auth/session.service'
 
@@ -33,7 +37,11 @@ type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 @Controller('/sessions')
 @Public()
 @UseGuards(PublicRateLimitGuard)
-@SkipThrottle({ [REGISTER_IP_THROTTLER]: true })
+@SkipThrottle({
+  [REGISTER_IP_THROTTLER]: true,
+  [REFRESH_IP_THROTTLER]: true,
+  [REFRESH_SESSION_THROTTLER]: true,
+})
 export class AuthenticateController {
   constructor(
     private authenticateAccount: AuthenticateAccountUseCase,
@@ -65,7 +73,10 @@ export class AuthenticateController {
       }
     }
 
-    const tokens = await this.sessions.create(result.value.accountId, { userAgent, ip })
+    const tokens = await this.sessions.create(result.value.accountId, {
+      userAgent,
+      ip,
+    })
 
     return {
       access_token: tokens.accessToken,

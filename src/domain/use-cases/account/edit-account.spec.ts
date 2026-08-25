@@ -5,16 +5,23 @@ import { makeAccount } from 'test/factories/make-Account'
 import { EditAccountUseCase } from './edit-account'
 import { InvalidAccountDataError } from '../error/invalid-account-data.error'
 import { unwrapRight } from 'test/utils/either'
+import { FakePasswordCompromiseChecker } from 'test/account/fake-password-compromise-checker'
 
 describe('Edit account', () => {
   let inMemoryAccountRepository: InMemoryAccountRepository
   let fakeHasher: FakeHasher
   let sut: EditAccountUseCase
+  let passwordChecker: FakePasswordCompromiseChecker
 
   beforeEach(() => {
     inMemoryAccountRepository = new InMemoryAccountRepository()
     fakeHasher = new FakeHasher()
-    sut = new EditAccountUseCase(inMemoryAccountRepository, fakeHasher)
+    passwordChecker = new FakePasswordCompromiseChecker()
+    sut = new EditAccountUseCase(
+      inMemoryAccountRepository,
+      fakeHasher,
+      passwordChecker,
+    )
   })
 
   it('should be able to edit an account', async () => {

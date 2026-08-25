@@ -12,6 +12,7 @@ import {
   normalizeAccountName,
 } from '@/domain/account/account-policy'
 import { InvalidAccountDataError } from '../error/invalid-account-data.error'
+import { PasswordCompromiseChecker } from '@/domain/account/password-compromise-checker'
 
 interface RegisterAccountUseCaseRequest {
   name: string
@@ -31,6 +32,7 @@ export class RegisterAccountUseCase {
   constructor(
     private accountRepository: AccountRepository,
     private hashGenerator: HashGenerator,
+    private passwordCompromiseChecker: PasswordCompromiseChecker,
   ) {}
 
   async execute({
@@ -50,6 +52,10 @@ export class RegisterAccountUseCase {
     }
 
     if (!isAccountPasswordValid(password)) {
+      return left(new InvalidAccountDataError('Invalid account password'))
+    }
+
+    if (await this.passwordCompromiseChecker.isCompromised(password)) {
       return left(new InvalidAccountDataError('Invalid account password'))
     }
 

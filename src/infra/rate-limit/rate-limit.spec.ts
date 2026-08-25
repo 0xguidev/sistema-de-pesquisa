@@ -18,9 +18,11 @@ import {
 import { EnvService } from '../env/env.service'
 import { AuthenticateController } from '../http/controllers/authenticate/authenticate.controller'
 import { CreateAccountController } from '../http/controllers/account/create-account.controller'
+import { SessionController } from '../http/controllers/authenticate/session.controller'
 import {
   createRateLimitOptions,
   loginIdentifierTracker,
+  refreshSessionTracker,
 } from './rate-limit.config'
 import { RATE_LIMIT_MESSAGE } from './rate-limit.constants'
 import { PublicRateLimitGuard } from './public-rate-limit.guard'
@@ -40,6 +42,11 @@ describe('public endpoint rate limiting', () => {
       LOGIN_RATE_LIMIT_WINDOW_SECONDS: 1,
       REGISTER_RATE_LIMIT_IP_MAX: 1,
       REGISTER_RATE_LIMIT_WINDOW_SECONDS: 1,
+      REFRESH_RATE_LIMIT_IP_MAX: 10,
+      REFRESH_RATE_LIMIT_SESSION_MAX: 1,
+      REFRESH_RATE_LIMIT_WINDOW_SECONDS: 1,
+      REPORT_RATE_LIMIT_USER_MAX: 10,
+      REPORT_RATE_LIMIT_WINDOW_SECONDS: 1,
     }
     const env = {
       get: (key: keyof typeof values) => values[key],
@@ -52,12 +59,19 @@ describe('public endpoint rate limiting', () => {
           storage: throttlerStorage,
         }),
       ],
-      controllers: [AuthenticateController, CreateAccountController],
+      controllers: [
+        AuthenticateController,
+        CreateAccountController,
+        SessionController,
+      ],
       providers: [
         PublicRateLimitGuard,
         {
           provide: SessionService,
-          useValue: { create: vi.fn() },
+          useValue: {
+            create: vi.fn(),
+            rotate: vi.fn().mockResolvedValue(null),
+          },
         },
         {
           provide: AuthenticateAccountUseCase,
@@ -177,5 +191,49 @@ describe('public endpoint rate limiting', () => {
     )
     expect(tracker).not.toContain('user@example.com')
     expect(tracker).not.toContain('password')
+  })
+
+  it('throttles refresh independently by a hashed valid session id', async () => {
+    const sessionId = '223e4567-e89b-42d3-a456-426614174000'
+    const refreshToken = `${sessionId}.secret-that-is-never-part-of-the-key-or-error`
+
+    await request(app.getHttpServer())
+      .post('/sessions/refresh')
+      .send({ refresh_token: refreshToken })
+      .expect(401)
+    const response = await request(app.getHttpServer())
+      .post('/sessions/refresh')
+      .send({ refresh_token: refreshToken })
+      .expect(429)
+
+    const tracker = refreshSessionTracker({
+      body: { refresh_token: refreshToken },
+    })
+    expect(tracker).toMatch(/^[a-f0-9]{64}$/)
+    expect(tracker).not.toContain(sessionId)
+    expect(JSON.stringify(response.body)).not.toContain(refreshToken)
+  })
+
+  it('shares counters between replica instances using the same store', async () => {
+    const [replicaA, replicaB] =
+      ControllableThrottlerStorage.sharedReplicas(2)
+
+    const first = await replicaA.increment(
+      'same-client',
+      1_000,
+      1,
+      1_000,
+      'refresh',
+    )
+    const second = await replicaB.increment(
+      'same-client',
+      1_000,
+      1,
+      1_000,
+      'refresh',
+    )
+
+    expect(first.isBlocked).toBe(false)
+    expect(second.isBlocked).toBe(true)
   })
 })

@@ -65,6 +65,7 @@ describe('Authenticate (E2E)', () => {
     )
     expect(payload.exp).toEqual(expect.any(Number))
     expect(payload.exp).toBeGreaterThan(Math.floor(Date.now() / 1000))
+    expect((payload.exp as number) - (payload.iat as number)).toBe(900)
     expect(payload.iss).toBe('sistema-de-pesquisa')
     expect(payload.aud).toBe('sistema-de-pesquisa')
 

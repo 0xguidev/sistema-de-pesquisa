@@ -9,7 +9,18 @@ interface Bucket {
 /** In-memory throttler storage with an explicit clock for deterministic tests. */
 export class ControllableThrottlerStorage implements ThrottlerStorage {
   private now = 0
-  private readonly buckets = new Map<string, Bucket>()
+
+  constructor(
+    private readonly buckets: Map<string, Bucket> = new Map<string, Bucket>(),
+  ) {}
+
+  static sharedReplicas(count: number): ControllableThrottlerStorage[] {
+    const sharedBuckets = new Map<string, Bucket>()
+    return Array.from(
+      { length: count },
+      () => new ControllableThrottlerStorage(sharedBuckets),
+    )
+  }
 
   reset(): void {
     this.now = 0

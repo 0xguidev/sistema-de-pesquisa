@@ -69,6 +69,16 @@ model RevokedTokenSubject {
   @@map("revoked_token_subjects")
 }
 
+model RateLimitBucket {
+  key          String   @id
+  totalHits    Int      @map("total_hits")
+  expiresAt    DateTime @map("expires_at")
+  blockedUntil DateTime? @map("blocked_until")
+
+  @@index([expiresAt])
+  @@map("rate_limit_buckets")
+}
+
 model Survey {
   id        String    @id @unique @default(uuid())
   title     String

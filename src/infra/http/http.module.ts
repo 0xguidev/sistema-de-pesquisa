@@ -70,9 +70,22 @@ import { AuthModule } from '../auth/auth.module'
 import { SessionController } from './controllers/authenticate/session.controller'
 import { CreateCompleteSurveyUseCase } from '@/domain/use-cases/survey/create-complete-survey'
 import { ReportProtection } from '@/domain/use-cases/report/report-protection'
+import { PasswordCompromiseChecker } from '@/domain/account/password-compromise-checker'
+import { LocalPasswordCompromiseChecker } from '../auth/local-password-compromise-checker'
+import { EnvModule } from '../env/env.module'
 @Module({
-  imports: [DatabaseModule, CryptographyModule, RateLimitModule, AuthModule],
+  imports: [
+    DatabaseModule,
+    CryptographyModule,
+    RateLimitModule,
+    AuthModule,
+    EnvModule,
+  ],
   providers: [
+    {
+      provide: PasswordCompromiseChecker,
+      useClass: LocalPasswordCompromiseChecker,
+    },
     RegisterAccountUseCase,
     EditAccountUseCase,
     DeleteAccountUseCase,

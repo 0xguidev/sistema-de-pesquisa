@@ -4,9 +4,11 @@ import { AccountAlreadyExistsError } from '../error/account-already-exists.error
 import { RegisterAccountUseCase } from './create-account'
 import { InvalidAccountDataError } from '../error/invalid-account-data.error'
 import { unwrapLeft, unwrapRight } from 'test/utils/either'
+import { FakePasswordCompromiseChecker } from 'test/account/fake-password-compromise-checker'
 
 let inMemoryAccountRepository: InMemoryAccountRepository
 let fakeHasher: FakeHasher
+let passwordChecker: FakePasswordCompromiseChecker
 
 let sut: RegisterAccountUseCase
 
@@ -14,8 +16,13 @@ describe('Create account', () => {
   beforeEach(() => {
     inMemoryAccountRepository = new InMemoryAccountRepository()
     fakeHasher = new FakeHasher()
+    passwordChecker = new FakePasswordCompromiseChecker()
 
-    sut = new RegisterAccountUseCase(inMemoryAccountRepository, fakeHasher)
+    sut = new RegisterAccountUseCase(
+      inMemoryAccountRepository,
+      fakeHasher,
+      passwordChecker,
+    )
   })
 
   it('should register a new account', async () => {
@@ -79,6 +86,19 @@ describe('Create account', () => {
 
     expect(result.isLeft()).toBe(true)
     expect(result.value).toBeInstanceOf(InvalidAccountDataError)
+    expect(inMemoryAccountRepository.items).toHaveLength(0)
+  })
+
+  it('rejects a compromised password without hashing or persisting it', async () => {
+    passwordChecker.compromised.add('compromised-password')
+
+    const result = await sut.execute({
+      name: 'John Doe',
+      email: 'john@example.com',
+      password: 'compromised-password',
+    })
+
+    expect(unwrapLeft(result)).toBeInstanceOf(InvalidAccountDataError)
     expect(inMemoryAccountRepository.items).toHaveLength(0)
   })
 

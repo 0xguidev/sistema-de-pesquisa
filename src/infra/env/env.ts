@@ -9,11 +9,27 @@ export const requiredEnvVars = [
 
 export const envSchema = z
   .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .optional()
+      .default('development'),
     DATABASE_URL: z.string().url(),
     JWT_PRIVATE_KEY: z.string().min(1),
     JWT_PUBLIC_KEY: z.string().min(1),
     CORS_ORIGIN: z.string().min(1),
     BCRYPT_COST: z.coerce.number().int().min(10).max(14).optional().default(10),
+    ACCESS_TOKEN_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(300)
+      .max(86400)
+      .optional()
+      .default(900),
+    RATE_LIMIT_STORE: z
+      .enum(['database', 'memory'])
+      .optional()
+      .default('database'),
+    COMPROMISED_PASSWORD_SHA256: z.string().optional().default(''),
     TRUST_PROXY_HOPS: z.coerce
       .number()
       .int()
@@ -71,6 +87,27 @@ export const envSchema = z
       .max(86400)
       .optional()
       .default(3600),
+    REFRESH_RATE_LIMIT_IP_MAX: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .optional()
+      .default(30),
+    REFRESH_RATE_LIMIT_SESSION_MAX: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .optional()
+      .default(10),
+    REFRESH_RATE_LIMIT_WINDOW_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(86400)
+      .optional()
+      .default(60),
     REPORT_RATE_LIMIT_USER_MAX: z.coerce
       .number()
       .int()
@@ -157,6 +194,13 @@ export const envSchema = z
       message:
         'REPORT_PDF_USER_CONCURRENCY must not exceed REPORT_PDF_GLOBAL_CONCURRENCY',
       path: ['REPORT_PDF_USER_CONCURRENCY'],
+    },
+  )
+  .refine(
+    (env) => env.NODE_ENV !== 'production' || env.RATE_LIMIT_STORE !== 'memory',
+    {
+      message: 'Production requires a shared rate-limit store',
+      path: ['RATE_LIMIT_STORE'],
     },
   )
 

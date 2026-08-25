@@ -23,6 +23,8 @@ import { SkipThrottle } from '@nestjs/throttler'
 import {
   LOGIN_IDENTIFIER_THROTTLER,
   LOGIN_IP_THROTTLER,
+  REFRESH_IP_THROTTLER,
+  REFRESH_SESSION_THROTTLER,
 } from '@/infra/rate-limit/rate-limit.constants'
 import { PublicRateLimitGuard } from '@/infra/rate-limit/public-rate-limit.guard'
 
@@ -52,6 +54,8 @@ type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>
 @SkipThrottle({
   [LOGIN_IP_THROTTLER]: true,
   [LOGIN_IDENTIFIER_THROTTLER]: true,
+  [REFRESH_IP_THROTTLER]: true,
+  [REFRESH_SESSION_THROTTLER]: true,
 })
 export class CreateAccountController {
   constructor(private registerAccount: RegisterAccountUseCase) {}

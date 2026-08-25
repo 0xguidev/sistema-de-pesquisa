@@ -30,6 +30,9 @@ function workerDatabaseUrl(): string {
 
 const databaseUrl = workerDatabaseUrl()
 process.env.DATABASE_URL = databaseUrl
+// Individual E2E workers use isolated schemas; shared-store behavior is covered
+// separately with a shared fake, while this keeps existing per-test resets cheap.
+process.env.RATE_LIMIT_STORE = 'memory'
 
 let prisma: PrismaClient
 
