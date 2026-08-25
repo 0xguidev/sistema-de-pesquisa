@@ -53,6 +53,37 @@ describe('environment validation', () => {
     ).toBe(false)
   })
 
+  it('validates configurable report resource limits', () => {
+    const parsed = envSchema.parse({
+      ...requiredEnvironment,
+      REPORT_RATE_LIMIT_USER_MAX: '4',
+      REPORT_PDF_GLOBAL_CONCURRENCY: '3',
+      REPORT_PDF_USER_CONCURRENCY: '1',
+      REPORT_TIMEOUT_MS: '15000',
+      REPORT_MAX_INTERVIEWS: '500',
+      REPORT_MAX_QUESTIONS: '40',
+      REPORT_MAX_OPTIONS_PER_QUESTION: '20',
+      REPORT_MAX_TEXT_LENGTH: '2000',
+      REPORT_MAX_DOCUMENT_BYTES: '5242880',
+    })
+
+    expect(parsed).toMatchObject({
+      REPORT_RATE_LIMIT_USER_MAX: 4,
+      REPORT_PDF_GLOBAL_CONCURRENCY: 3,
+      REPORT_PDF_USER_CONCURRENCY: 1,
+      REPORT_TIMEOUT_MS: 15000,
+      REPORT_MAX_INTERVIEWS: 500,
+      REPORT_MAX_DOCUMENT_BYTES: 5242880,
+    })
+    expect(
+      envSchema.safeParse({
+        ...requiredEnvironment,
+        REPORT_PDF_GLOBAL_CONCURRENCY: '1',
+        REPORT_PDF_USER_CONCURRENCY: '2',
+      }).success,
+    ).toBe(false)
+  })
+
   it.each(['9', '15', '10.5', 'invalid'])(
     'rejects invalid bcrypt cost %s',
     (bcryptCost) => {

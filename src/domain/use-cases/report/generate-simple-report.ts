@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
+import { ReportProtection } from './report-protection'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
 
 export interface SimpleReportData {
@@ -14,7 +15,10 @@ export interface SimpleReportData {
 
 @Injectable()
 export class GenerateSimpleReportUseCase {
-  constructor(private interviewRepository: InterviewRepository) {}
+  constructor(
+    private interviewRepository: InterviewRepository,
+    @Optional() private protection?: ReportProtection,
+  ) {}
 
   async execute(
     surveyId: string,
@@ -24,8 +28,9 @@ export class GenerateSimpleReportUseCase {
       surveyId,
       accountId,
       1,
-      1000,
+      this.protection?.maxInterviews ?? 1000,
     )
+    this.protection?.validateInterviews(interviews)
     if (!interviews || interviews.data.length === 0) {
       return []
     }

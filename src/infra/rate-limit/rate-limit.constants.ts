@@ -1,5 +1,6 @@
 export const LOGIN_IP_THROTTLER = 'login-ip'
 export const LOGIN_IDENTIFIER_THROTTLER = 'login-identifier'
 export const REGISTER_IP_THROTTLER = 'register-ip'
+export const REPORT_USER_THROTTLER = 'report-user'
 
 export const RATE_LIMIT_MESSAGE = 'Too many requests. Please try again later.'

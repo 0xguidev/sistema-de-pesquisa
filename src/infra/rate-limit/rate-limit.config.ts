@@ -6,12 +6,15 @@ import {
   LOGIN_IP_THROTTLER,
   RATE_LIMIT_MESSAGE,
   REGISTER_IP_THROTTLER,
+  REPORT_USER_THROTTLER,
 } from './rate-limit.constants'
 
 interface RateLimitRequest {
   ip?: string
+  originalUrl?: string
   socket?: { remoteAddress?: string }
   body?: { email?: unknown }
+  user?: { sub?: string }
 }
 
 function clientIp(request: RateLimitRequest): string {
@@ -33,10 +36,23 @@ export function createRateLimitOptions(
 ): ThrottlerModuleOptions {
   const loginWindow = env.get('LOGIN_RATE_LIMIT_WINDOW_SECONDS') * 1000
   const registerWindow = env.get('REGISTER_RATE_LIMIT_WINDOW_SECONDS') * 1000
+  const reportWindow = env.get('REPORT_RATE_LIMIT_WINDOW_SECONDS') * 1000
 
   return {
     errorMessage: RATE_LIMIT_MESSAGE,
     throttlers: [
+      {
+        name: REPORT_USER_THROTTLER,
+        limit: env.get('REPORT_RATE_LIMIT_USER_MAX'),
+        ttl: reportWindow,
+        blockDuration: reportWindow,
+        skipIf: (context) => {
+          const request = context.switchToHttp().getRequest<RateLimitRequest>()
+          return !request.originalUrl?.startsWith('/reports')
+        },
+        getTracker: (request: RateLimitRequest) =>
+          request.user?.sub ?? clientIp(request),
+      },
       {
         name: LOGIN_IP_THROTTLER,
         limit: env.get('LOGIN_RATE_LIMIT_IP_MAX'),

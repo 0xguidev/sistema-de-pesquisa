@@ -5,7 +5,15 @@ import {
   Res,
   Header,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common'
+import { SkipThrottle } from '@nestjs/throttler'
+import { PublicRateLimitGuard } from '@/infra/rate-limit/public-rate-limit.guard'
+import {
+  LOGIN_IDENTIFIER_THROTTLER,
+  LOGIN_IP_THROTTLER,
+  REGISTER_IP_THROTTLER,
+} from '@/infra/rate-limit/rate-limit.constants'
 import { GenerateSimpleReportPdfUseCase } from '@/domain/use-cases/report/generate-simple-report-pdf'
 import { CurrentUser } from '@/infra/auth/current-user-decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
@@ -14,6 +22,12 @@ import { throwReportHttpError } from './report-error-mapper'
 import { attachmentContentDisposition } from './content-disposition'
 
 @Controller('/reports')
+@UseGuards(PublicRateLimitGuard)
+@SkipThrottle({
+  [LOGIN_IP_THROTTLER]: true,
+  [LOGIN_IDENTIFIER_THROTTLER]: true,
+  [REGISTER_IP_THROTTLER]: true,
+})
 export class GenerateSimpleReportPdfController {
   constructor(
     private generateSimpleReportPdfUseCase: GenerateSimpleReportPdfUseCase,

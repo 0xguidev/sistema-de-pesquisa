@@ -69,6 +69,7 @@ import { RateLimitModule } from '../rate-limit/rate-limit.module'
 import { AuthModule } from '../auth/auth.module'
 import { SessionController } from './controllers/authenticate/session.controller'
 import { CreateCompleteSurveyUseCase } from '@/domain/use-cases/survey/create-complete-survey'
+import { ReportProtection } from '@/domain/use-cases/report/report-protection'
 @Module({
   imports: [DatabaseModule, CryptographyModule, RateLimitModule, AuthModule],
   providers: [
@@ -99,6 +100,7 @@ import { CreateCompleteSurveyUseCase } from '@/domain/use-cases/survey/create-co
     GenerateCrossReportWordUseCase,
     GenerateCrossReportUseCase,
     GenerateSimpleReportPdfUseCase,
+    ReportProtection,
     FetchQuestionByIdUseCase,
     FetchQuestionsBySurveyIdUseCase,
     GetOptionAnswerUseCase,

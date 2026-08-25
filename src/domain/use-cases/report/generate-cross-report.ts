@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
+import { ReportProtection } from './report-protection'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import { QuestionRepository } from '@/domain/repositories/question-repository'
 import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
@@ -38,6 +39,7 @@ export class GenerateCrossReportUseCase {
     private interviewRepository: InterviewRepository,
     private questionRepository: QuestionRepository,
     private optionAnswerRepository: OptionAnswerRepository,
+    @Optional() private protection?: ReportProtection,
   ) {}
 
   async execute(
@@ -48,8 +50,9 @@ export class GenerateCrossReportUseCase {
       surveyId,
       accountId,
       1,
-      1000,
+      this.protection?.maxInterviews ?? 1000,
     )
+    this.protection?.validateInterviews(interviews)
     if (!interviews || interviews.data.length === 0) {
       return []
     }
@@ -57,6 +60,7 @@ export class GenerateCrossReportUseCase {
     // Buscar todas as perguntas do survey
     const questions =
       await this.questionRepository.findQuestionsBySurveyId(surveyId)
+    this.protection?.validateQuestions(questions ?? [])
     if (!questions || questions.length < 2) {
       throw new InvalidRequestError(
         'São necessárias pelo menos duas perguntas para gerar relatório cruzado',
@@ -81,6 +85,8 @@ export class GenerateCrossReportUseCase {
           questionB.id.toString(),
           accountId,
         )
+        this.protection?.validateOptions(optionsA ?? [])
+        this.protection?.validateOptions(optionsB ?? [])
 
         if (
           !optionsA ||

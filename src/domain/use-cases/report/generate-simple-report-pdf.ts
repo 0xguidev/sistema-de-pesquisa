@@ -4,8 +4,7 @@ import puppeteer from 'puppeteer'
 import type { HTTPRequest } from 'puppeteer'
 import { buildHtml } from './utils/build-html'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
-
-const PDF_OPERATION_TIMEOUT_MS = 30_000
+import { ReportProtection } from './report-protection'
 
 export function isAllowedPdfResource(url: string): boolean {
   if (url === 'about:blank') return true
@@ -27,15 +26,31 @@ function interceptPdfRequest(request: HTTPRequest): void {
 
 @Injectable()
 export class GenerateSimpleReportPdfUseCase {
-  constructor(private interviewRepository: InterviewRepository) {}
+  constructor(
+    private interviewRepository: InterviewRepository,
+    private protection: ReportProtection,
+  ) {}
 
   async execute(surveyId: string, accountId: string): Promise<Buffer> {
+    return this.protection.withPdfSlot(accountId, (signal) =>
+      this.generate(surveyId, accountId, signal),
+    )
+  }
+
+  private async generate(
+    surveyId: string,
+    accountId: string,
+    signal: AbortSignal,
+  ): Promise<Buffer> {
     const interviews = await this.interviewRepository.findBySurveyId(
       surveyId,
       accountId,
       1,
-      1000,
+      this.protection.maxInterviews,
     )
+    signal.throwIfAborted()
+
+    this.protection.validateInterviews(interviews)
 
     if (!interviews || interviews.data.length === 0) {
       throw new ResourceNotFoundError()
@@ -103,30 +118,36 @@ export class GenerateSimpleReportPdfUseCase {
 
     const html = buildHtml(questions)
 
+    const timeout = this.protection.timeoutMs
     const browser = await puppeteer.launch({
       executablePath: '/usr/bin/chromium',
       headless: true,
-      timeout: PDF_OPERATION_TIMEOUT_MS,
+      timeout,
     })
     let page: Awaited<ReturnType<typeof browser.newPage>> | undefined
+    const closeOnTimeout = () => {
+      void browser.close().catch(() => undefined)
+    }
+    signal.addEventListener('abort', closeOnTimeout, { once: true })
 
     try {
+      signal.throwIfAborted()
       page = await browser.newPage()
-      page.setDefaultNavigationTimeout(PDF_OPERATION_TIMEOUT_MS)
-      page.setDefaultTimeout(PDF_OPERATION_TIMEOUT_MS)
+      page.setDefaultNavigationTimeout(timeout)
+      page.setDefaultTimeout(timeout)
       await page.setRequestInterception(true)
       page.on('request', interceptPdfRequest)
 
       await page.setContent(html, {
         waitUntil: 'networkidle0',
-        timeout: PDF_OPERATION_TIMEOUT_MS,
+        timeout,
       })
 
       const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
         displayHeaderFooter: false,
-        timeout: PDF_OPERATION_TIMEOUT_MS,
+        timeout,
         margin: {
           top: '20px',
           bottom: '20px',
@@ -135,12 +156,15 @@ export class GenerateSimpleReportPdfUseCase {
         },
       })
 
-      return Buffer.from(pdf)
+      const buffer = Buffer.from(pdf)
+      this.protection.validateDocument(buffer)
+      return buffer
     } finally {
+      signal.removeEventListener('abort', closeOnTimeout)
       try {
         if (page && !page.isClosed()) await page.close()
       } finally {
-        await browser.close()
+        await browser.close().catch(() => undefined)
       }
     }
   }

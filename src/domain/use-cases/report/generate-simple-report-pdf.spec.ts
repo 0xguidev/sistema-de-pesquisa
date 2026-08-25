@@ -5,6 +5,7 @@ import { InMemoryInterviewRepository } from '../../../../test/repositories/in-me
 import { makeQuestion } from '../../../../test/factories/make-question'
 import { makeOptionAnswer } from '../../../../test/factories/make-option-answer'
 import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-error'
+import { ReportProtection } from './report-protection'
 
 const chromium = vi.hoisted(() => {
   let requestHandler: ((request: any) => void) | undefined
@@ -63,7 +64,22 @@ describe('Generate simple report PDF', () => {
     chromium.browser.close.mockResolvedValue(undefined)
     chromium.launch.mockResolvedValue(chromium.browser)
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
-    sut = new GenerateSimpleReportPdfUseCase(inMemoryInterviewRepository)
+    const protection = {
+      maxInterviews: 1000,
+      timeoutMs: 30000,
+      validateInterviews: vi.fn(),
+      validateDocument: vi.fn(),
+      withPdfSlot: vi.fn(
+        (
+          _accountId: string,
+          operation: (signal: AbortSignal) => Promise<Buffer>,
+        ) => operation(new AbortController().signal),
+      ),
+    } as unknown as ReportProtection
+    sut = new GenerateSimpleReportPdfUseCase(
+      inMemoryInterviewRepository,
+      protection,
+    )
   })
 
   it('should generate a PDF buffer with charts', async () => {
