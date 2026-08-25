@@ -2,12 +2,30 @@ import { describe, expect, it } from 'vitest'
 import { ConfigService } from '@nestjs/config'
 import { EnvService } from './env.service'
 import { envSchema, isCorsOriginAllowed, parseCorsOrigin } from './env'
+import { generateKeyPairSync, randomBytes } from 'node:crypto'
+
+function encodedRsaPair(modulusLength = 2048) {
+  const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+    modulusLength,
+  })
+  return {
+    JWT_PRIVATE_KEY: Buffer.from(
+      privateKey.export({ type: 'pkcs8', format: 'pem' }),
+    ).toString('base64'),
+    JWT_PUBLIC_KEY: Buffer.from(
+      publicKey.export({ type: 'spki', format: 'pem' }),
+    ).toString('base64'),
+  }
+}
+
+const rsaKeys = encodedRsaPair()
 
 describe('environment validation', () => {
   const requiredEnvironment = {
-    DATABASE_URL: 'http://localhost:5432',
-    JWT_PRIVATE_KEY: 'private-key',
-    JWT_PUBLIC_KEY: 'public-key',
+    DATABASE_URL:
+      'postgresql://user:password@localhost:5432/database?sslmode=disable',
+    DATABASE_TLS_MODE: 'disable',
+    ...rsaKeys,
     CORS_ORIGIN: 'http://localhost:5173',
   }
 
@@ -31,18 +49,120 @@ describe('environment validation', () => {
     ).toBe(1800)
   })
 
-  it('rejects process-local rate limiting in production', () => {
+  it.each(['299', '86401', '1.5', 'invalid'])(
+    'rejects invalid access token duration %s',
+    (duration) => {
+      expect(
+        envSchema.safeParse({
+          ...requiredEnvironment,
+          ACCESS_TOKEN_TTL_SECONDS: duration,
+        }).success,
+      ).toBe(false)
+    },
+  )
+
+  it('accepts matching Base64 PEM RSA keys with at least 2048 bits', () => {
+    expect(envSchema.safeParse(requiredEnvironment).success).toBe(true)
+  })
+
+  it('rejects malformed Base64, non-PEM, undersized and mismatched JWT keys', () => {
+    const otherPair = encodedRsaPair()
+    const weakPair = encodedRsaPair(1024)
+
+    for (const keys of [
+      { ...rsaKeys, JWT_PRIVATE_KEY: 'not-base64!' },
+      {
+        ...rsaKeys,
+        JWT_PRIVATE_KEY: Buffer.from('not a PEM key').toString('base64'),
+      },
+      weakPair,
+      { ...rsaKeys, JWT_PUBLIC_KEY: otherPair.JWT_PUBLIC_KEY },
+    ]) {
+      expect(
+        envSchema.safeParse({ ...requiredEnvironment, ...keys }).success,
+      ).toBe(false)
+    }
+  })
+
+  it('requires explicit database TLS in production', () => {
+    const production = {
+      ...requiredEnvironment,
+      NODE_ENV: 'production',
+      SESSION_IP_HASH_SECRET: randomBytes(32).toString('base64'),
+    }
+    expect(envSchema.safeParse(production).success).toBe(false)
+    expect(
+      envSchema.safeParse({
+        ...production,
+        DATABASE_TLS_MODE: 'require',
+        DATABASE_URL:
+          'postgresql://user:password@db.example/database?sslmode=verify-full',
+      }).success,
+    ).toBe(true)
+  })
+
+  it('requires an explicit sslmode when local database TLS is disabled', () => {
     expect(
       envSchema.safeParse({
         ...requiredEnvironment,
-        NODE_ENV: 'production',
-        RATE_LIMIT_STORE: 'memory',
+        DATABASE_URL: 'postgresql://localhost/database',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('requires a strong Base64 session IP secret in production', () => {
+    const production = {
+      ...requiredEnvironment,
+      NODE_ENV: 'production',
+      DATABASE_TLS_MODE: 'require',
+      DATABASE_URL: 'postgresql://db.example/database?sslmode=require',
+    }
+    expect(envSchema.safeParse(production).success).toBe(false)
+    expect(
+      envSchema.safeParse({
+        ...production,
+        SESSION_IP_HASH_SECRET: randomBytes(31).toString('base64'),
       }).success,
     ).toBe(false)
     expect(
-      envSchema.parse({ ...requiredEnvironment, NODE_ENV: 'production' })
-        .RATE_LIMIT_STORE,
-    ).toBe('database')
+      envSchema.safeParse({
+        ...production,
+        SESSION_IP_HASH_SECRET: randomBytes(32).toString('base64'),
+      }).success,
+    ).toBe(true)
+  })
+
+  it('only enables HTTPS enforcement with a trusted proxy', () => {
+    expect(
+      envSchema.safeParse({ ...requiredEnvironment, REQUIRE_HTTPS: 'true' })
+        .success,
+    ).toBe(false)
+    expect(
+      envSchema.safeParse({
+        ...requiredEnvironment,
+        REQUIRE_HTTPS: 'true',
+        TRUST_PROXY_HOPS: '1',
+      }).success,
+    ).toBe(true)
+  })
+
+  it('rejects process-local rate limiting in production', () => {
+    const productionEnvironment = {
+      ...requiredEnvironment,
+      NODE_ENV: 'production',
+      DATABASE_TLS_MODE: 'require',
+      DATABASE_URL: 'postgresql://db.example/database?sslmode=require',
+      SESSION_IP_HASH_SECRET: randomBytes(32).toString('base64'),
+    }
+    expect(
+      envSchema.safeParse({
+        ...productionEnvironment,
+        RATE_LIMIT_STORE: 'memory',
+      }).success,
+    ).toBe(false)
+    expect(envSchema.parse(productionEnvironment).RATE_LIMIT_STORE).toBe(
+      'database',
+    )
   })
 
   it('reads rate limits and trusted proxy hops from the environment', () => {
@@ -124,7 +244,8 @@ describe('environment validation', () => {
 
   it('requires JWT keys to be present', () => {
     const parsed = envSchema.safeParse({
-      DATABASE_URL: 'http://localhost:5432',
+      DATABASE_URL: 'postgresql://localhost/database?sslmode=disable',
+      DATABASE_TLS_MODE: 'disable',
       PORT: '3333',
     })
 
@@ -141,9 +262,9 @@ describe('environment validation', () => {
 
   it('requires CORS_ORIGIN to be present', () => {
     const parsed = envSchema.safeParse({
-      DATABASE_URL: 'http://localhost:5432',
-      JWT_PRIVATE_KEY: 'private-key',
-      JWT_PUBLIC_KEY: 'public-key',
+      DATABASE_URL: 'postgresql://localhost/database?sslmode=disable',
+      DATABASE_TLS_MODE: 'disable',
+      ...rsaKeys,
     })
 
     expect(parsed.success).toBe(false)
@@ -191,7 +312,8 @@ describe('environment validation', () => {
 
   it('throws a clear error when JWT keys are missing through EnvService', () => {
     const config = new ConfigService({
-      DATABASE_URL: 'http://localhost:5432',
+      DATABASE_URL: 'postgresql://localhost/database?sslmode=disable',
+      DATABASE_TLS_MODE: 'disable',
       PORT: '3333',
     })
 

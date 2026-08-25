@@ -1,4 +1,67 @@
 import { z } from 'zod'
+import { createPrivateKey, createPublicKey, KeyObject } from 'node:crypto'
+
+const MIN_RSA_BITS = 2048
+const MIN_SESSION_SECRET_BYTES = 32
+
+function decodeBase64(value: string): Buffer | null {
+  const normalized = value.replace(/\s/g, '')
+  if (
+    normalized.length === 0 ||
+    normalized.length % 4 !== 0 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(normalized)
+  ) {
+    return null
+  }
+
+  const decoded = Buffer.from(normalized, 'base64')
+  return decoded.toString('base64') === normalized ? decoded : null
+}
+
+function readRsaKeyPair(privateValue: string, publicValue: string): boolean {
+  const privatePem = decodeBase64(privateValue)
+  const publicPem = decodeBase64(publicValue)
+  if (!privatePem || !publicPem) return false
+
+  try {
+    const privateKey = createPrivateKey(privatePem)
+    const publicKey = createPublicKey(publicPem)
+    if (!isSafeRsaKey(privateKey) || !isSafeRsaKey(publicKey)) return false
+
+    const derivedPublic = createPublicKey(privateKey).export({
+      type: 'spki',
+      format: 'der',
+    })
+    const configuredPublic = publicKey.export({ type: 'spki', format: 'der' })
+    return Buffer.from(derivedPublic).equals(Buffer.from(configuredPublic))
+  } catch {
+    return false
+  }
+}
+
+function isSafeRsaKey(key: KeyObject): boolean {
+  return (
+    key.asymmetricKeyType === 'rsa' &&
+    (key.asymmetricKeyDetails?.modulusLength ?? 0) >= MIN_RSA_BITS
+  )
+}
+
+function hasRequiredDatabaseTls(databaseUrl: string): boolean {
+  try {
+    const sslMode = new URL(databaseUrl).searchParams.get('sslmode')
+    return ['require', 'verify-ca', 'verify-full'].includes(sslMode ?? '')
+  } catch {
+    return false
+  }
+}
+
+function hasExplicitlyDisabledDatabaseTls(databaseUrl: string): boolean {
+  try {
+    return new URL(databaseUrl).searchParams.get('sslmode') === 'disable'
+  } catch {
+    return false
+  }
+}
 
 export const requiredEnvVars = [
   'DATABASE_URL',
@@ -14,6 +77,7 @@ export const envSchema = z
       .optional()
       .default('development'),
     DATABASE_URL: z.string().url(),
+    DATABASE_TLS_MODE: z.enum(['require', 'disable']),
     JWT_PRIVATE_KEY: z.string().min(1),
     JWT_PUBLIC_KEY: z.string().min(1),
     CORS_ORIGIN: z.string().min(1),
@@ -37,6 +101,11 @@ export const envSchema = z
       .max(10)
       .optional()
       .default(0),
+    REQUIRE_HTTPS: z
+      .enum(['true', 'false'])
+      .optional()
+      .default('false')
+      .transform((value) => value === 'true'),
     LOGIN_RATE_LIMIT_IP_MAX: z.coerce
       .number()
       .int()
@@ -72,7 +141,7 @@ export const envSchema = z
       .max(1440)
       .optional()
       .default(60),
-    SESSION_IP_HASH_SECRET: z.string().min(32).optional(),
+    SESSION_IP_HASH_SECRET: z.string().optional(),
     REGISTER_RATE_LIMIT_IP_MAX: z.coerce
       .number()
       .int()
@@ -196,6 +265,74 @@ export const envSchema = z
       path: ['REPORT_PDF_USER_CONCURRENCY'],
     },
   )
+  .superRefine((env, context) => {
+    if (!readRsaKeyPair(env.JWT_PRIVATE_KEY, env.JWT_PUBLIC_KEY)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `JWT key pair must be matching Base64-encoded PEM RSA keys of at least ${MIN_RSA_BITS} bits`,
+        path: ['JWT_PRIVATE_KEY'],
+      })
+    }
+
+    if (
+      env.DATABASE_TLS_MODE === 'require' &&
+      !hasRequiredDatabaseTls(env.DATABASE_URL)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'DATABASE_URL must explicitly require TLS',
+        path: ['DATABASE_URL'],
+      })
+    }
+    if (
+      env.DATABASE_TLS_MODE === 'disable' &&
+      !hasExplicitlyDisabledDatabaseTls(env.DATABASE_URL)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'DATABASE_URL must explicitly set sslmode=disable',
+        path: ['DATABASE_URL'],
+      })
+    }
+    if (env.NODE_ENV === 'production' && env.DATABASE_TLS_MODE !== 'require') {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Production requires database TLS',
+        path: ['DATABASE_TLS_MODE'],
+      })
+    }
+
+    if (env.REQUIRE_HTTPS && env.TRUST_PROXY_HOPS === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'HTTPS enforcement requires a trusted proxy',
+        path: ['TRUST_PROXY_HOPS'],
+      })
+    }
+
+    const sessionSecret = env.SESSION_IP_HASH_SECRET
+      ? decodeBase64(env.SESSION_IP_HASH_SECRET)
+      : null
+    if (sessionSecret && sessionSecret.byteLength < MIN_SESSION_SECRET_BYTES) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `SESSION_IP_HASH_SECRET must contain at least ${MIN_SESSION_SECRET_BYTES} random bytes encoded as Base64`,
+        path: ['SESSION_IP_HASH_SECRET'],
+      })
+    } else if (env.SESSION_IP_HASH_SECRET && !sessionSecret) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'SESSION_IP_HASH_SECRET must be valid Base64',
+        path: ['SESSION_IP_HASH_SECRET'],
+      })
+    } else if (env.NODE_ENV === 'production' && !sessionSecret) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Production requires SESSION_IP_HASH_SECRET',
+        path: ['SESSION_IP_HASH_SECRET'],
+      })
+    }
+  })
   .refine(
     (env) => env.NODE_ENV !== 'production' || env.RATE_LIMIT_STORE !== 'memory',
     {
