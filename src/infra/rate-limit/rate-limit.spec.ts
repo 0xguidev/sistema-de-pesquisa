@@ -2,19 +2,10 @@ import { left, right } from '@/core/types/either'
 import { AuthenticateAccountUseCase } from '@/domain/use-cases/account/authenticate-account'
 import { RegisterAccountUseCase } from '@/domain/use-cases/account/create-account'
 import { WrongCredentialsError } from '@/domain/use-cases/error/wrong-credentials-error'
-import { INestApplication } from '@nestjs/common'
+import { ExecutionContext, HttpException } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { ThrottlerModule } from '@nestjs/throttler'
-import request from 'supertest'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EnvService } from '../env/env.service'
 import { AuthenticateController } from '../http/controllers/authenticate/authenticate.controller'
 import { CreateAccountController } from '../http/controllers/account/create-account.controller'
@@ -31,7 +22,10 @@ import { ControllableThrottlerStorage } from 'test/rate-limit/controllable-throt
 import { ObservabilityModule } from '../observability/observability.module'
 
 describe('public endpoint rate limiting', () => {
-  let app: INestApplication
+  let guard: PublicRateLimitGuard
+  let authenticateController: AuthenticateController
+  let createAccountController: CreateAccountController
+  let sessionController: SessionController
   const throttlerStorage = new ControllableThrottlerStorage()
   const authenticate = vi.fn()
   const register = vi.fn()
@@ -86,8 +80,11 @@ describe('public endpoint rate limiting', () => {
       ],
     }).compile()
 
-    app = moduleRef.createNestApplication()
-    await app.init()
+    guard = moduleRef.get(PublicRateLimitGuard)
+    authenticateController = moduleRef.get(AuthenticateController)
+    createAccountController = moduleRef.get(CreateAccountController)
+    sessionController = moduleRef.get(SessionController)
+    await guard.onModuleInit()
   })
 
   beforeEach(() => {
@@ -98,23 +95,78 @@ describe('public endpoint rate limiting', () => {
     register.mockResolvedValue(right({ account: null as never }))
   })
 
-  afterAll(async () => {
-    await app.close()
-  })
+  async function dispatch(options: {
+    controller: object
+    handler: (...args: never[]) => unknown
+    body: Record<string, unknown>
+    path: string
+    onAllowed: () => Promise<unknown>
+    forwardedFor?: string
+    successStatus: number
+  }) {
+    const headers: Record<string, string> = {}
+    const request = {
+      body: options.body,
+      headers: options.forwardedFor
+        ? { 'x-forwarded-for': options.forwardedFor }
+        : {},
+      ip: '127.0.0.1',
+      originalUrl: options.path,
+      socket: { remoteAddress: '127.0.0.1' },
+    }
+    const response = {
+      header: (name: string, value: unknown) => {
+        headers[name.toLowerCase()] = String(value)
+      },
+    }
+    const context = {
+      getClass: () => options.controller.constructor,
+      getHandler: () => options.handler,
+      switchToHttp: () => ({
+        getRequest: () => request,
+        getResponse: () => response,
+      }),
+    } as unknown as ExecutionContext
+
+    try {
+      await guard.canActivate(context)
+      await options.onAllowed()
+      return { status: options.successStatus, body: {}, headers }
+    } catch (error) {
+      if (!(error instanceof HttpException)) throw error
+      const exceptionResponse = error.getResponse()
+      return {
+        status: error.getStatus(),
+        body:
+          typeof exceptionResponse === 'string'
+            ? { statusCode: error.getStatus(), message: exceptionResponse }
+            : (exceptionResponse as Record<string, unknown>),
+        headers,
+      }
+    }
+  }
 
   function attempt(email = 'user@example.com', forwardedFor?: string) {
-    const pendingRequest = request(app.getHttpServer())
-      .post('/sessions')
-      .send({ email, password: 'not-the-password' })
-
-    return forwardedFor
-      ? pendingRequest.set('X-Forwarded-For', forwardedFor)
-      : pendingRequest
+    const normalizedEmail = email.trim().toLowerCase()
+    return dispatch({
+      controller: authenticateController,
+      handler: authenticateController.handle,
+      body: { email: normalizedEmail, password: 'not-the-password' },
+      path: '/sessions',
+      forwardedFor,
+      successStatus: 201,
+      onAllowed: () =>
+        authenticateController.handle(
+          { email: normalizedEmail, password: 'not-the-password' },
+          undefined,
+          '127.0.0.1',
+        ),
+    })
   }
 
   it('allows requests within the configured limit', async () => {
-    await attempt(' USER@example.com ').expect(401)
-    await attempt('user@example.com').expect(401)
+    expect((await attempt(' USER@example.com ')).status).toBe(401)
+    expect((await attempt('user@example.com')).status).toBe(401)
 
     expect(authenticate).toHaveBeenCalledTimes(2)
     expect(authenticate).toHaveBeenLastCalledWith({
@@ -124,10 +176,11 @@ describe('public endpoint rate limiting', () => {
   })
 
   it('returns a consistent 429 response after the limit is exceeded', async () => {
-    await attempt().expect(401)
-    await attempt().expect(401)
-    const response = await attempt().expect(429)
+    expect((await attempt()).status).toBe(401)
+    expect((await attempt()).status).toBe(401)
+    const response = await attempt()
 
+    expect(response.status).toBe(429)
     expect(response.body).toEqual({
       statusCode: 429,
       message: RATE_LIMIT_MESSAGE,
@@ -137,28 +190,36 @@ describe('public endpoint rate limiting', () => {
   })
 
   it('recovers after the configured window', async () => {
-    await attempt().expect(401)
-    await attempt().expect(401)
-    await attempt().expect(429)
+    expect((await attempt()).status).toBe(401)
+    expect((await attempt()).status).toBe(401)
+    expect((await attempt()).status).toBe(429)
 
     throttlerStorage.advanceBy(1_100)
 
-    await attempt().expect(401)
+    expect((await attempt()).status).toBe(401)
   })
 
   it('ignores client-supplied forwarding headers when no proxy is trusted', async () => {
-    await attempt('first@example.com', '198.51.100.1').expect(401)
-    await attempt('second@example.com', '198.51.100.2').expect(401)
-    await attempt('third@example.com', '198.51.100.3').expect(429)
+    expect((await attempt('first@example.com', '198.51.100.1')).status).toBe(
+      401,
+    )
+    expect((await attempt('second@example.com', '198.51.100.2')).status).toBe(
+      401,
+    )
+    expect((await attempt('third@example.com', '198.51.100.3')).status).toBe(
+      429,
+    )
 
     expect(authenticate).toHaveBeenCalledTimes(2)
   })
 
   it('returns the same generic error for every invalid identifier', async () => {
-    const first = await attempt('existing@example.com').expect(401)
-    const second = await attempt('unknown@example.com').expect(401)
+    const first = await attempt('existing@example.com')
+    const second = await attempt('unknown@example.com')
 
+    expect(first.status).toBe(401)
     expect(first.body.message).toBe('Credentials are not valid.')
+    expect(second.status).toBe(401)
     expect(second.body).toEqual(first.body)
   })
 
@@ -169,12 +230,20 @@ describe('public endpoint rate limiting', () => {
       password: 'valid-password',
     }
 
-    await request(app.getHttpServer()).post('/accounts').send(body).expect(201)
-    const response = await request(app.getHttpServer())
-      .post('/accounts')
-      .send({ ...body, email: 'other@example.com' })
-      .expect(429)
+    const registerAttempt = (email: string) =>
+      dispatch({
+        controller: createAccountController,
+        handler: createAccountController.handle,
+        body: { ...body, email },
+        path: '/accounts',
+        successStatus: 201,
+        onAllowed: () => createAccountController.handle({ ...body, email }),
+      })
 
+    expect((await registerAttempt(body.email)).status).toBe(201)
+    const response = await registerAttempt('other@example.com')
+
+    expect(response.status).toBe(429)
     expect(response.body.message).toBe(RATE_LIMIT_MESSAGE)
     expect(register).toHaveBeenCalledTimes(1)
   })
@@ -199,15 +268,21 @@ describe('public endpoint rate limiting', () => {
     const sessionId = '223e4567-e89b-42d3-a456-426614174000'
     const refreshToken = `${sessionId}.secret-that-is-never-part-of-the-key-or-error`
 
-    await request(app.getHttpServer())
-      .post('/sessions/refresh')
-      .send({ refresh_token: refreshToken })
-      .expect(401)
-    const response = await request(app.getHttpServer())
-      .post('/sessions/refresh')
-      .send({ refresh_token: refreshToken })
-      .expect(429)
+    const refreshAttempt = () =>
+      dispatch({
+        controller: sessionController,
+        handler: sessionController.refresh,
+        body: { refresh_token: refreshToken },
+        path: '/sessions/refresh',
+        successStatus: 201,
+        onAllowed: () =>
+          sessionController.refresh({ refresh_token: refreshToken }),
+      })
 
+    expect((await refreshAttempt()).status).toBe(401)
+    const response = await refreshAttempt()
+
+    expect(response.status).toBe(429)
     const tracker = refreshSessionTracker({
       body: { refresh_token: refreshToken },
     })
@@ -217,8 +292,7 @@ describe('public endpoint rate limiting', () => {
   })
 
   it('shares counters between replica instances using the same store', async () => {
-    const [replicaA, replicaB] =
-      ControllableThrottlerStorage.sharedReplicas(2)
+    const [replicaA, replicaB] = ControllableThrottlerStorage.sharedReplicas(2)
 
     const first = await replicaA.increment(
       'same-client',

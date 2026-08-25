@@ -73,6 +73,8 @@ import { ReportProtection } from '@/domain/use-cases/report/report-protection'
 import { PasswordCompromiseChecker } from '@/domain/account/password-compromise-checker'
 import { LocalPasswordCompromiseChecker } from '../auth/local-password-compromise-checker'
 import { EnvModule } from '../env/env.module'
+import { PdfRenderer } from '@/domain/use-cases/report/pdf-renderer'
+import { PuppeteerPdfRenderer } from '../renderer/puppeteer-pdf-renderer'
 @Module({
   imports: [
     DatabaseModule,
@@ -82,6 +84,7 @@ import { EnvModule } from '../env/env.module'
     EnvModule,
   ],
   providers: [
+    { provide: PdfRenderer, useClass: PuppeteerPdfRenderer },
     {
       provide: PasswordCompromiseChecker,
       useClass: LocalPasswordCompromiseChecker,

@@ -25,11 +25,14 @@ function workerDatabaseUrl(): string {
 
   url.searchParams.set('schema', schema)
   url.searchParams.set('connection_limit', '5')
+  url.searchParams.set('sslmode', 'disable')
   return url.toString()
 }
 
 const databaseUrl = workerDatabaseUrl()
 process.env.DATABASE_URL = databaseUrl
+process.env.DATABASE_TLS_MODE = 'disable'
+process.env.NODE_ENV = 'test'
 // Individual E2E workers use isolated schemas; shared-store behavior is covered
 // separately with a shared fake, while this keeps existing per-test resets cheap.
 process.env.RATE_LIMIT_STORE = 'memory'
