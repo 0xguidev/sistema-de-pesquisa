@@ -4,6 +4,40 @@ import { createPrivateKey, createPublicKey, KeyObject } from 'node:crypto'
 const MIN_RSA_BITS = 2048
 const MIN_SESSION_SECRET_BYTES = 32
 
+function isLocalhost(hostname: string): boolean {
+  return ['localhost', '127.0.0.1', '[::1]'].includes(hostname)
+}
+
+function validateCorsOrigins(
+  value: string,
+  environment: 'development' | 'test' | 'production',
+): boolean {
+  const origins = value.split(',')
+
+  if (origins.some((origin) => origin.trim() === '')) return false
+
+  return origins.every((configuredOrigin) => {
+    const origin = configuredOrigin.trim()
+    if (origin.includes('*')) return false
+
+    try {
+      const url = new URL(origin)
+      const isOriginOnly =
+        url.origin === origin && !url.username && !url.password
+
+      if (!isOriginOnly) return false
+      if (environment === 'production') return url.protocol === 'https:'
+
+      return (
+        url.protocol === 'https:' ||
+        (url.protocol === 'http:' && isLocalhost(url.hostname))
+      )
+    } catch {
+      return false
+    }
+  })
+}
+
 function decodeBase64(value: string): Buffer | null {
   const normalized = value.replace(/\s/g, '')
   if (
@@ -310,6 +344,15 @@ export const envSchema = z
       })
     }
 
+    if (!validateCorsOrigins(env.CORS_ORIGIN, env.NODE_ENV)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'CORS_ORIGIN must contain comma-separated HTTPS origins (HTTP is only allowed for localhost outside production); wildcards, paths and empty values are forbidden',
+        path: ['CORS_ORIGIN'],
+      })
+    }
+
     const sessionSecret = env.SESSION_IP_HASH_SECRET
       ? decodeBase64(env.SESSION_IP_HASH_SECRET)
       : null
@@ -357,25 +400,13 @@ export function validateRequiredEnv(env: Record<string, string | undefined>) {
 
 export type Env = z.infer<typeof envSchema>
 
-export function parseCorsOrigin(corsOrigin: string): string | string[] {
-  if (corsOrigin === '*') {
-    return corsOrigin
-  }
-
-  const origins = corsOrigin.split(',').map((origin) => origin.trim())
-
-  return origins.length === 1 ? origins[0] : origins
+export function parseCorsOrigin(corsOrigin: string): string[] {
+  return corsOrigin.split(',').map((origin) => origin.trim())
 }
 
 export function isCorsOriginAllowed(
-  configuredOrigin: string | string[],
+  configuredOrigins: string[],
   requestOrigin?: string,
 ): boolean {
-  if (!requestOrigin || configuredOrigin === '*') {
-    return true
-  }
-
-  return Array.isArray(configuredOrigin)
-    ? configuredOrigin.includes(requestOrigin)
-    : configuredOrigin === requestOrigin
+  return !requestOrigin || configuredOrigins.includes(requestOrigin)
 }

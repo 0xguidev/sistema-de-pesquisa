@@ -26,7 +26,7 @@ describe('environment validation', () => {
       'postgresql://user:password@localhost:5432/database?sslmode=disable',
     DATABASE_TLS_MODE: 'disable',
     ...rsaKeys,
-    CORS_ORIGIN: 'http://localhost:5173',
+    CORS_ORIGIN: 'https://app.example.com',
   }
 
   it('uses bcrypt cost 10 by default and reads a configured cost', () => {
@@ -276,18 +276,9 @@ describe('environment validation', () => {
   })
 
   it('accepts a single CORS origin', () => {
-    expect(parseCorsOrigin('http://localhost:5173')).toBe(
+    expect(parseCorsOrigin('http://localhost:5173')).toEqual([
       'http://localhost:5173',
-    )
-  })
-
-  it('accepts any CORS origin when configured with a wildcard', () => {
-    const configuredOrigin = parseCorsOrigin('*')
-
-    expect(configuredOrigin).toBe('*')
-    expect(
-      isCorsOriginAllowed(configuredOrigin, 'https://any.example.com'),
-    ).toBe(true)
+    ])
   })
 
   it('supports multiple comma-separated CORS origins', () => {
@@ -307,6 +298,63 @@ describe('environment validation', () => {
         configuredOrigin,
         'https://not-configured.example.com',
       ),
+    ).toBe(false)
+  })
+
+  it.each(['*', 'https://*.example.com', '', 'https://app.example.com,'])(
+    'rejects wildcard or empty CORS configuration %j',
+    (CORS_ORIGIN) => {
+      expect(
+        envSchema.safeParse({ ...requiredEnvironment, CORS_ORIGIN }).success,
+      ).toBe(false)
+    },
+  )
+
+  it.each([
+    'not-a-url',
+    'ftp://app.example.com',
+    'https://user@app.example.com',
+    'https://app.example.com/path',
+  ])('rejects malformed or non-origin CORS value %s', (CORS_ORIGIN) => {
+    expect(
+      envSchema.safeParse({ ...requiredEnvironment, CORS_ORIGIN }).success,
+    ).toBe(false)
+  })
+
+  it('allows HTTP only for local development and test origins', () => {
+    for (const CORS_ORIGIN of [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://[::1]:5173',
+    ]) {
+      expect(
+        envSchema.safeParse({ ...requiredEnvironment, CORS_ORIGIN }).success,
+      ).toBe(true)
+    }
+
+    expect(
+      envSchema.safeParse({
+        ...requiredEnvironment,
+        CORS_ORIGIN: 'http://app.example.com',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('requires HTTPS CORS origins in production', () => {
+    const production = {
+      ...requiredEnvironment,
+      NODE_ENV: 'production',
+      DATABASE_TLS_MODE: 'require',
+      DATABASE_URL: 'postgresql://db.example/database?sslmode=require',
+      SESSION_IP_HASH_SECRET: randomBytes(32).toString('base64'),
+    }
+
+    expect(envSchema.safeParse(production).success).toBe(true)
+    expect(
+      envSchema.safeParse({
+        ...production,
+        CORS_ORIGIN: 'http://localhost:5173',
+      }).success,
     ).toBe(false)
   })
 
