@@ -14,10 +14,16 @@ import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import { AnswerQuestionRepository } from '@/domain/repositories/answer-question-repository'
 import { TokenRevocation } from '@/domain/auth/token-revocation'
 import { TokenRevocationService } from './token-revocation.service'
+import { CompleteSurveyRepository } from '@/domain/repositories/complete-survey-repository'
+import { PrismaCompleteSurveyRepository } from './prisma/repositories/prisma-complete-survey-repository'
 
 @Module({
   providers: [
     PrismaService,
+    {
+      provide: CompleteSurveyRepository,
+      useClass: PrismaCompleteSurveyRepository,
+    },
     {
       provide: TokenRevocation,
       useClass: TokenRevocationService,
@@ -49,6 +55,7 @@ import { TokenRevocationService } from './token-revocation.service'
   ],
   exports: [
     PrismaService,
+    CompleteSurveyRepository,
     TokenRevocation,
     AccountRepository,
     SurveyRepository,

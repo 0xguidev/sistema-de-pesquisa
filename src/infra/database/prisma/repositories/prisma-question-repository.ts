@@ -22,6 +22,25 @@ export class PrismaQuestionRepository implements QuestionRepository {
     })
   }
 
+  async createWithConditionalRules(
+    question: Question,
+    rules: ConditionalRule[],
+  ): Promise<void> {
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.question.create({
+        data: PrismaQuestionMapper.toPrisma(question),
+      })
+      for (const rule of rules) {
+        await transaction.conditionalRule.create({
+          data: PrismaConditionalRuleMapper.toPrisma(
+            rule,
+            rule.dependsOnOptionId.toString(),
+          ),
+        })
+      }
+    })
+  }
+
   async findById(id: string): Promise<Question | null> {
     const question = await this.prisma.question.findUnique({
       where: {

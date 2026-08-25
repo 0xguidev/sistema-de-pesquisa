@@ -73,6 +73,14 @@ export class InMemoryQuestionRepository implements QuestionRepository {
     this.items.push(question)
   }
 
+  async createWithConditionalRules(
+    question: Question,
+    rules: ConditionalRule[],
+  ): Promise<void> {
+    this.items.push(question)
+    this.conditionalRules.push(...rules)
+  }
+
   async save(question: Question) {
     const itemIndex = this.items.findIndex(
       (item) => item.id.toString() === question.id.toString(),

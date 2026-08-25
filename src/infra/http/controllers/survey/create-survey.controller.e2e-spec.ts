@@ -6,6 +6,10 @@ import { DatabaseModule } from '@/infra/database/database.module'
 import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { AccountFactory } from 'test/factories/make-Account'
 import { AppModule } from '@/app.module'
+import { PrismaCompleteSurveyRepository } from '@/infra/database/prisma/repositories/prisma-complete-survey-repository'
+import { Survey } from '@/domain/entities/survey'
+import { Question } from '@/domain/entities/question'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 describe('Create survey (E2E)', () => {
   let app: INestApplication
@@ -159,5 +163,108 @@ describe('Create survey (E2E)', () => {
     expect(conditionalRules.length).toBe(1)
     expect(conditionalRules[0].dependsOnQuestionNumber).toBe(1)
     expect(conditionalRules[0].dependsOnOptionNumber).toBe(1)
+  })
+
+  test.each([
+    {
+      name: 'invalid question',
+      title: 'Rollback invalid question',
+      questions: [
+        {
+          questionTitle: 'Valid question',
+          questionNum: 1,
+          options: [{ optionTitle: 'Valid option', optionNum: 1 }],
+        },
+        { questionTitle: '', questionNum: 2, options: [] },
+      ],
+    },
+    {
+      name: 'invalid option',
+      title: 'Rollback invalid option',
+      questions: [
+        {
+          questionTitle: 'Valid question',
+          questionNum: 1,
+          options: [
+            { optionTitle: 'Valid option', optionNum: 1 },
+            { optionTitle: '', optionNum: 2 },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'nonexistent conditional rule target',
+      title: 'Rollback invalid rule',
+      questions: [
+        {
+          questionTitle: 'Conditional question',
+          questionNum: 1,
+          options: [{ optionTitle: 'Valid option', optionNum: 1 }],
+          conditionalRules: [{ questionNum: 999, optionNum: 1 }],
+        },
+      ],
+    },
+  ])('should not persist anything for $name', async ({ title, questions }) => {
+    const user = await accountFactory.makePrismaAccount()
+    const accessToken = (await sessions.create(user.id.toString(), {}))
+      .accessToken
+
+    const response = await request(app.getHttpServer())
+      .post('/surveys')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ title, location: 'location', type: 'survey', questions })
+
+    expect(response.statusCode).toBe(400)
+    expect(await prisma.survey.count({ where: { title } })).toBe(0)
+    expect(
+      await prisma.question.count({ where: { userId: user.id.toString() } }),
+    ).toBe(0)
+    expect(
+      await prisma.optionAnswer.count({
+        where: { userId: user.id.toString() },
+      }),
+    ).toBe(0)
+  })
+
+  test('should roll back the complete transaction on a constraint violation', async () => {
+    const user = await accountFactory.makePrismaAccount()
+    const repository = new PrismaCompleteSurveyRepository(prisma)
+    const survey = Survey.create({
+      title: 'Rollback constraint violation',
+      location: 'location',
+      type: 'survey',
+      accountId: user.id,
+    })
+    const duplicateId = new UniqueEntityID()
+    const questions = ['First question', 'Second question'].map(
+      (questionTitle, index) =>
+        Question.create(
+          {
+            questionTitle,
+            questionNum: index + 1,
+            surveyId: survey.id,
+            accountId: user.id,
+          },
+          duplicateId,
+        ),
+    )
+
+    await expect(
+      repository.createComplete({
+        survey,
+        questions,
+        options: [],
+        conditionalRules: [],
+      }),
+    ).rejects.toThrow('persistence constraint')
+
+    expect(
+      await prisma.survey.findUnique({ where: { id: survey.id.toString() } }),
+    ).toBeNull()
+    expect(
+      await prisma.question.count({
+        where: { surveyId: survey.id.toString() },
+      }),
+    ).toBe(0)
   })
 })

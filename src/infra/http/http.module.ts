@@ -68,6 +68,7 @@ import { FetchAnswersByInterviewIdController } from './controllers/answer/fetch-
 import { RateLimitModule } from '../rate-limit/rate-limit.module'
 import { AuthModule } from '../auth/auth.module'
 import { SessionController } from './controllers/authenticate/session.controller'
+import { CreateCompleteSurveyUseCase } from '@/domain/use-cases/survey/create-complete-survey'
 @Module({
   imports: [DatabaseModule, CryptographyModule, RateLimitModule, AuthModule],
   providers: [
@@ -76,6 +77,7 @@ import { SessionController } from './controllers/authenticate/session.controller
     DeleteAccountUseCase,
     AuthenticateAccountUseCase,
     CreateSurveyUseCase,
+    CreateCompleteSurveyUseCase,
     CreateQuestionUseCase,
     CreateOptionAnswerUseCase,
     CreateInterviewUseCase,

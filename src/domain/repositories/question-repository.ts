@@ -3,6 +3,10 @@ import { Question } from '../entities/question'
 
 export abstract class QuestionRepository {
   abstract create(question: Question): Promise<void>
+  abstract createWithConditionalRules(
+    question: Question,
+    rules: ConditionalRule[],
+  ): Promise<void>
   abstract findById(id: string): Promise<Question | null>
   abstract findByIdAndAccountId(
     id: string,

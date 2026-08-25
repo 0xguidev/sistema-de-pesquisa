@@ -95,10 +95,10 @@ export class CreateQuestionUseCase {
       }
     }
 
-    await this.questionRepository.create(question)
-    for (const rule of rulesToCreate) {
-      await this.questionRepository.createConditionalRule(rule)
-    }
+    await this.questionRepository.createWithConditionalRules(
+      question,
+      rulesToCreate,
+    )
 
     return right({
       question,
