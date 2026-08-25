@@ -139,7 +139,7 @@ export class GenerateSimpleReportPdfUseCase {
       page.on('request', interceptPdfRequest)
 
       await page.setContent(html, {
-        waitUntil: 'networkidle0',
+        waitUntil: 'load',
         timeout,
       })
 
