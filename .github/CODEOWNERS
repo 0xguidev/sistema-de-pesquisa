@@ -1,0 +1,5 @@
+# Branch protection must require a Code Owner approval before merging.
+/.github/ @0xguidev
+/package.json @0xguidev
+/pnpm-lock.yaml @0xguidev
+/docker-compose*.yml @0xguidev

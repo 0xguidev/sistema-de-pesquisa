@@ -1,0 +1,12 @@
+title = "sistema-de-pesquisa secret scanning"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Generated and dependency paths"
+paths = [
+  '''(^|/)dist/''',
+  '''(^|/)coverage/''',
+  '''(^|/)node_modules/'''
+]

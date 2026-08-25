@@ -1,0 +1,11 @@
+name: typescript-security
+
+paths:
+  - src
+  - test
+paths-ignore:
+  - dist
+  - coverage
+queries:
+  - uses: security-extended
+  - uses: security-and-quality

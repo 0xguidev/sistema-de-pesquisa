@@ -5,8 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "packageManager": "pnpm@10.14.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.19.4"
   },
   "scripts": {
     "build": "nest build",
@@ -23,7 +24,10 @@
     "test:watch": "vitest",
     "test:e2e": "vitest run --config ./vitest.config.e2e.mts",
     "test:e2e:watch": "vitest --config ./vitest.config.e2e.mts",
+    "security:audit": "pnpm audit --prod --audit-level high",
+    "security:ci": "pnpm lint && pnpm typecheck && pnpm build && pnpm test && pnpm prisma:validate && pnpm security:audit",
     "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
