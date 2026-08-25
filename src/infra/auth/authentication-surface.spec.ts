@@ -26,6 +26,9 @@ describe('authentication surface', () => {
       join(process.cwd(), 'src/infra/http/controllers/authenticate'),
     ).join('\n')
 
-    expect(authenticationSources).not.toMatch(/console\.|Logger\b/)
+    expect(authenticationSources).not.toMatch(/console\.|new Logger\b/)
+    expect(authenticationSources).not.toMatch(
+      /import\s*\{[^}]*Logger[^}]*\}\s*from ['"]@nestjs\/common['"]/s,
+    )
   })
 })

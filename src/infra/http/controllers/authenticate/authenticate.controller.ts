@@ -22,6 +22,9 @@ import {
 } from '@/infra/rate-limit/rate-limit.constants'
 import { PublicRateLimitGuard } from '@/infra/rate-limit/public-rate-limit.guard'
 import { SessionService } from '@/infra/auth/session.service'
+import { SecurityLogger } from '@/infra/observability/security-logger.service'
+import { SecurityMetrics } from '@/infra/observability/security-metrics.service'
+import { SecurityEvent } from '@/infra/observability/security-events'
 
 const authenticateBodySchema = z.object({
   email: z
@@ -46,6 +49,8 @@ export class AuthenticateController {
   constructor(
     private authenticateAccount: AuthenticateAccountUseCase,
     private sessions: SessionService,
+    private securityLogger: SecurityLogger,
+    private metrics: SecurityMetrics,
   ) {}
 
   @Post()
@@ -65,6 +70,13 @@ export class AuthenticateController {
     if (result.isLeft()) {
       const error = result.value
 
+      this.securityLogger.audit(SecurityEvent.LOGIN_FAILURE, {
+        principal_id: this.securityLogger.pseudonym(email),
+        ip_id: this.securityLogger.pseudonym(ip),
+        reason: error.constructor.name,
+      })
+      this.metrics.increment('login_failures_total')
+
       switch (error.constructor) {
         case WrongCredentialsError:
           throw new UnauthorizedException(error.message)
@@ -76,6 +88,11 @@ export class AuthenticateController {
     const tokens = await this.sessions.create(result.value.accountId, {
       userAgent,
       ip,
+    })
+
+    this.securityLogger.audit(SecurityEvent.LOGIN_SUCCESS, {
+      principal_id: this.securityLogger.pseudonym(result.value.accountId),
+      ip_id: this.securityLogger.pseudonym(ip),
     })
 
     return {

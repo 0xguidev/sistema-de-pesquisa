@@ -7,10 +7,12 @@ import { PublicRateLimitGuard } from './public-rate-limit.guard'
 import { DatabaseModule } from '../database/database.module'
 import { PrismaService } from '../database/prisma/prisma.service'
 import { PrismaThrottlerStorage } from './prisma-throttler-storage'
+import { ObservabilityModule } from '../observability/observability.module'
 
 @Module({
   imports: [
     DatabaseModule,
+    ObservabilityModule,
     ThrottlerModule.forRootAsync({
       imports: [EnvModule, DatabaseModule],
       inject: [EnvService, PrismaService],

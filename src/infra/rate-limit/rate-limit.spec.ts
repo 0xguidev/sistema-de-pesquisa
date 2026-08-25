@@ -28,6 +28,7 @@ import { RATE_LIMIT_MESSAGE } from './rate-limit.constants'
 import { PublicRateLimitGuard } from './public-rate-limit.guard'
 import { SessionService } from '../auth/session.service'
 import { ControllableThrottlerStorage } from 'test/rate-limit/controllable-throttler-storage'
+import { ObservabilityModule } from '../observability/observability.module'
 
 describe('public endpoint rate limiting', () => {
   let app: INestApplication
@@ -54,6 +55,7 @@ describe('public endpoint rate limiting', () => {
 
     const moduleRef = await Test.createTestingModule({
       imports: [
+        ObservabilityModule,
         ThrottlerModule.forRoot({
           ...createRateLimitOptions(env),
           storage: throttlerStorage,

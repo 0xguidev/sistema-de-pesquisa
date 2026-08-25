@@ -1,6 +1,9 @@
 import { InvalidRequestError } from '@/core/errors/errors/invalid-request-error'
 import { EnvService } from '@/infra/env/env.service'
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
+import { SecurityLogger } from '@/infra/observability/security-logger.service'
+import { SecurityMetrics } from '@/infra/observability/security-metrics.service'
+import { SecurityEvent } from '@/infra/observability/security-events'
 
 export class ReportUserCapacityError extends Error {}
 export class ReportGlobalCapacityError extends Error {}
@@ -8,11 +11,14 @@ export class ReportTimeoutError extends Error {}
 
 @Injectable()
 export class ReportProtection {
-  private readonly logger = new Logger(ReportProtection.name)
   private globalPdf = 0
   private readonly userPdf = new Map<string, number>()
 
-  constructor(private readonly env: EnvService) {}
+  constructor(
+    private readonly env: EnvService,
+    @Optional() private readonly logger?: SecurityLogger,
+    @Optional() private readonly metrics?: SecurityMetrics,
+  ) {}
 
   get maxInterviews() {
     return this.env.get('REPORT_MAX_INTERVIEWS')
@@ -109,21 +115,18 @@ export class ReportProtection {
   ): Promise<T> {
     const currentUser = this.userPdf.get(accountId) ?? 0
     if (currentUser >= this.env.get('REPORT_PDF_USER_CONCURRENCY')) {
-      this.logger.warn(
-        JSON.stringify({
-          event: 'report_capacity_rejected',
-          scope: 'user',
-          accountId,
-        }),
-      )
+      this.logger?.audit(SecurityEvent.REPORT_CAPACITY_REJECTED, {
+        scope: 'user',
+        principal_id: this.logger?.pseudonym(accountId),
+      })
       throw new ReportUserCapacityError(
         'Já existe uma geração de PDF em andamento para este usuário.',
       )
     }
     if (this.globalPdf >= this.env.get('REPORT_PDF_GLOBAL_CONCURRENCY')) {
-      this.logger.warn(
-        JSON.stringify({ event: 'report_capacity_rejected', scope: 'global' }),
-      )
+      this.logger?.audit(SecurityEvent.REPORT_CAPACITY_REJECTED, {
+        scope: 'global',
+      })
       throw new ReportGlobalCapacityError(
         'A capacidade de geração de PDF está temporariamente esgotada.',
       )
@@ -140,13 +143,11 @@ export class ReportProtection {
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             timedOut = true
-            this.logger.error(
-              JSON.stringify({
-                event: 'report_timeout',
-                accountId,
-                timeoutMs: this.timeoutMs,
-              }),
-            )
+            this.logger?.audit(SecurityEvent.REPORT_TIMEOUT, {
+              principal_id: this.logger?.pseudonym(accountId),
+              timeout_ms: this.timeoutMs,
+            })
+            this.metrics?.increment('report_timeout_total')
             reject(
               new ReportTimeoutError(
                 'A geração do relatório excedeu o tempo limite.',

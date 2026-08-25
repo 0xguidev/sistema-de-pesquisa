@@ -20,12 +20,17 @@ import {
   REGISTER_IP_THROTTLER,
   REPORT_USER_THROTTLER,
 } from '@/infra/rate-limit/rate-limit.constants'
+import { SecurityLogger } from '@/infra/observability/security-logger.service'
+import { SecurityEvent } from '@/infra/observability/security-events'
 
 const refreshSchema = z.object({ refresh_token: z.string().min(40).max(200) })
 
 @Controller('/sessions')
 export class SessionController {
-  constructor(private sessions: SessionService) {}
+  constructor(
+    private sessions: SessionService,
+    private securityLogger: SecurityLogger,
+  ) {}
 
   @Public()
   @Post('/refresh')
@@ -41,19 +46,33 @@ export class SessionController {
     body: z.infer<typeof refreshSchema>,
   ) {
     const tokens = await this.sessions.rotate(body.refresh_token)
-    if (!tokens) throw new UnauthorizedException('Invalid refresh token')
+    if (!tokens) {
+      this.securityLogger.audit(SecurityEvent.REFRESH_FAILURE, {
+        reason: 'invalid_or_expired',
+      })
+      throw new UnauthorizedException('Invalid refresh token')
+    }
+    this.securityLogger.audit(SecurityEvent.REFRESH_SUCCESS, {
+      principal_id: this.securityLogger.pseudonym(tokens.accountId),
+    })
     return this.response(tokens)
   }
 
   @Delete('/current')
   async logout(@CurrentUser() user: UserPayload) {
     await this.sessions.revoke(user.sid, user.sub)
+    this.securityLogger.audit(SecurityEvent.LOGOUT, {
+      session_id: this.securityLogger.pseudonym(user.sid),
+    })
     return { revoked: true }
   }
 
   @Delete()
   async logoutAll(@CurrentUser() user: UserPayload) {
     await this.sessions.revokeAll(user.sub)
+    this.securityLogger.audit(SecurityEvent.SESSIONS_REVOKED, {
+      scope: 'all',
+    })
     return { revoked: true }
   }
 
@@ -61,6 +80,7 @@ export class SessionController {
     accessToken: string
     refreshToken: string
     refreshExpiresAt: Date
+    accountId?: string
   }) {
     return {
       access_token: tokens.accessToken,

@@ -38,7 +38,8 @@ async function bootstrap() {
     origin: (origin, callback) =>
       callback(null, isCorsOriginAllowed(corsOrigins, origin)),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Authorization', 'Content-Type'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-Request-ID'],
+    exposedHeaders: ['X-Request-ID'],
     credentials: true,
   })
 

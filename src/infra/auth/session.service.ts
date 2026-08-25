@@ -3,9 +3,17 @@ import { JwtService } from '@nestjs/jwt'
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { PrismaService } from '../database/prisma/prisma.service'
 import { EnvService } from '../env/env.service'
+import { SecurityLogger } from '../observability/security-logger.service'
+import { SecurityMetrics } from '../observability/security-metrics.service'
+import { SecurityEvent } from '../observability/security-events'
 
 export type SessionMetadata = { userAgent?: string; ip?: string }
-type SessionTokens = { accessToken: string; refreshToken: string; refreshExpiresAt: Date }
+type SessionTokens = {
+  accessToken: string
+  refreshToken: string
+  refreshExpiresAt: Date
+  accountId: string
+}
 
 @Injectable()
 export class SessionService implements OnModuleInit, OnModuleDestroy {
@@ -15,6 +23,8 @@ export class SessionService implements OnModuleInit, OnModuleDestroy {
     private prisma: PrismaService,
     private jwt: JwtService,
     private env: EnvService,
+    private securityLogger: SecurityLogger,
+    private metrics: SecurityMetrics,
   ) {}
 
   onModuleInit() {
@@ -60,6 +70,11 @@ export class SessionService implements OnModuleInit, OnModuleDestroy {
           where: { id: sessionId, revokedAt: null },
           data: { revokedAt: new Date() },
         })
+        this.securityLogger.audit(SecurityEvent.REFRESH_REPLAY, {
+          session_id: this.securityLogger.pseudonym(sessionId),
+          principal_id: this.securityLogger.pseudonym(session.accountId),
+        })
+        this.metrics.increment('refresh_replay_total')
       }
       return null
     }
@@ -88,6 +103,12 @@ export class SessionService implements OnModuleInit, OnModuleDestroy {
         where: { id: session.id, revokedAt: null },
         data: { revokedAt: new Date() },
       })
+      this.securityLogger.audit(SecurityEvent.REFRESH_REPLAY, {
+        session_id: this.securityLogger.pseudonym(session.id),
+        principal_id: this.securityLogger.pseudonym(session.accountId),
+        reason: 'concurrent_rotation',
+      })
+      this.metrics.increment('refresh_replay_total')
       return null
     }
     return this.tokens(session.accountId, session.id, nextToken, session.expiresAt)
@@ -125,6 +146,7 @@ export class SessionService implements OnModuleInit, OnModuleDestroy {
       accessToken: this.jwt.sign({ sub: accountId, sid: sessionId, iat: Math.floor(Date.now() / 1000) }),
       refreshToken,
       refreshExpiresAt,
+      accountId,
     }
   }
 
