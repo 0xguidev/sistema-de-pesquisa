@@ -1,6 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common'
 import puppeteer from 'puppeteer'
-import type { HTTPRequest } from 'puppeteer'
+import type { Browser, HTTPRequest, Page } from 'puppeteer'
 import {
   PdfRenderer,
   PdfRenderOptions,
@@ -52,19 +52,35 @@ export class PuppeteerPdfRenderer extends PdfRenderer {
   }
 
   async render(html: string, options: PdfRenderOptions): Promise<Buffer> {
-    const browser = await puppeteer.launch({
+    let browser: Browser | undefined
+    let rejectOnAbort!: (reason?: unknown) => void
+    const aborted = new Promise<never>((_, reject) => {
+      rejectOnAbort = reject
+    })
+    const closeOnAbort = () => {
+      rejectOnAbort(options.signal.reason)
+      if (browser) void browser.close().catch(() => undefined)
+    }
+    options.signal.addEventListener('abort', closeOnAbort, { once: true })
+
+    const launching = puppeteer.launch({
       executablePath:
         process.env.CHROMIUM_EXECUTABLE_PATH ?? '/usr/bin/chromium',
       headless: true,
       timeout: options.timeoutMs,
     })
-    let page: Awaited<ReturnType<typeof browser.newPage>> | undefined
-    const closeOnTimeout = () => {
-      void browser.close().catch(() => undefined)
-    }
-    options.signal.addEventListener('abort', closeOnTimeout, { once: true })
+    void launching
+      .then((launchedBrowser) => {
+        if (options.signal.aborted)
+          return launchedBrowser.close().catch(() => undefined)
+      })
+      .catch(() => undefined)
+
+    let page: Page | undefined
 
     try {
+      options.signal.throwIfAborted()
+      browser = await Promise.race([launching, aborted])
       options.signal.throwIfAborted()
       page = await browser.newPage()
       page.setDefaultNavigationTimeout(options.timeoutMs)
@@ -92,11 +108,11 @@ export class PuppeteerPdfRenderer extends PdfRenderer {
         }),
       )
     } finally {
-      options.signal.removeEventListener('abort', closeOnTimeout)
+      options.signal.removeEventListener('abort', closeOnAbort)
       try {
         if (page && !page.isClosed()) await page.close()
       } finally {
-        await browser.close().catch(() => undefined)
+        if (browser) await browser.close().catch(() => undefined)
       }
     }
   }

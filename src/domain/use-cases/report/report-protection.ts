@@ -136,13 +136,11 @@ export class ReportProtection {
     let timer: ReturnType<typeof setTimeout> | undefined
     const abort = new AbortController()
     const running = operation(abort.signal)
-    let timedOut = false
     try {
       return await Promise.race([
         running,
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
-            timedOut = true
             this.logger?.audit(SecurityEvent.REPORT_TIMEOUT, {
               principal_id: this.logger?.pseudonym(accountId),
               timeout_ms: this.timeoutMs,
@@ -159,8 +157,9 @@ export class ReportProtection {
       ])
     } finally {
       if (timer) clearTimeout(timer)
-      // Do not return capacity while Chromium is still unwinding.
-      if (timedOut) await running.catch(() => undefined)
+      // The timed-out operation may ignore cancellation. Observe its eventual
+      // rejection without delaying the HTTP response or retaining capacity.
+      void running.catch(() => undefined)
       this.globalPdf--
       const remaining = (this.userPdf.get(accountId) ?? 1) - 1
       if (remaining === 0) this.userPdf.delete(accountId)

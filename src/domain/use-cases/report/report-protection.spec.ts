@@ -94,4 +94,21 @@ describe('ReportProtection PDF capacity', () => {
     ).resolves.toBe('released')
     vi.useRealTimers()
   })
+
+  it('returns on timeout even when the operation never settles after abort', async () => {
+    vi.useFakeTimers()
+    const sut = protection()
+    const running = sut.withPdfSlot(
+      'user-1',
+      () => new Promise<void>(() => undefined),
+    )
+
+    const assertion = expect(running).rejects.toBeInstanceOf(ReportTimeoutError)
+    await vi.advanceTimersByTimeAsync(20)
+    await assertion
+    await expect(
+      sut.withPdfSlot('user-1', async () => 'released'),
+    ).resolves.toBe('released')
+    vi.useRealTimers()
+  })
 })

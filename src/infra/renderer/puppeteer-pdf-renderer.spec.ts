@@ -118,6 +118,27 @@ describe('PuppeteerPdfRenderer', () => {
     await expect(render()).rejects.toThrow('Page close failed')
     expect(chromium.browser.close).toHaveBeenCalledOnce()
   })
+
+  it('cancels immediately while Chromium is still launching', async () => {
+    let finishLaunch!: (browser: typeof chromium.browser) => void
+    chromium.launch.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishLaunch = resolve
+      }),
+    )
+    const abort = new AbortController()
+    const rendering = new PuppeteerPdfRenderer().render('<html>safe</html>', {
+      timeoutMs: 1000,
+      signal: abort.signal,
+    })
+
+    abort.abort()
+    await expect(rendering).rejects.toMatchObject({ name: 'AbortError' })
+
+    finishLaunch(chromium.browser)
+    await vi.waitFor(() => expect(chromium.browser.close).toHaveBeenCalledOnce())
+    expect(chromium.browser.newPage).not.toHaveBeenCalled()
+  })
 })
 
 function createRequest(url: string) {
