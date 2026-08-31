@@ -203,7 +203,217 @@ Os itens abaixo não são capacidades existentes deste repositório:
 
 ## 3. Modelo de domínio
 
-> A preencher com entidades, relacionamentos, conceitos e terminologia observados na implementação atual.
+### 3.1 Visão geral e classificação
+
+O modelo persistido divide-se em dois grupos:
+
+- **Entidades de produto:** `User` (representado no domínio como `Account`), `Survey`, `Question`, `OptionAnswer`, `ConditionalRule`, `Interview` e `AnswerQuestion`. Essas entidades representam contas, questionários, aplicações de pesquisas e respostas.
+- **Entidades operacionais e de segurança:** `Session`, `SessionUsedToken`, `RevokedTokenSubject`, `RateLimitBucket` e `PdfRenderLease`. Elas sustentam autenticação, revogação, limitação de requisições e controle de capacidade; não são conteúdo de uma pesquisa.
+
+Os nomes do domínio e da persistência nem sempre coincidem. A entidade de domínio `Account` é armazenada na tabela `users`, e `OptionAnswer` representa uma opção disponível para uma pergunta, não uma resposta registrada. A resposta efetivamente dada em uma entrevista é `AnswerQuestion`.
+
+### 3.2 Hierarquia do produto
+
+```text
+Account/User
+└── Survey
+    ├── Question
+    │   ├── OptionAnswer
+    │   └── ConditionalRule
+    │       ├── depende de outra Question
+    │       └── depende de uma OptionAnswer dessa pergunta
+    └── Interview
+        └── AnswerQuestion
+            ├── referencia uma Question da mesma Survey
+            └── referencia uma OptionAnswer da mesma Question
+```
+
+Uma conta é titular de suas pesquisas e, de forma redundante e deliberada, também identifica a titularidade de perguntas, opções, entrevistas e respostas. Cada pesquisa possui dois ramos principais: a estrutura do questionário e as entrevistas realizadas. A estrutura é composta por perguntas, opções e regras condicionais. Cada entrevista agrupa respostas; cada resposta seleciona uma única opção pertencente à pergunta respondida.
+
+As chaves estrangeiras compostas reforçam a coerência dessa hierarquia no banco. Elas impedem, por exemplo, que uma pergunta seja associada a uma pesquisa de outra conta, que uma entrevista pertença simultaneamente a outra pesquisa ou conta, ou que uma resposta combine entrevista, pergunta e opção de titulares ou estruturas incompatíveis.
+
+### 3.3 Entidades de produto
+
+#### 3.3.1 Account/User
+
+**Propósito.** Representa a conta que se autentica, possui os dados de produto e opera a API. No código de domínio chama-se `Account`; no Prisma, `User`; a tabela física é `users`.
+
+**Atributos principais.** `id` UUID; `email`; senha armazenada em `password`; `name`; `role`, com valores `USER` ou `ADMIN` e padrão `USER`; `slug`; `createdAt`; e `updatedAt` opcional. O mapper de domínio transporta nome, e-mail, senha e papel, enquanto os timestamps pertencem ao registro de persistência.
+
+**Relacionamentos e titularidade.** Uma conta pode possuir muitas pesquisas, perguntas, opções, entrevistas, respostas e sessões. `userId`/`accountId` é a raiz de titularidade usada pelos repositórios para restringir consultas e mutações aos recursos da conta autenticada.
+
+**Unicidade e índices.** `id` é chave primária UUID. `email` e `slug` são globalmente únicos. O papel existente no esquema não cria, por si só, um fluxo administrativo.
+
+**Exclusão.** Sessões são excluídas em cascata com a conta. As relações diretas das entidades de produto com `users` usam comportamento restritivo, portanto registros de produto ainda vinculados podem impedir a exclusão da conta. O fluxo de exclusão grava ou atualiza um `RevokedTokenSubject` como tombstone de segurança, sem vínculo estrangeiro, para que a revogação sobreviva à remoção da conta.
+
+**Ciclo de vida.** `createdAt` recebe o horário de criação no banco; `updatedAt` é atualizado automaticamente pelo Prisma quando o registro é alterado.
+
+#### 3.3.2 Survey
+
+**Propósito.** É a raiz agregadora de um questionário e de suas aplicações. Reúne a definição da pesquisa, suas perguntas, regras condicionais e entrevistas.
+
+**Atributos principais.** `id` UUID; `title`; `location`; `type`; `slug`; `userId`; `createdAt`; e `updatedAt` opcional.
+
+**Relacionamentos e titularidade.** Pertence a exatamente um `User` por `userId`; possui muitas `Question`, `Interview` e `ConditionalRule`. Os repositórios de leitura por identificador e de relatórios combinam `id` e `userId`, restringindo o acesso à conta proprietária.
+
+**Unicidade e índices.** `id` é chave primária e `slug` é globalmente único. A combinação `(id, userId)` também é única e serve de destino às relações compostas de perguntas e entrevistas. Não existe restrição de unicidade para título, local ou tipo.
+
+**Exclusão.** A exclusão da pesquisa propaga-se por cascata para perguntas e entrevistas. A cascata de perguntas alcança opções, e a cascata de entrevistas alcança respostas. Entretanto, `ConditionalRule` referencia pesquisa, pergunta e dependências com exclusão restritiva; uma pesquisa que ainda tenha regras condicionais pode exigir a remoção prévia dessas regras para que a exclusão seja aceita pelo banco.
+
+**Ciclo de vida.** `createdAt` é definido na criação; `updatedAt` é opcional e mantido automaticamente pelo Prisma nas atualizações.
+
+#### 3.3.3 Question
+
+**Propósito.** Representa uma pergunta estruturada pertencente a uma pesquisa.
+
+**Atributos principais.** `id` UUID; texto em `title` (exposto no domínio como `questionTitle`); posição ou referência numérica em `number` (`questionNum`); `surveyId`; `userId`; `slug`; `createdAt`; e `updatedAt` opcional.
+
+**Relacionamentos e titularidade.** Pertence simultaneamente à pesquisa e à mesma conta proprietária por meio da chave estrangeira composta `(surveyId, userId)`. Possui opções e respostas e pode aparecer em uma regra condicional tanto como pergunta condicionada (`questionId`) quanto como pergunta da qual outra depende (`dependsOnQuestionId`).
+
+**Unicidade e índices.** `id` e `slug` são globalmente únicos. Também são únicas as combinações `(id, userId)` e `(id, surveyId, userId)`, utilizadas pelas relações filhas. O índice `(surveyId, userId)` atende consultas das perguntas de uma pesquisa da conta. `number` não possui restrição única no banco, nem isoladamente nem dentro da pesquisa.
+
+**Exclusão.** A exclusão de uma pesquisa elimina suas perguntas em cascata. A exclusão de uma pergunta elimina suas opções em cascata. O caso de uso de exclusão individual remove antes as regras em que a pergunta é o alvo ou a dependência. Respostas referenciam a pergunta com comportamento restritivo; portanto, uma pergunta já usada em respostas não é automaticamente removida por uma exclusão individual enquanto essas referências existirem.
+
+**Ciclo de vida.** `createdAt` é definido na criação; `updatedAt` é opcional e atualizado pelo Prisma.
+
+#### 3.3.4 OptionAnswer
+
+**Propósito.** Representa uma opção de resposta predefinida de uma pergunta. Apesar do nome, não representa a escolha registrada em uma entrevista.
+
+**Atributos principais.** `id` UUID; texto da opção em `option` (no domínio, `optionTitle`); número em `number` (`optionNum`); `questionId`; `userId`; `slug`; `createdAt`; e `updatedAt` opcional.
+
+**Relacionamentos e titularidade.** Pertence a uma pergunta da mesma conta por meio da chave composta `(questionId, userId)`. Pode ser selecionada por muitas `AnswerQuestion` e pode ser a opção de dependência de muitas `ConditionalRule`.
+
+**Unicidade e índices.** `id` e `slug` são globalmente únicos. Também são únicas as combinações `(id, userId)` e `(id, questionId, userId)`. O índice `(questionId, userId)` apoia a listagem das opções de uma pergunta pertencente à conta. `number` não é único no banco dentro da pergunta.
+
+**Exclusão.** É excluída em cascata quando sua pergunta é removida. Na exclusão individual, o caso de uso remove previamente regras condicionais que dependem da opção. Respostas referenciam opções com exclusão restritiva; uma opção já selecionada em respostas não é removida automaticamente enquanto essas respostas existirem.
+
+**Ciclo de vida.** A persistência possui `createdAt`, definido por padrão, e `updatedAt`, atualizado automaticamente. O objeto de domínio denomina o último campo `updateAt`, mas o mapper e o schema persistente usam `updatedAt`.
+
+#### 3.3.5 ConditionalRule
+
+**Propósito.** Registra que uma pergunta está condicionada à seleção de determinada opção de outra pergunta da mesma pesquisa. A entidade persiste a dependência estrutural; não implica, por si só, uma interface ou navegação condicional.
+
+**Atributos principais.** `id` UUID; `questionId`, que identifica a pergunta condicionada; `dependsOnQuestionId` e `dependsOnQuestionNumber`, que identificam a pergunta de referência; `dependsOnOptionId` e `dependsOnOptionNumber`, que identificam a opção esperada; e `surveyId`.
+
+**Relacionamentos e titularidade.** Pertence a uma pesquisa e referencia duas funções de `Question`: a pergunta condicionada e a pergunta de dependência. Também referencia a `OptionAnswer` de dependência. A tabela não possui `userId`; sua associação à conta é indireta, por meio da pesquisa e das perguntas referenciadas. A criação de estrutura completa resolve números para identificadores e persiste as regras na mesma transação da pesquisa, perguntas e opções.
+
+**Unicidade e índices.** `id` é a chave primária UUID e também está declarado como único. Não há unicidade composta para impedir regras repetidas, nem índices adicionais declarados para pergunta, opção ou pesquisa.
+
+**Exclusão.** Todas as relações de `ConditionalRule` usam exclusão restritiva. Os casos de uso de exclusão de pergunta e opção removem explicitamente as regras relacionadas antes de remover o recurso. Não há cascata automática a partir de pesquisa, pergunta ou opção.
+
+**Ciclo de vida.** Não possui campos de criação ou atualização.
+
+#### 3.3.6 Interview
+
+**Propósito.** Representa uma aplicação ou ocorrência de coleta de uma pesquisa. Agrupa as respostas registradas, sem modelar a identidade do participante.
+
+**Atributos principais.** `id` UUID; `surveyId`; `userId`; `createdAt`; e `updatedAt` opcional.
+
+**Relacionamentos e titularidade.** Pertence à combinação `(surveyId, userId)`, garantindo que a pesquisa e a entrevista tenham o mesmo titular. Possui muitas `AnswerQuestion`. Consultas por pesquisa filtram simultaneamente `surveyId` e a conta autenticada.
+
+**Unicidade e índices.** `id` é chave primária. As combinações `(id, userId)` e `(id, surveyId, userId)` são únicas e sustentam consultas e a relação composta das respostas. O índice `(surveyId, userId)` atende listagem e contagem de entrevistas da pesquisa por titular.
+
+**Exclusão.** É excluída em cascata quando a pesquisa é removida. Ao excluir uma entrevista, todas as suas respostas são eliminadas em cascata pela relação composta da entrevista com `AnswerQuestion`.
+
+**Ciclo de vida.** `createdAt` registra a criação; `updatedAt` é opcional e atualizado automaticamente pelo Prisma.
+
+#### 3.3.7 AnswerQuestion
+
+**Propósito.** Representa a resposta a uma pergunta dentro de uma entrevista, materializada pela seleção de uma `OptionAnswer`.
+
+**Atributos principais.** `id` UUID; `interviewId`; `surveyId`; `questionId`; `optionAnswerId`; `userId`; `createdAt`; e `updatedAt` opcional. Ao persistir, o repositório obtém `surveyId` da entrevista, em vez de confiar em um valor independente fornecido pelo objeto de domínio.
+
+**Relacionamentos e titularidade.** A relação composta `(interviewId, surveyId, userId)` exige que a resposta pertença à entrevista, pesquisa e conta coerentes. `(questionId, surveyId, userId)` exige que a pergunta pertença à mesma pesquisa e conta. `(optionAnswerId, questionId, userId)` exige que a opção pertença à pergunta e conta informadas. Há ainda uma relação direta com `User` por `userId`.
+
+**Unicidade e índices.** `id` é chave primária. A combinação `(interviewId, questionId)` é única, limitando cada entrevista a no máximo uma resposta persistida por pergunta. Os índices `(interviewId, surveyId, userId)`, `(questionId, surveyId, userId)` e `(optionAnswerId, questionId, userId)` apoiam as relações, consultas por entrevista e validação estrutural.
+
+**Exclusão.** É excluída em cascata com a entrevista. Suas referências a pergunta e opção são restritivas, evitando que elementos usados por respostas sejam removidos isoladamente. A remoção de conta também permanece sujeita à relação direta restritiva com `User` enquanto a resposta existir.
+
+**Ciclo de vida.** `createdAt` registra a criação; `updatedAt` é opcional e atualizado automaticamente pelo Prisma.
+
+### 3.4 Entidades operacionais e de segurança
+
+#### 3.4.1 Session
+
+**Propósito.** Mantém uma sessão autenticada e o estado necessário à emissão, rotação, expiração e revogação de tokens de renovação.
+
+**Atributos principais.** `id` UUID; `accountId`; `tokenHash`, que armazena o hash do token de renovação atual; `createdAt`; `expiresAt`; `lastUsedAt`; `revokedAt` opcional; `userAgent` opcional limitado a 200 caracteres; e `ipHash` opcional limitado a 64 caracteres.
+
+**Relacionamentos e titularidade.** Pertence a um `User` e possui muitos `SessionUsedToken`. É operacionalmente vinculada à conta por `accountId`, mas não contém dados de pesquisa.
+
+**Unicidade e índices.** `id` é chave primária e `tokenHash` é único. O índice `(accountId, revokedAt)` apoia busca e revogação das sessões ativas da conta; o índice de `expiresAt` apoia identificação e limpeza das sessões expiradas.
+
+**Exclusão.** É excluída em cascata com a conta. A limpeza periódica remove sessões expiradas. Ao excluir uma sessão, seus tokens usados são excluídos em cascata.
+
+**Ciclo de vida.** `createdAt` e `lastUsedAt` começam no momento da criação. `lastUsedAt` muda quando o token é rotacionado; `revokedAt` marca revogação sem excluir imediatamente o registro; `expiresAt` determina o limite temporal da sessão.
+
+#### 3.4.2 SessionUsedToken
+
+**Propósito.** Registra hashes de tokens de renovação já consumidos para detectar reapresentação ou replay durante a rotação.
+
+**Atributos principais.** `tokenHash`; `sessionId`; e `usedAt`.
+
+**Relacionamentos e titularidade.** Pertence a uma única `Session`. A conta é identificável indiretamente pela sessão.
+
+**Unicidade e índices.** `tokenHash` é a chave primária, logo cada token usado só pode ser registrado uma vez. `sessionId` possui índice para acesso e manutenção por sessão.
+
+**Exclusão.** É excluído em cascata com a sessão e, indiretamente, com a conta.
+
+**Ciclo de vida.** `usedAt` registra por padrão o momento em que o token anterior é consumido. Não possui timestamp de atualização.
+
+#### 3.4.3 RevokedTokenSubject
+
+**Propósito.** Funciona como marcador temporal de revogação global de tokens emitidos para uma conta, inclusive após a exclusão dela.
+
+**Atributos principais.** `accountId` e `revokedBefore`.
+
+**Relacionamentos e titularidade.** `accountId` identifica o sujeito revogado, mas não há chave estrangeira para `User`. Essa ausência é intencional para permitir que o registro sobreviva como tombstone de segurança depois da exclusão da conta.
+
+**Unicidade e índices.** `accountId` é a chave primária; existe no máximo um marco de revogação global por identificador de conta.
+
+**Exclusão.** Não há cascata associada à conta. O fluxo de exclusão da conta faz `upsert` deste registro em vez de removê-lo.
+
+**Ciclo de vida.** `revokedBefore` recebe o horário atual por padrão e é substituído quando uma revogação global mais recente é registrada. Não há `createdAt` ou `updatedAt` separado.
+
+#### 3.4.4 RateLimitBucket
+
+**Propósito.** Compartilha entre instâncias da API o estado de limitação de taxa de requisições.
+
+**Atributos principais.** `key`, composta operacionalmente pelo nome do limitador e pela chave do cliente; `totalHits`; `expiresAt`; e `blockedUntil` opcional.
+
+**Relacionamentos e titularidade.** Não possui relação estrangeira com contas ou entidades de produto. Dependendo do limitador, a chave pode representar um contexto de requisição, mas isso não constitui titularidade de domínio.
+
+**Unicidade e índices.** `key` é a chave primária. `expiresAt` possui índice para localizar janelas expiradas. Incrementos são serializados com bloqueio consultivo do PostgreSQL para manter a decisão consistente entre réplicas.
+
+**Exclusão.** Não há cascatas ou vínculo de exclusão com entidades de produto. Janelas expiradas são reinicializadas por `upsert` quando a chave volta a ser usada; o modelo não define timestamps gerais de criação ou atualização.
+
+**Ciclo de vida.** `expiresAt` delimita a janela corrente; `blockedUntil` delimita um bloqueio ativo; `totalHits` é reiniciado quando a janela ou o bloqueio expira.
+
+#### 3.4.5 PdfRenderLease
+
+**Propósito.** Representa uma reserva temporária de capacidade para geração de PDF e permite aplicar limites simultâneos globais e por conta entre diferentes instâncias da API.
+
+**Atributos principais.** `id` UUID; `accountId`; `expiresAt`; e `createdAt`.
+
+**Relacionamentos e titularidade.** `accountId` identifica a conta para contagem de capacidade, mas não possui chave estrangeira para `User`. A entidade é operacional e não integra a hierarquia de conteúdo da pesquisa.
+
+**Unicidade e índices.** `id` é chave primária. O índice `(accountId, expiresAt)` apoia a contagem e expiração por conta; o índice de `expiresAt` apoia limpeza global de reservas vencidas. A aquisição usa bloqueio consultivo do PostgreSQL para tornar atômicas a limpeza, a verificação dos limites e a inserção.
+
+**Exclusão.** A reserva é removida explicitamente ao liberar a capacidade; reservas expiradas são apagadas antes de uma nova aquisição. Não há cascata quando uma conta é excluída.
+
+**Ciclo de vida.** `createdAt` registra a aquisição e `expiresAt` limita a validade da reserva. Não possui timestamp de atualização.
+
+### 3.5 Resumo das regras de integridade e exclusão
+
+- A titularidade de conteúdo começa em `User` e é propagada por `userId` nas principais entidades de produto.
+- Chaves compostas garantem que perguntas e entrevistas pertençam à pesquisa da mesma conta e que respostas combinem entrevista, pesquisa, pergunta, opção e conta compatíveis.
+- Uma entrevista admite no máximo uma resposta por pergunta por causa da unicidade de `(interviewId, questionId)`.
+- Excluir uma entrevista elimina suas respostas; excluir uma pesquisa aciona cascatas para perguntas e entrevistas; excluir uma pergunta aciona cascata para opções.
+- Respostas restringem a exclusão isolada das perguntas e opções que referenciam.
+- Regras condicionais não são eliminadas automaticamente pelo banco. Os fluxos de exclusão individual de pergunta e opção fazem limpeza explícita, mas a exclusão direta da pesquisa continua sujeita às restrições existentes.
+- Excluir uma conta elimina suas sessões, mas os vínculos diretos restritivos das entidades de produto exigem que não permaneçam dados associados. O tombstone de revogação e reservas operacionais sem chave estrangeira não são apagados em cascata.
+- `slug` é único globalmente em `User`, `Survey`, `Question` e `OptionAnswer`; os números de perguntas e opções não possuem unicidade garantida pelo schema.
 
 ## 4. Requisitos funcionais
 
