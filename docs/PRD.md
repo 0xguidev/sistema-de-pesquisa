@@ -640,6 +640,125 @@ No fluxo individual, uma pergunta nova normalmente não consegue depender de si 
 
 Também não há verificação de duplicidade entre regras condicionais idênticas. Os números armazenados em `ConditionalRule` coexistem com UUIDs resolvidos, e alterações posteriores nos números de perguntas ou opções não disparam sincronização automática dessas regras.
 
+### 4.10 Entrevistas e coleta de respostas
+
+#### RF-ENT-001 — Criar entrevista para uma pesquisa
+
+A conta autenticada deve poder criar uma entrevista por `POST /interviews`. O corpo exige:
+
+- `surveyId`: UUID da pesquisa;
+- `answers`: array obrigatório, que pode estar vazio;
+- para cada item de `answers`, `questionId` e `answerId` como UUIDs, sendo `answerId` o identificador da opção selecionada.
+
+Antes de criar a entrevista, a API localiza a pesquisa pela combinação `(surveyId, accountId)`. Pesquisa inexistente ou de outra conta retorna HTTP `404` e nenhuma entrevista é criada. Payload ausente, identificadores malformados ou estrutura inválida retornam HTTP `400`. Em caso de sucesso, a API responde com HTTP `201` sem representação da entrevista no corpo.
+
+A entrevista não contém dados identificadores do participante. Ela registra uma ocorrência de aplicação da pesquisa pertencente à conta autenticada.
+
+#### RF-ENT-002 — Enviar múltiplas respostas com a entrevista
+
+Após criar a entrevista, o controlador deve processar todos os itens de `answers`. Para cada item, cria uma `AnswerQuestion` que associa:
+
+- a entrevista recém-criada;
+- a pergunta informada em `questionId`;
+- a opção selecionada informada em `answerId`;
+- a pesquisa derivada da entrevista;
+- a conta autenticada.
+
+O array pode conter múltiplas respostas e elas são disparadas concorrentemente com `Promise.all`. Uma lista vazia cria uma entrevista sem respostas. A implementação não exige resposta para todas as perguntas e não impede uma entrevista incompleta.
+
+Se entrevista, pergunta ou opção não for encontrada no escopo correto, o item falha com HTTP `404`. Outros erros reconhecidos pelo controlador seriam HTTP `400`; conflitos de persistência não convertidos para erro HTTP específico chegam ao tratamento global como HTTP `500`.
+
+#### RF-ENT-003 — Obter entrevista por identificador
+
+`GET /interviews/:interviewId` deve validar o parâmetro como UUID. Sucesso retorna HTTP `200` com `id`, `surveyId`, `accountId`, `createdAt` e `updatedAt`. UUID inválido retorna HTTP `400`; entrevista inexistente retorna HTTP `404`; entrevista pertencente a outra conta retorna HTTP `403`.
+
+Esta consulta retorna os metadados da entrevista, sem incluir suas respostas. As respostas podem ser obtidas pelo endpoint específico ou pela listagem de entrevistas da pesquisa.
+
+#### RF-ENT-004 — Listar entrevistas de uma pesquisa
+
+`GET /interviews/survey/:surveyId` deve validar `surveyId` como UUID e aceitar:
+
+- `page`: inteiro mínimo 1, padrão 1;
+- `limit`: inteiro mínimo 1, padrão 10.
+
+A consulta filtra simultaneamente `surveyId` e a conta autenticada. A resposta HTTP `200` contém `interviews`, `total`, `page` e `limit`. Cada entrevista contém identificador, pesquisa, timestamps e `answers`; cada resposta aninhada inclui seus dados de pergunta e opção. O caso de uso calcula `totalPages`, mas o controlador atual não o expõe.
+
+As entrevistas são ordenadas por `createdAt` em ordem crescente. Dentro de cada entrevista listada, as respostas são ordenadas pelo número da pergunta em ordem crescente. Não há limite máximo de página ou de `limit` declarado nesse endpoint.
+
+O endpoint não verifica a pesquisa separadamente. Pesquisa inexistente ou pertencente a outra conta resulta em HTTP `200` com `interviews` vazio e `total` zero. UUID ou paginação inválida retorna HTTP `400`.
+
+#### RF-ENT-005 — Excluir entrevista
+
+`DELETE /interviews/:id` deve permitir exclusão apenas pela conta proprietária. Sucesso retorna HTTP `204`; entrevista inexistente retorna HTTP `404`; entrevista de outra conta retorna HTTP `403`.
+
+A exclusão da entrevista remove todas as suas `AnswerQuestion` em cascata. A entrevista também é eliminada em cascata quando sua pesquisa é excluída, observadas as demais restrições de exclusão da pesquisa.
+
+### 4.11 Gestão individual de respostas
+
+#### RF-RES-001 — Criar resposta individual
+
+`POST /answer-questions` deve receber `interviewId`, `questionId` e `optionAnswerId`, todos UUIDs, e usar a conta autenticada como proprietária. Sucesso retorna HTTP `201` sem representação da resposta no corpo. Payload malformado retorna HTTP `400`.
+
+Antes de persistir, o caso de uso deve confirmar cumulativamente que:
+
+- a entrevista pertence à conta autenticada;
+- a pergunta pertence à conta autenticada;
+- a opção pertence à pergunta informada e à conta autenticada;
+- a pergunta pertence à mesma pesquisa da entrevista.
+
+Falha em qualquer uma dessas verificações retorna HTTP `404`, ocultando recursos incompatíveis ou de outra conta. O repositório deriva `surveyId` da entrevista ao persistir a resposta.
+
+#### RF-RES-002 — Impedir resposta duplicada por pergunta
+
+O banco impõe unicidade sobre `(interviewId, questionId)`. Portanto, uma entrevista pode conter no máximo uma resposta persistida para cada pergunta. Uma segunda inserção para a mesma combinação é rejeitada pela persistência, inclusive se tentar selecionar outra opção.
+
+Não há tratamento de domínio ou mapeamento HTTP dedicado para esse conflito nos endpoints de resposta. Assim, a restrição impede a duplicidade no banco, mas o erro atualmente segue o tratamento global de falhas não mapeadas como HTTP `500`, em vez de uma resposta de conflito específica.
+
+#### RF-RES-003 — Obter resposta por identificador
+
+`GET /answer-questions/:answerId` deve validar o identificador como UUID. Sucesso retorna HTTP `200` com `id`, `interviewId`, `questionId`, `optionAnswerId`, `accountId` e timestamps. UUID inválido retorna HTTP `400`; resposta inexistente retorna HTTP `404`; resposta de outra conta retorna HTTP `403`.
+
+#### RF-RES-004 — Listar respostas de uma entrevista
+
+`GET /answer-questions/interview/:interviewId` deve validar o parâmetro como UUID e filtrar por `interviewId` e conta autenticada. Sucesso retorna HTTP `200` com um array de respostas contendo identificadores, conta e timestamps, ordenado por `createdAt` em ordem crescente.
+
+O endpoint não verifica separadamente se a entrevista existe ou pertence à conta. Entrevista inexistente, entrevista de outra conta ou entrevista sem respostas produz array vazio. UUID inválido retorna HTTP `400`.
+
+#### RF-RES-005 — Atualizar resposta
+
+`PUT /answer-questions/:id` deve permitir alterar a opção selecionada e, opcionalmente, a pergunta associada. O corpo aceita `questionId` opcional e exige, na prática, `optionAnswerId` truthy; a ausência de `optionAnswerId` retorna HTTP `400`. Esses dois campos são tipados como strings no controlador, sem validação UUID específica nesse endpoint.
+
+Antes da atualização, a API localiza a resposta por identificador e conta e revalida a entrevista original, a pergunta resultante e a opção resultante. A opção deve pertencer à pergunta, e a pergunta deve pertencer à mesma pesquisa da entrevista, sempre na mesma conta. Resposta ou recurso incompatível, ausente ou de outra conta retorna HTTP `404`. Sucesso retorna HTTP `204`.
+
+Se a mudança de pergunta produzir uma combinação `(interviewId, questionId)` já respondida, a restrição única do banco rejeita a atualização; não há mapeamento específico e o conflito chega ao tratamento global como HTTP `500`.
+
+#### RF-RES-006 — Excluir resposta
+
+`DELETE /answer-questions/:id` deve permitir exclusão apenas pela conta proprietária. Sucesso retorna HTTP `204`; resposta inexistente retorna HTTP `404`; resposta de outra conta retorna HTTP `403`. A exclusão individual não remove entrevista, pergunta ou opção.
+
+### 4.12 Consistência, regras condicionais e limite transacional
+
+#### Coerência entre conta, pesquisa, pergunta e opção
+
+O caso de uso e as chaves estrangeiras compostas se complementam para impedir combinações cruzadas:
+
+- `(interviewId, surveyId, userId)` vincula a resposta à entrevista da mesma pesquisa e conta;
+- `(questionId, surveyId, userId)` vincula a resposta à pergunta da mesma pesquisa e conta;
+- `(optionAnswerId, questionId, userId)` exige que a opção selecionada pertença à pergunta e conta informadas;
+- `(interviewId, questionId)` único impede duas respostas para a mesma pergunta na mesma entrevista.
+
+Essas regras rejeitam recursos de outra conta, perguntas de outra pesquisa e opções pertencentes a outra pergunta, mesmo quando todos os UUIDs existem separadamente.
+
+#### Regras condicionais durante a coleta
+
+A submissão de entrevista e a criação ou atualização de resposta não consultam `ConditionalRule`. Portanto, a implementação atual não avalia automaticamente visibilidade, obrigatoriedade ou aplicabilidade de perguntas condicionais durante a coleta. Ela também não rejeita resposta a uma pergunta cuja condição não tenha sido satisfeita. As regras condicionais permanecem parte da estrutura do questionário, não uma validação executada nesse fluxo.
+
+#### Nota de implementação — atomicidade da criação
+
+O controlador coordena a criação da entrevista e, depois, a criação das respostas em chamadas separadas. A entrevista é persistida antes do `Promise.all`, e cada resposta é inserida por sua própria operação de repositório; não há uma transação de banco única envolvendo a entrevista e todo o conjunto de respostas.
+
+Como risco observável, se uma resposta falhar após a entrevista ser criada, a requisição pode retornar erro e ainda assim deixar a entrevista persistida. Como as respostas são processadas concorrentemente, algumas respostas válidas também podem ter sido persistidas antes ou ao mesmo tempo que outra falhou. A implementação não executa rollback compensatório desse estado parcial.
+
 ## 5. Regras de negócio
 
 ### 5.1 Normalização e validação de conta
@@ -692,6 +811,21 @@ Também não há verificação de duplicidade entre regras condicionais idêntic
 - A listagem específica de perguntas ordena por número crescente. Listagens de pesquisas, opções e estruturas aninhadas no detalhe não possuem `orderBy` e não oferecem garantia de ordenação.
 - Regras condicionais só podem ser formadas a partir de dependências resolvidas na mesma pesquisa no fluxo completo ou na mesma combinação de pesquisa e conta no fluxo individual.
 - Não existem endpoints próprios para manter `ConditionalRule`; correções exigem os fluxos estruturais disponíveis, e exclusões relacionadas executam as limpezas explicitamente implementadas.
+
+### 5.6 Regras de entrevistas e respostas
+
+- Uma entrevista pertence a exatamente uma pesquisa e à mesma conta proprietária dessa pesquisa.
+- Criar entrevista exige pesquisa existente da conta autenticada; listar entrevistas apenas filtra pesquisa e conta, sem confirmar a existência da pesquisa.
+- Uma entrevista pode ser criada sem respostas, e não há validação de que todas as perguntas tenham sido respondidas.
+- Cada resposta representa uma única opção predefinida para uma pergunta dentro de uma entrevista.
+- Entrevista e pergunta de uma resposta devem pertencer à mesma pesquisa e conta.
+- A opção selecionada deve pertencer à pergunta e à mesma conta.
+- A combinação entrevista/pergunta admite no máximo uma resposta persistida.
+- Atualizar uma resposta pode trocar a pergunta e a opção, desde que a nova combinação continue coerente com a pesquisa da entrevista.
+- Consultas individuais de entrevista e resposta distinguem recurso estrangeiro com HTTP `403`; listagens por pesquisa ou entrevista filtram por conta e podem retornar coleção vazia sem revelar a existência do recurso estrangeiro.
+- Excluir entrevista elimina respostas em cascata; excluir resposta não afeta seus recursos pais.
+- Regras condicionais não são avaliadas na criação ou atualização de respostas.
+- A criação de entrevista com respostas não é atômica como conjunto e pode resultar em entrevista vazia ou parcialmente respondida quando um item falha.
 
 ## 6. Segurança
 
