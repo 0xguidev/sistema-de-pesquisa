@@ -1210,7 +1210,188 @@ Os contadores expostos são `login_failures_total`, `http_401_total`, `http_403_
 
 ## 9. Requisitos não funcionais
 
-> A preencher com requisitos verificáveis de desempenho, disponibilidade, confiabilidade, observabilidade, acessibilidade, compatibilidade e manutenibilidade existentes.
+### 9.1 Plataforma e dependências de execução
+
+O produto é uma API HTTP de backend implementada em Node.js, NestJS e TypeScript. O manifesto do projeto fixa o motor Node.js em `20.19.4`, declara NestJS `11.2.1` como dependência principal e TypeScript `5.7` como dependência de desenvolvimento. A instalação e a execução dos scripts usam pnpm, com versão declarada `10.14.0`.
+
+A persistência usa PostgreSQL e Prisma. O cliente e o CLI do Prisma estão na linha `6.19.3`, e o schema declara o provider `postgresql`. A aplicação abre a conexão no início do módulo e a encerra no desligamento; o cliente registra somente avisos e erros do Prisma. Não há, neste repositório, requisito implementado de réplica de leitura, failover, SLA de disponibilidade, política de backup ou configuração própria de pool de conexões.
+
+Outras dependências operacionais relevantes incluem Express como plataforma HTTP do NestJS, `bcryptjs` para senhas, Passport/JWT para autenticação, `@nestjs/throttler` para limitação de taxa, Zod para validação de ambiente, `docx` para documentos e Puppeteer/Chromium para renderização de PDF. Essas versões descrevem o estado do manifesto e do lockfile, não uma promessa de compatibilidade com versões futuras.
+
+### 9.2 Inicialização e validação de ambiente
+
+A aplicação deve validar o ambiente antes de criar o servidor NestJS. Configuração ausente, fora da faixa ou incoerente impede a inicialização. Valores secretos devem ser injetados pelo ambiente de execução e não pertencem a este documento nem ao repositório.
+
+#### Variáveis necessárias
+
+| Variável | Requisito implementado |
+| --- | --- |
+| `DATABASE_URL` | URL de conexão PostgreSQL válida, com `sslmode` coerente com `DATABASE_TLS_MODE`. |
+| `DATABASE_TLS_MODE` | Deve ser `require` ou `disable`; embora não conste na verificação preliminar de nomes, é obrigatória no schema final. |
+| `JWT_PRIVATE_KEY` | Chave privada RSA em PEM codificado em Base64. |
+| `JWT_PUBLIC_KEY` | Chave pública RSA em PEM codificado em Base64, correspondente à privada. |
+| `CORS_ORIGIN` | Uma ou mais origens explícitas, separadas por vírgula, conforme as regras da seção 9.4. |
+
+#### Variáveis importantes com padrão ou caráter opcional
+
+| Variável | Padrão | Regra ou finalidade |
+| --- | ---: | --- |
+| `NODE_ENV` | `development` | Aceita `development`, `test` ou `production`; ativa validações adicionais em produção. |
+| `PORT` | `3333` | Porta de escuta do servidor HTTP. |
+| `TRUST_PROXY_HOPS` | `0` | Quantidade de proxies confiáveis, inteira de 0 a 10. |
+| `REQUIRE_HTTPS` | `false` | Ativa rejeição de requisições que não sejam reconhecidas como seguras. |
+| `BCRYPT_COST` | `10` | Custo do bcrypt, inteiro de 10 a 14. |
+| `ACCESS_TOKEN_TTL_SECONDS` | `900` | Validade do access token, de 300 a 86.400 segundos. |
+| `REFRESH_TOKEN_TTL_DAYS` | `30` | Validade da sessão/refresh token, de 1 a 90 dias. |
+| `SESSION_CLEANUP_INTERVAL_MINUTES` | `60` | Intervalo de limpeza de sessões, de 1 a 1.440 minutos. |
+| `SESSION_IP_HASH_SECRET` | sem padrão seguro | Segredo Base64 com ao menos 32 bytes aleatórios; obrigatório em produção. |
+| `COMPROMISED_PASSWORD_SHA256` | lista vazia | Lista configurável de hashes SHA-256 usada na rejeição de senhas comprometidas. |
+| `RATE_LIMIT_STORE` | `database` | Aceita `database` ou `memory`; produção proíbe `memory`. |
+| `LOG_PSEUDONYM_KEY` | não integra o schema validado | Chave opcional usada para pseudonimização de campos de log; na ausência, o logger reutiliza `SESSION_IP_HASH_SECRET` e possui fallback apenas local. |
+| `CHROMIUM_EXECUTABLE_PATH` | `/usr/bin/chromium` | Caminho do executável usado pelo renderer de PDF; o teste de integração do renderer exige configuração explícita. |
+
+As variáveis de limites de taxa e proteção de relatórios são detalhadas nas seções 9.7 e 9.10. Os valores apresentados são padrões do código, não valores reais de qualquer ambiente implantado.
+
+### 9.3 Limites fixos do transporte HTTP
+
+O bootstrap desativa o body parser padrão e instala limites explícitos:
+
+- corpos JSON: no máximo `100kb` segundo a interpretação do parser do Express;
+- corpos `application/x-www-form-urlencoded`: no máximo `50kb`, com objetos estendidos habilitados.
+
+Esses dois valores são constantes de código e não são configuráveis por variável de ambiente. Uma carga acima do limite é rejeitada pelo parser antes do controlador. A implementação não declara suporte a upload multipart de arquivos.
+
+O cabeçalho de identificação do framework `X-Powered-By` permanece desabilitado. Todas as respostas atravessam middleware que define:
+
+- `X-Content-Type-Options: nosniff`;
+- `X-Frame-Options: DENY`;
+- `Referrer-Policy: no-referrer`;
+- `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`.
+
+Esses cabeçalhos são limites fixos da implementação atual, não opções de ambiente.
+
+### 9.4 CORS, proxies confiáveis e HTTPS
+
+`CORS_ORIGIN` funciona como allowlist exata. Pode conter várias origens separadas por vírgula, mas não aceita curingas, entradas vazias, credenciais embutidas, caminhos ou valores que não sejam apenas uma origem. Em produção, todas as origens devem usar HTTPS. Em desenvolvimento e teste, HTTP é permitido somente para `localhost`, `127.0.0.1` e `[::1]`; HTTPS continua permitido. Requisições sem cabeçalho `Origin`, como clientes servidor a servidor, são aceitas pela função CORS.
+
+O CORS permite os métodos `GET`, `POST`, `PUT`, `PATCH` e `DELETE`, os cabeçalhos de requisição `Authorization`, `Content-Type` e `X-Request-ID`, expõe `X-Request-ID` ao cliente e habilita credenciais. Isso não cria autenticação por cookie: os endpoints protegidos continuam usando Bearer JWT conforme a seção 6.
+
+`TRUST_PROXY_HOPS` configura diretamente o número de saltos confiáveis do Express. Esse valor influencia `request.ip` e a percepção de `request.secure`; portanto, deve corresponder à topologia real para que identificação por IP, logs e HTTPS não confiem em cabeçalhos enviados diretamente por clientes.
+
+Quando `REQUIRE_HTTPS=true`, a configuração exige ao menos um proxy confiável. Requisições não reconhecidas como HTTPS retornam HTTP `426` com `HTTPS is required`. Requisições seguras recebem `Strict-Transport-Security: max-age=31536000; includeSubDomains`. Com o padrão `false`, a aplicação não força HTTPS nem emite esse HSTS por conta própria; a terminação e imposição de TLS podem ficar a cargo da infraestrutura.
+
+### 9.5 Segurança da conexão de banco de dados
+
+`DATABASE_TLS_MODE=require` exige que `DATABASE_URL` declare `sslmode=require`, `verify-ca` ou `verify-full`. `DATABASE_TLS_MODE=disable` exige `sslmode=disable` explícito. Em `NODE_ENV=production`, somente o modo `require` é aceito, de modo que a aplicação não inicializa com TLS de banco desativado.
+
+O modo `require` garante a solicitação de transporte TLS conforme a URL fornecida; a validação da aplicação também admite os modos mais estritos `verify-ca` e `verify-full`. A escolha entre eles e o fornecimento de autoridades certificadoras pertencem à implantação. Credenciais e URLs reais não devem aparecer no PRD, em logs ou em imagens de contêiner.
+
+### 9.6 Criptografia e parâmetros de autenticação
+
+As duas chaves JWT devem ser chaves RSA correspondentes, em PEM codificado em Base64, com módulo de pelo menos 2.048 bits. A aplicação deriva a chave pública da privada e compara as duas durante a inicialização; pares inválidos ou incompatíveis impedem o processo de subir. Access tokens são assinados com RS256 e obedecem aos claims, emissor, audiência e expiração definidos na seção 6.1.
+
+O custo de hash bcrypt é configurável por `BCRYPT_COST`, com padrão 10 e faixa rígida aceita de 10 a 14. A faixa é validação de inicialização; o padrão não deve ser confundido com limite imutável. As regras de senha comprometida, refresh token, sessão e pseudonimização de IP estão nas seções 4.1, 5.1 a 5.4 e 6.
+
+### 9.7 Limitação de taxa
+
+O armazenamento padrão dos buckets é PostgreSQL. Cada incremento ocorre em transação e usa advisory lock por chave, oferecendo decisão atômica e estado compartilhado entre réplicas da aplicação. `RATE_LIMIT_STORE=memory` seleciona o armazenamento em memória do framework, apropriado apenas para execução não produtiva: seus contadores são locais ao processo, desaparecem em reinícios e não coordenam réplicas. A validação proíbe essa opção em produção.
+
+Os padrões configuráveis são:
+
+| Fluxo e chave | Máximo padrão | Janela e bloqueio padrão | Faixas aceitas |
+| --- | ---: | ---: | --- |
+| Login por IP | 20 | 900 s | máximo 1–1.000; janela 1–86.400 s |
+| Login por IP + hash do e-mail normalizado | 5 | 900 s | máximo 1–1.000; janela 1–86.400 s |
+| Cadastro por IP | 5 | 3.600 s | máximo 1–1.000; janela 1–86.400 s |
+| Refresh por IP | 30 | 60 s | máximo 1–1.000; janela 1–86.400 s |
+| Refresh por hash do identificador de sessão extraído do token | 10 | 60 s | máximo 1–1.000; janela 1–86.400 s |
+| Relatórios por `sub` autenticado, com fallback para IP | 10 | 60 s | máximo 1–1.000; janela 1–86.400 s |
+
+Ao exceder um limite, o bloqueio dura a mesma janela, a API responde HTTP `429`, usa a mensagem comum de excesso de requisições e informa `Retry-After`. Os nomes das variáveis são `LOGIN_RATE_LIMIT_IP_MAX`, `LOGIN_RATE_LIMIT_IDENTIFIER_MAX`, `LOGIN_RATE_LIMIT_WINDOW_SECONDS`, `REGISTER_RATE_LIMIT_IP_MAX`, `REGISTER_RATE_LIMIT_WINDOW_SECONDS`, `REFRESH_RATE_LIMIT_IP_MAX`, `REFRESH_RATE_LIMIT_SESSION_MAX`, `REFRESH_RATE_LIMIT_WINDOW_SECONDS`, `REPORT_RATE_LIMIT_USER_MAX` e `REPORT_RATE_LIMIT_WINDOW_SECONDS`.
+
+Os detalhes de aplicação às rotas de autenticação estão na seção 6.3. A sobreposição atualmente existente entre limitadores de relatório e refresh está registrada na seção 7.11 e não deve ser interpretada como um modelo idealizado distinto do código.
+
+### 9.8 Correlação, eventos estruturados e métricas
+
+Cada requisição recebe um identificador de correlação. Um `X-Request-ID` fornecido pelo cliente é preservado somente se tiver de 1 a 128 caracteres alfanuméricos ou `.`, `_` e `-`; caso contrário, a aplicação gera um UUID. O valor é devolvido em `X-Request-ID`, propagado no contexto assíncrono e incluído nos registros estruturados. A URL registrada exclui a query string.
+
+Eventos operacionais e de auditoria são emitidos em stdout como uma linha JSON por evento. Os campos comuns incluem timestamp, categoria, código do evento, request ID, método, caminho e identificadores pseudonimizados quando disponíveis. A implementação registra conclusão e erro HTTP, sucessos e falhas de autenticação, throttling, rotação/reuso de refresh, logout e revogação, negações de autorização, alterações de conta e pesquisa, além do ciclo, timeout, falta de capacidade e bloqueios do renderer de relatórios.
+
+O logger remove campos cujos nomes indiquem senha, tokens, autorização, cookies, chaves JWT ou URL do banco e redige padrões Bearer e credenciais PostgreSQL encontrados em textos. Identificadores pseudonimizados usam HMAC-SHA-256 truncado; isso reduz exposição direta, mas a gestão e rotação das chaves de pseudonimização continuam sendo responsabilidade da implantação.
+
+As métricas de segurança implementadas são contadores no processo:
+
+- `login_failures_total`;
+- `http_401_total`, `http_403_total`, `http_429_total` e `http_5xx_total`;
+- `refresh_replay_total`;
+- `report_generation_total` e `report_timeout_total`;
+- `ssrf_block_total`.
+
+`GET /metrics` é público e responde no formato texto Prometheus `0.0.4`, conforme o catálogo da seção 8.10. Não há autenticação, allowlist própria ou agregação persistente nesse endpoint. Os contadores reiniciam com o processo e não são compartilhados entre réplicas. Quando a exposição pública direta não for desejada, a restrição de rede deve ser aplicada pela infraestrutura; tal restrição não está implementada nesta API.
+
+### 9.9 Tratamento e observabilidade de erros HTTP
+
+O interceptor global mede a duração das requisições, registra o status de conclusões e erros e incrementa os contadores de status relevantes. Falhas `401` e `403` geram ainda evento de auditoria de autorização; falhas de relatório geram evento específico. O filtro global cobre erros que escapem do interceptor e evita dupla contabilização quando o interceptor já os registrou.
+
+Esses mecanismos fornecem rastreabilidade técnica, mas não constituem, por si sós, monitoramento externo, retenção de logs, alertas, tracing distribuído ou garantia de disponibilidade. O repositório não define backend de logs, scraper Prometheus, dashboards ou política de retenção.
+
+### 9.10 Capacidade e proteção de relatórios
+
+Os controles de relatório são configuráveis dentro de faixas rígidas aceitas na inicialização:
+
+| Variável | Padrão | Faixa aceita |
+| --- | ---: | ---: |
+| `REPORT_MAX_INTERVIEWS` | 1.000 | 1–100.000 |
+| `REPORT_MAX_QUESTIONS` | 100 | 1–1.000 |
+| `REPORT_MAX_OPTIONS_PER_QUESTION` | 100 | 1–1.000 |
+| `REPORT_MAX_TEXT_LENGTH` | 5.000 caracteres | 1–100.000 |
+| `REPORT_MAX_DOCUMENT_BYTES` | 20 MiB | 1.024 bytes–1 GiB |
+| `REPORT_TIMEOUT_MS` | 30.000 ms | 1.000–300.000 ms |
+| `REPORT_PDF_USER_CONCURRENCY` | 1 | 1–8 |
+| `REPORT_PDF_GLOBAL_CONCURRENCY` | 2 | 1–32 |
+
+O limite de concorrência por conta não pode exceder o global. Leases de renderização persistidos no PostgreSQL e um advisory lock global coordenam capacidade de PDF entre réplicas; leases expirados são removidos durante uma nova tentativa de aquisição. O prazo do lease é o timeout configurado acrescido de 30 segundos. A operação libera o lease em sucesso ou falha tratada, e o timeout tenta abortar o Chromium sem atrasar indefinidamente a resposta.
+
+O renderer bloqueia requisições de rede durante a produção de PDF e registra/incrementa evento e métrica quando ocorre tentativa bloqueada, reduzindo a superfície de SSRF. O caminho do Chromium é configurável como descrito na seção 9.2. Os efeitos exatos de limites, diferenças entre formatos, erros de capacidade e alcance do timeout estão nas seções 7.9 a 7.13; em especial, timeout e concorrência são aplicados atualmente somente ao PDF simples.
+
+### 9.11 Comandos de qualidade, build, migração e segurança
+
+Os scripts mantidos no manifesto são:
+
+| Finalidade | Comando | Comportamento |
+| --- | --- | --- |
+| Lint | `pnpm lint` | Executa ESLint nos fontes e testes; `pnpm lint:fix` aplica correções. |
+| Formatação | `pnpm format` | Reescreve arquivos TypeScript de `src` e `test` com Prettier. |
+| Tipagem | `pnpm typecheck` | Executa `tsc --noEmit` para as configurações de build e testes. |
+| Testes unitários | `pnpm test` | Executa Vitest uma vez; há variantes `test:watch` e `test:coverage`. |
+| Testes E2E | `pnpm test:e2e` | Executa Vitest com a configuração E2E; há variante watch. |
+| Integração do renderer | `pnpm test:renderer:integration` | Executa a suíte específica que depende de um Chromium configurado. |
+| Build | `pnpm build` | Compila a aplicação com Nest CLI. |
+| Execução de produção | `pnpm start:prod` | Executa `node dist/main` após o build. |
+| Prisma | `pnpm prisma:generate` / `pnpm prisma:validate` | Gera o cliente ou valida o schema. |
+| Migração | `pnpm prisma:migrate` | Executa `prisma migrate dev`; o repositório não declara script separado de deploy de migrações. |
+| Auditoria | `pnpm security:audit` | Audita dependências de produção e falha a partir de severidade alta. |
+| Pipeline de segurança | `pnpm security:ci` | Encadeia lint, type-check, build, testes unitários, validação Prisma e auditoria. |
+
+Há ainda scripts de desenvolvimento para inicialização normal, watch e debug. O pipeline `security:ci` não inclui os testes E2E nem o teste de integração do renderer; sua execução deve ser planejada separadamente quando esses níveis de validação forem necessários.
+
+### 9.12 Premissas de implantação observáveis no Docker
+
+O repositório contém Compose para o PostgreSQL, mas não contém Dockerfile da aplicação. O serviço de banco usa imagem PostgreSQL 17.11 baseada em Bookworm, fixada também por digest, exige `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB`, persiste dados no volume nomeado `postgres_data` e possui política `restart: unless-stopped`.
+
+O Compose base não publica a porta do banco no host. O override de desenvolvimento publica a porta `5432` do contêiner somente em `127.0.0.1`, usando `POSTGRES_DEV_PORT` com padrão `5433`. Logo, a configuração fornecida assume acesso local restrito no desenvolvimento e não expõe PostgreSQL em todas as interfaces.
+
+Como não há contêiner da API, proxy reverso, terminador TLS, coletor de métricas ou rotina de migração no Compose, a implantação desses componentes é externa ao artefato Docker atual. A execução deve fornecer Node.js/pnpm compatíveis, build da aplicação, `DATABASE_URL`, chaves e demais variáveis validadas, conectividade com PostgreSQL e Chromium quando PDF for usado. O Compose não implementa backup, health check, alta disponibilidade ou aplicação automática de migrações.
+
+### 9.13 Padrões configuráveis versus limites fixos
+
+Para evitar interpretar valores iniciais como garantias imutáveis:
+
+- são **padrões configuráveis**: porta, custo bcrypt, TTLs, limpeza de sessão, número de proxies, imposição HTTPS, armazenamento e janelas/máximos de rate limiting, limites de volume de relatório, timeout e concorrência de PDF;
+- são **faixas rígidas de configuração**: mínimos e máximos aceitos pelo schema para os itens anteriores, incluindo RSA de ao menos 2.048 bits e segredo de pseudonimização de IP com ao menos 32 bytes em produção;
+- são **limites fixos no código**: corpo JSON de `100kb`, corpo URL-encoded de `50kb`, sintaxe e tamanho máximo de 128 caracteres do request ID, allowlist de métodos/cabeçalhos CORS, cabeçalhos defensivos, ausência de wildcard CORS e duração HSTS de um ano quando HTTPS é imposto;
+- são **restrições obrigatórias de produção**: TLS para PostgreSQL, origens CORS HTTPS, `SESSION_IP_HASH_SECRET` válido e rate limiting compartilhado em banco;
+- não há requisito implementado de tempo de resposta geral, throughput, uptime, retenção de logs, recuperação de desastre ou escalabilidade automática. O único timeout funcional explícito de relatório é o do PDF simples descrito anteriormente.
 
 ## 10. Limitações
 
