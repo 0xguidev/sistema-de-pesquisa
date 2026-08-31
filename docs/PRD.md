@@ -1110,7 +1110,103 @@ Essas diferenças refletem os caminhos implementados e não constituem uma regra
 
 ## 8. Catálogo de APIs
 
-> A preencher com endpoints, métodos, parâmetros, respostas, autenticação e erros das APIs atualmente disponíveis.
+### 8.1 Convenções do catálogo
+
+Este catálogo resume os controladores registrados atualmente. Ele não substitui uma especificação OpenAPI nem repete todas as regras das seções anteriores.
+
+- **Público:** dispensa JWT por uso explícito de `@Public()`.
+- **JWT:** exige `Authorization: Bearer {access_token}` por aplicação do `JwtAuthGuard` global.
+- Todas as rotas protegidas podem responder HTTP `401` quando o token ou a sessão é ausente, inválido, expirado, revogado ou pertence a conta inativa.
+- Rotas sujeitas a rate limit podem responder HTTP `429` e `Retry-After`.
+- Nenhum controlador declara restrição `@Roles(...)`; `USER` e `ADMIN` acessam a mesma superfície autenticada atual.
+- Não há prefixo global nem versionamento de rota configurado.
+- `—` significa que não há parâmetro ou corpo relevante.
+
+### 8.2 Contas
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `POST /accounts` | Público | Cadastrar conta | Corpo: `name`, `email`, `password` | `201`, sem corpo | `400` para nome, e-mail, senha ou senha comprometida inválidos; e-mail já existente mantém `201` sem revelar a conta; `429` por IP |
+| `PUT /accounts` | JWT | Atualizar a própria conta | Corpo: ao menos um entre `name`, `email`, `password` | `204`, sem corpo | `400` para corpo vazio ou campo inválido; `404` se a conta não existir; `409` se o novo e-mail pertencer a outra conta |
+| `DELETE /accounts` | JWT | Excluir a própria conta | — | `204`, sem corpo | `404` se a conta não existir; restrições referenciais de dados de produto podem impedir a exclusão |
+
+### 8.3 Sessões
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `POST /sessions` | Público | Autenticar e criar sessão | Corpo: `email`, `password`; cabeçalho opcional `User-Agent`; IP obtido da requisição | `201` com `access_token`, `refresh_token`, `refresh_expires_at`, `token_type` | `400` para payload inválido; `401` para e-mail inexistente ou senha incorreta; `429` por IP ou IP+e-mail |
+| `POST /sessions/refresh` | Público | Rotacionar refresh token | Corpo: `refresh_token` | `201` com novo par de tokens e expiração | `400` para formato corporal inválido; `401` para token inválido, expirado, revogado ou reutilizado; `429` por IP ou sessão derivada |
+| `DELETE /sessions/current` | JWT | Encerrar a sessão representada pelo token | Claims `sub` e `sid` | `200` com `{ "revoked": true }` | `401` se a sessão não estiver autenticada/ativa |
+| `DELETE /sessions` | JWT | Revogar todas as sessões da conta | Claim `sub` | `200` com `{ "revoked": true }` | `401` se a sessão chamadora não estiver autenticada/ativa |
+
+### 8.4 Pesquisas
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `POST /surveys` | JWT | Criar pesquisa completa | Corpo: `title`, `location`, `type`; `questions[]` opcional com `questionTitle`, `questionNum`, `options[]` e `conditionalRules[]` opcionais (`questionNum`, `optionNum`) | `201` com mensagem e `surveyId` | `400` para estrutura inválida, dependência ausente, autodependência ou números duplicados; `409` para conflito de persistência |
+| `GET /surveys` | JWT | Listar pesquisas próprias | Query: `page` numérico, mínimo 1, padrão 1 | `200` com array de `{ id, title }`, até 10 itens | `400` para página inválida; `500` para falha de repositório |
+| `GET /surveys/:id` | JWT | Obter pesquisa e questionário detalhado | Path: `id` UUID | `200` com pesquisa, perguntas, opções e regras condicionais | `400` para UUID inválido; `404` para pesquisa ausente ou de outra conta |
+| `PUT /surveys/:id` | JWT | Alterar título e/ou local | Path: `id`; corpo: `title` e/ou `location` | `204`, sem corpo | `400` sem valor truthy; `404` ausente; `403` de outra conta; não altera `type` |
+| `DELETE /surveys/:id` | JWT | Excluir pesquisa própria | Path: `id` | `204`, sem corpo | `404` ausente; `403` de outra conta; regras condicionais restritivas podem bloquear a exclusão |
+
+### 8.5 Perguntas
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `POST /questions` | JWT | Criar pergunta individual | Corpo: `questionTitle`, `questionNum`, `surveyId`; `conditionalRules[]` opcional com `dependsOnQuestionNumber`, `dependsOnOptionNumber` | `201` com objeto `question` | `400` para forma inválida; `404` para pesquisa/dependência/opção ausente ou de outra conta |
+| `GET /questions/:id` | JWT | Obter pergunta | Path: `id` | `200` com objeto `question` e metadados | `404` ausente; `403` de outra conta; o path não possui validação UUID dedicada |
+| `GET /questions/survey/:id` | JWT | Listar perguntas de uma pesquisa | Path: `id` da pesquisa | `200` com array ordenado por número | `404` para pesquisa ausente ou de outra conta; o path não possui validação UUID dedicada |
+| `PUT /questions/:id` | JWT | Alterar título e/ou número | Path: `id`; corpo: `title` e/ou `num` | `204`, sem corpo | `400` sem valor truthy ou forma inválida; `404` ausente; `403` de outra conta |
+| `DELETE /questions/:id` | JWT | Excluir pergunta | Path: `id` | `204`, sem corpo | `404` ausente; `403` de outra conta; respostas existentes podem restringir exclusão |
+
+### 8.6 Opções de resposta
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `POST /option-answers` | JWT | Criar opção para uma pergunta | Corpo: `optionTitle`, `optionNum`, `questionId` UUID | `201`, sem corpo | `400` para forma/UUID inválido; `404` para pergunta ausente ou de outra conta |
+| `GET /option-answers/:optionId` | JWT | Obter opção | Path: `optionId` UUID | `200` com objeto `option` e metadados | `400` para UUID inválido; `404` ausente ou de outra conta |
+| `GET /option-answers/question/:questionId` | JWT | Listar opções de uma pergunta | Path: `questionId` UUID | `200` com array de opções | `400` para UUID inválido; pergunta ausente, estrangeira ou sem opções retorna `[]` |
+| `PUT /option-answers/:id` | JWT | Alterar título e/ou número | Path: `id`; corpo: `title` e/ou `num` | `204`, sem corpo | `400` sem valor truthy ou forma inválida; `404` ausente ou de outra conta |
+| `DELETE /option-answers/:id` | JWT | Excluir opção | Path: `id` | `204`, sem corpo | `404` ausente ou de outra conta; respostas existentes podem restringir exclusão |
+
+### 8.7 Entrevistas
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `POST /interviews` | JWT | Criar entrevista e enviar respostas | Corpo: `surveyId` UUID; `answers[]` obrigatório com `questionId` e `answerId` UUID | `201`, sem corpo | `400` para payload inválido; `404` para pesquisa, pergunta ou opção incompatível/ausente; falha em resposta pode deixar estado parcial |
+| `GET /interviews/:interviewId` | JWT | Obter metadados da entrevista | Path: `interviewId` UUID | `200` com objeto `interview` | `400` para UUID inválido; `404` ausente; `403` de outra conta |
+| `GET /interviews/survey/:surveyId` | JWT | Listar entrevistas e respostas da pesquisa | Path: `surveyId` UUID; query: `page` e `limit`, inteiros mínimos 1, padrões 1 e 10 | `200` com `interviews`, `total`, `page`, `limit` | `400` para path/paginação inválidos; pesquisa ausente ou estrangeira produz coleção vazia |
+| `DELETE /interviews/:id` | JWT | Excluir entrevista | Path: `id` | `204`, sem corpo | `404` ausente; `403` de outra conta; respostas são excluídas em cascata |
+
+### 8.8 Respostas de entrevistas
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `POST /answer-questions` | JWT | Criar resposta individual | Corpo: `interviewId`, `questionId`, `optionAnswerId`, todos UUID | `201`, sem corpo | `400` para forma inválida; `404` para recurso ausente, estrangeiro ou incompatível; duplicidade entrevista/pergunta é rejeitada pelo banco e atualmente chega como `500` |
+| `GET /answer-questions/:answerId` | JWT | Obter resposta | Path: `answerId` UUID | `200` com objeto `answer` | `400` para UUID inválido; `404` ausente; `403` de outra conta |
+| `GET /answer-questions/interview/:interviewId` | JWT | Listar respostas de uma entrevista | Path: `interviewId` UUID | `200` com array ordenado por criação | `400` para UUID inválido; entrevista ausente, estrangeira ou sem respostas retorna `[]` |
+| `PUT /answer-questions/:id` | JWT | Alterar opção e, opcionalmente, pergunta | Path: `id`; corpo: `optionAnswerId` obrigatório na prática, `questionId` opcional | `204`, sem corpo | `400` sem `optionAnswerId`; `404` para resposta/recurso ausente, estrangeiro ou incompatível; conflito de duplicidade pode chegar como `500` |
+| `DELETE /answer-questions/:id` | JWT | Excluir resposta | Path: `id` | `204`, sem corpo | `404` ausente; `403` de outra conta |
+
+### 8.9 Relatórios
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `GET /reports/simple/:surveyId` | JWT | Obter relatório simples | Path: `surveyId` | `200` JSON; `[]` sem entrevistas | `404` para pesquisa ausente/estrangeira; limite de conteúdo atualmente pode chegar como `500`; `429` por rate limit |
+| `GET /reports/simple/:surveyId/download` | JWT | Baixar relatório simples DOCX | Path: `surveyId` | `200` DOCX como attachment | `404` para pesquisa ausente/estrangeira ou sem entrevistas; `400` para limites/validação; `429` por rate limit |
+| `GET /reports/simple-pdf/:surveyId` | JWT | Baixar relatório simples PDF | Path: `surveyId` | `200` PDF como attachment | `404` ausente/estrangeira ou sem entrevistas; `400` limites; `429` rate/capacidade da conta; `503` capacidade global ou timeout |
+| `GET /reports/cross/:surveyId` | JWT | Obter relatório cruzado | Path: `surveyId` | `200` JSON; `[]` sem entrevistas | `404` pesquisa ausente/estrangeira; `400` limites ou menos de duas perguntas; `429` rate limit |
+| `GET /reports/cross/:surveyId/download` | JWT | Baixar relatório cruzado DOCX | Path: `surveyId` | `200` DOCX como attachment | `404` ausente/estrangeira ou sem entrevistas; `400` limites ou menos de duas perguntas; `429` rate limit |
+
+Os nomes, tipos MIME, precisão e diferenças de conteúdo entre formatos estão detalhados na seção 7.
+
+### 8.10 Observabilidade
+
+| Método e rota | Acesso | Finalidade | Parâmetros e corpo principais | Sucesso | Validação e erros importantes |
+| --- | --- | --- | --- | --- | --- |
+| `GET /metrics` | Público | Expor contadores operacionais e de segurança | — | `200`, texto Prometheus `text/plain; version=0.0.4; charset=utf-8` | Sem validação de entrada; falha inesperada segue o tratamento global `500` |
+
+Os contadores expostos são `login_failures_total`, `http_401_total`, `http_403_total`, `http_429_total`, `refresh_replay_total`, `report_generation_total`, `report_timeout_total`, `ssrf_block_total` e `http_5xx_total`.
 
 ## 9. Requisitos não funcionais
 
