@@ -890,7 +890,223 @@ Os endereços IP usados como chave do limitador dependem da configuração segur
 
 ## 7. Relatórios
 
-> A preencher com os relatórios, indicadores, filtros, formatos e regras de acesso disponíveis no sistema atual.
+### 7.1 Visão geral
+
+A API oferece relatórios simples e cruzados para pesquisas da conta autenticada. O relatório simples consolida a distribuição das opções observadas em cada pergunta. O relatório cruzado combina pares de perguntas e apresenta a distribuição conjunta de suas opções.
+
+| Relatório | Endpoint | Formato |
+| --- | --- | --- |
+| Simples, dados | `GET /reports/simple/:surveyId` | JSON |
+| Simples, download | `GET /reports/simple/:surveyId/download` | DOCX |
+| Simples, download | `GET /reports/simple-pdf/:surveyId` | PDF |
+| Cruzado, dados | `GET /reports/cross/:surveyId` | JSON |
+| Cruzado, download | `GET /reports/cross/:surveyId/download` | DOCX |
+
+Não existe relatório cruzado em PDF. Todos os endpoints exigem JWT válido e validam a pesquisa pela combinação de `surveyId` e conta autenticada antes de gerar o conteúdo.
+
+### 7.2 Relatório simples em JSON
+
+#### RF-REL-001 — Retornar distribuição simples
+
+`GET /reports/simple/:surveyId` deve responder com HTTP `200` e um array de perguntas que tenham ao menos uma resposta observada nas entrevistas carregadas. Cada item contém:
+
+- `questionId`, `questionNum` e `questionTitle`;
+- `options`, com `num`, `answer` e `percentage`.
+
+As respostas são agrupadas por identificador de pergunta e pelo texto da opção. A implementação mantém uma contagem interna por texto de opção, mas não expõe `count` no JSON. Se duas opções distintas tiverem o mesmo texto dentro da mesma pergunta, seus votos são agrupados sob esse texto e o número preservado é o da primeira ocorrência observada.
+
+Perguntas são ordenadas por `questionNum` crescente. Dentro de cada pergunta, as opções observadas são ordenadas por `num` crescente. Opções definidas, mas nunca selecionadas, não aparecem no relatório simples.
+
+#### Cálculo percentual
+
+Para cada opção observada:
+
+```text
+percentage = arredondar_2_casas(contagem_da_opção / total_de_entrevistas × 100)
+```
+
+O arredondamento usa `toFixed(2)` seguido de conversão para número. Portanto, o JSON pode apresentar `50` em vez de `50.00`, mas a precisão de cálculo é de duas casas decimais.
+
+O denominador é o total de entrevistas da pesquisa, não o total de respostas da pergunta. Uma entrevista sem resposta para determinada pergunta continua no denominador. Por isso, os percentuais de uma pergunta podem somar menos de 100%.
+
+Se não houver entrevistas, a resposta é HTTP `200` com `[]`. Se existirem entrevistas, mas nenhuma resposta válida para uma pergunta, essa pergunta não aparece. Uma pergunta nunca respondida também não aparece.
+
+### 7.3 Relatório simples em DOCX
+
+#### RF-REL-002 — Baixar relatório simples em Word
+
+`GET /reports/simple/:surveyId/download` deve gerar um documento Word com uma seção por pergunta observada e uma tabela com número, texto da opção e percentual. O download usa:
+
+- `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document`;
+- `Content-Disposition: attachment`;
+- nome lógico `relatorio-simples-{titulo-da-pesquisa}-{MM-AAAA}.docx`.
+
+O título da pesquisa e a data local do processo são usados para formar o nome. O fallback ASCII remove diacríticos, substitui caracteres inseguros e espaços por hífens e evita CR/LF; quando necessário, o cabeçalho também inclui `filename*` codificado em UTF-8.
+
+As opções são ordenadas por número crescente. As perguntas seguem a ordem em que seus identificadores são encontrados durante a leitura das entrevistas; não há ordenação final explícita por número neste gerador. Como as respostas de cada entrevista chegam ordenadas por número de pergunta, a ordem normalmente acompanha esse número, mas entrevistas incompletas podem fazer uma pergunta ser descoberta mais tarde. Essa ordem não deve ser tratada como garantia equivalente à do JSON.
+
+O cálculo interno arredonda cada percentual para uma casa decimal, converte-o para número e depois o documento o apresenta com `toFixed(2)`. Assim, um valor calculado como `33.3` é exibido como `33.30%`: há duas casas visuais, mas somente uma casa de precisão antes da formatação.
+
+As contagens não são exibidas. Se não houver entrevistas, o endpoint retorna HTTP `404`; se houver entrevista sem qualquer resposta aproveitável, pode ser gerado um documento contendo apenas o cabeçalho.
+
+### 7.4 Relatório simples em PDF
+
+#### RF-REL-003 — Baixar relatório simples em PDF
+
+`GET /reports/simple-pdf/:surveyId` deve montar HTML local, renderizá-lo com Chromium/Puppeteer e devolver um PDF A4 com gráficos de barras e lista de opções. O download usa:
+
+- `Content-Type: application/pdf`;
+- `Content-Disposition: attachment`;
+- nome lógico `relatorio-simples-{titulo-da-pesquisa}-{MM-AAAA}.pdf`.
+
+As opções são ordenadas por número crescente. As perguntas são construídas na ordem de descoberta no conjunto agregado e não recebem ordenação final explícita por `questionNum`, compartilhando o mesmo limite de ordenação por encontro descrito para o DOCX simples.
+
+O percentual é arredondado para uma casa decimal e convertido para número antes da construção do HTML. O HTML apresenta o valor numérico sem completar zeros: `33.3%` pode aparecer como tal, enquanto `50` pode aparecer como `50%`. Barras são limitadas visualmente ao intervalo de 0% a 100%. A lista inclui apenas opções observadas e exibe percentual, não contagem.
+
+Se não houver entrevistas, retorna HTTP `404`. Se houver entrevistas sem respostas aproveitáveis, o renderer pode produzir um PDF válido sem seções de pergunta.
+
+O HTML escapa títulos, textos e valores antes da interpolação. O renderer bloqueia recursos de rede, permitindo apenas `about:blank` e URLs `data:`, e fecha página e navegador ao concluir ou falhar.
+
+### 7.5 Relatório cruzado em JSON
+
+#### RF-REL-004 — Retornar cruzamentos de perguntas
+
+`GET /reports/cross/:surveyId` deve formar todos os pares não repetidos de perguntas, depois de ordenar as perguntas por `questionNum` crescente. Para cada par elegível, a resposta contém:
+
+- título, número e identificador da pergunta A;
+- título, número e identificador da pergunta B;
+- `answers`, contendo todas as combinações cartesianas das opções definidas para A e B, com números, textos e `percentage`.
+
+Pares são ordenados por `questionANum` e depois `questionBNum`. As combinações são ordenadas por `numA` e depois `numB`. Se uma das duas perguntas não possuir opções, o par é omitido. Combinações válidas sem ocorrência são mantidas com percentual zero.
+
+Uma entrevista incrementa uma combinação somente quando contém resposta para as duas perguntas do par. A contagem é interna e não é exposta no JSON. O percentual usa, ainda assim, todas as entrevistas como denominador:
+
+```text
+percentage = arredondar_2_casas(contagem_da_combinação / total_de_entrevistas × 100)
+```
+
+Entrevistas que responderam apenas uma das perguntas não incrementam combinação alguma, mas permanecem no denominador. Assim, a soma das combinações de um par pode ser inferior a 100%.
+
+Sem entrevistas, retorna HTTP `200` com `[]`, antes de exigir duas perguntas. Com entrevistas e menos de duas perguntas, retorna HTTP `400` com `São necessárias pelo menos duas perguntas para gerar relatório cruzado`. Com duas ou mais perguntas, mas nenhum par em que ambos os lados tenham opções, pode retornar `[]`.
+
+### 7.6 Relatório cruzado em DOCX
+
+#### RF-REL-005 — Baixar cruzamento em Word
+
+`GET /reports/cross/:surveyId/download` deve gerar um documento DOCX em orientação paisagem. Cada par elegível é apresentado como uma matriz: opções da pergunta A nas colunas, opções da pergunta B nas linhas e percentuais nas células.
+
+O download usa:
+
+- `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document`;
+- `Content-Disposition: attachment`;
+- nome lógico `relatorio-cruzado-{titulo-da-pesquisa}-{MM-AAAA}.docx`.
+
+Perguntas são ordenadas antes da geração dos pares; a iteração dos pares preserva ordem crescente de A e B. Números das opções A e B são ordenados de forma crescente na matriz.
+
+O cálculo arredonda para uma casa decimal e a célula é exibida com exatamente uma casa por `toFixed(1)`, por exemplo `33.3%`. Contagens são mantidas apenas durante a geração e não aparecem no documento.
+
+Sem entrevistas, retorna HTTP `404`. Com entrevistas e menos de duas perguntas, retorna HTTP `400`. Se nenhum par possuir opções nos dois lados, pode ser produzido um DOCX contendo apenas o título do relatório.
+
+### 7.7 Perguntas não respondidas e regras condicionais
+
+Os geradores não consultam `ConditionalRule` e não distinguem pergunta omitida, pergunta condicionalmente pulada ou outra causa de ausência de resposta.
+
+- No relatório simples, uma pergunta só existe no resultado se alguma resposta para ela foi observada; apenas opções selecionadas aparecem.
+- No relatório cruzado, as perguntas e opções são lidas da estrutura da pesquisa. Todos os pares elegíveis e combinações de opções são criados, inclusive combinações com zero ocorrência.
+- Em ambos os relatórios, entrevistas sem a resposta necessária permanecem no denominador total.
+- Não existe categoria “sem resposta”, “não se aplica” ou “pulada por condição”.
+
+Consequentemente, ausência ou salto condicional reduz os percentuais acumulados, em vez de ser excluído do denominador ou contado separadamente.
+
+### 7.8 Validação de propriedade
+
+Antes de qualquer geração, o controlador consulta a pesquisa por `(surveyId, accountId)`. Pesquisa inexistente ou pertencente a outra conta retorna HTTP `404`. As consultas de entrevistas também filtram por `surveyId` e conta, e as consultas de opções do relatório cruzado filtram opções pela conta autenticada.
+
+Os geradores cruzados consultam perguntas pelo identificador da pesquisa sem filtro de conta no método do repositório; a validação prévia de propriedade no controlador e a relação de titularidade da pesquisa formam a barreira implementada antes dessa chamada. Nenhum relatório deve incluir entrevistas ou opções de outra conta.
+
+Os parâmetros `surveyId` dos endpoints de relatório não possuem validação UUID dedicada no controlador. Um identificador malformado que não localize pesquisa recebe o mesmo HTTP `404` de pesquisa inexistente.
+
+### 7.9 Limites de volume e validação
+
+Os limites são configuráveis na inicialização. Seus padrões e faixas aceitas são:
+
+| Limite | Configuração | Padrão | Faixa aceita |
+| --- | --- | ---: | ---: |
+| Entrevistas por relatório | `REPORT_MAX_INTERVIEWS` | 1.000 | 1–100.000 |
+| Perguntas | `REPORT_MAX_QUESTIONS` | 100 | 1–1.000 |
+| Opções por pergunta | `REPORT_MAX_OPTIONS_PER_QUESTION` | 100 | 1–1.000 |
+| Comprimento de texto | `REPORT_MAX_TEXT_LENGTH` | 5.000 caracteres | 1–100.000 |
+| Documento gerado | `REPORT_MAX_DOCUMENT_BYTES` | 20 MiB | 1.024 bytes–1 GiB |
+| Timeout de PDF | `REPORT_TIMEOUT_MS` | 30.000 ms | 1.000–300.000 ms |
+| PDFs simultâneos por conta | `REPORT_PDF_USER_CONCURRENCY` | 1 | 1–8 |
+| PDFs simultâneos globais | `REPORT_PDF_GLOBAL_CONCURRENCY` | 2 | 1–32 |
+
+O limite por conta não pode exceder o limite global. Se o total real de entrevistas exceder o máximo, a geração é rejeitada; a API não entrega silenciosamente apenas a primeira página. A consulta carrega até o máximo configurado e compara esse recorte com o `total` retornado pelo repositório.
+
+#### Diferenças no alcance da validação
+
+- Todos os formatos validam o total de entrevistas e os textos de perguntas e opções presentes nas respostas carregadas.
+- Para relatório simples, quantidade de perguntas e opções é calculada a partir do que foi observado nas respostas: perguntas nunca respondidas e opções nunca selecionadas não entram nessa contagem.
+- Para relatório cruzado, além da validação das respostas, todas as perguntas da pesquisa e todas as opções consultadas para cada pergunta são validadas. Assim, uma pergunta ou opção nunca respondida ainda pode fazer o cruzado exceder um limite.
+- O limite de opções observado em respostas simples é baseado em textos distintos por pergunta, não necessariamente no número de registros `OptionAnswer`.
+- O tamanho máximo de documento é verificado após a geração para DOCX e PDF. Ele não se aplica às respostas JSON.
+- O timeout e os limites de concorrência aplicam-se somente ao PDF simples. JSON e DOCX não são envolvidos por `withPdfSlot` e não possuem timeout de relatório equivalente neste código.
+
+Um excesso de entrevistas, perguntas, opções, texto ou bytes gera `InvalidRequestError`. Downloads e relatório cruzado JSON convertem esse erro em HTTP `400`. O endpoint de relatório simples JSON retorna diretamente a promise do caso de uso sem usar o mapeador de erros; nesse caminho, um `InvalidRequestError` chega ao filtro global como HTTP `500`. Essa diferença é comportamento atual.
+
+### 7.10 Concorrência e leases distribuídos de PDF
+
+Antes de gerar PDF, a API precisa adquirir um `PdfRenderLease`. A aquisição usa transação PostgreSQL e um advisory lock comum entre réplicas para executar atomicamente:
+
+1. remoção de leases expirados;
+2. contagem dos leases da conta;
+3. contagem global;
+4. criação de um novo lease, se houver capacidade.
+
+O lease contém UUID, conta, criação e expiração. Sua validade é configurada como `REPORT_TIMEOUT_MS + 30.000 ms`, permitindo recuperação posterior se uma réplica cair sem liberar capacidade. Em conclusão, falha ou timeout normalmente tratado, o lease é liberado no bloco `finally`. Uma falha síncrona do renderer também libera o slot.
+
+Quando o limite por conta está ocupado, o PDF retorna HTTP `429` com `Já existe uma geração de PDF em andamento para este usuário.` Quando a capacidade global está esgotada, retorna HTTP `503` com `A capacidade de geração de PDF está temporariamente esgotada.`
+
+O timeout dispara aborto por `AbortSignal`, registra o evento e retorna HTTP `503` com `A geração do relatório excedeu o tempo limite.` A resposta de timeout não espera indefinidamente por uma operação que ignore cancelamento; a rejeição posterior é observada sem reter a resposta HTTP. O Chromium também recebe o timeout configurado para inicialização, navegação, conteúdo e geração do PDF.
+
+### 7.11 Limitação de taxa
+
+Todas as rotas sob `/reports` usam o limitador `report-user`, identificado pelo `sub` autenticado e, como fallback, pelo IP. O padrão é 10 requisições por 60 segundos, com bloqueio pela mesma janela; limite e janela são configuráveis entre 1 e 1.000 requisições e entre 1 e 86.400 segundos, respectivamente.
+
+Ao exceder o limite, a API retorna HTTP `429`, mensagem `Too many requests. Please try again later.` e cabeçalho `Retry-After`. O armazenamento é PostgreSQL por padrão e usa incremento atômico com advisory lock, permitindo compartilhamento entre réplicas; armazenamento em memória pode ser escolhido por configuração.
+
+**Nota de implementação.** Os controladores de relatório desabilitam explicitamente os limitadores de login e cadastro, mas não desabilitam os dois limitadores de refresh. Pela configuração atual do guard, requisições de relatório também passam pelos limites de refresh por IP e pela chave de sessão derivada; como não há `refresh_token` nessas requisições, essa segunda chave usa o agrupamento `invalid`. O limite padrão de refresh por sessão também é 10 por 60 segundos. Essa sobreposição não deve ser normalizada documentalmente como se apenas `report-user` fosse aplicado.
+
+### 7.12 Matriz de erros
+
+| Condição | JSON simples | DOCX simples | PDF simples | JSON cruzado | DOCX cruzado |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Pesquisa ausente ou de outra conta | `404` | `404` | `404` | `404` | `404` |
+| Nenhuma entrevista | `200` + `[]` | `404` | `404` | `200` + `[]` | `404` |
+| Menos de duas perguntas, havendo entrevistas | N/A | N/A | N/A | `400` | `400` |
+| Limite de conteúdo/volume excedido | `500` atual | `400` | `400` | `400` | `400` |
+| Documento maior que o limite | N/A | `400` | `400` | N/A | `400` |
+| Capacidade PDF da conta excedida | N/A | N/A | `429` | N/A | N/A |
+| Capacidade PDF global excedida | N/A | N/A | `503` | N/A | N/A |
+| Timeout de relatório | N/A | N/A | `503` | N/A | N/A |
+| Rate limit excedido | `429` | `429` | `429` | `429` | `429` |
+
+Falhas inesperadas do renderer ou de infraestrutura que não correspondam aos erros mapeados chegam ao filtro global como HTTP `500`.
+
+### 7.13 Diferenças de formato e precisão
+
+| Aspecto | JSON simples | DOCX simples | PDF simples | JSON cruzado | DOCX cruzado |
+| --- | --- | --- | --- | --- | --- |
+| Precisão calculada | 2 casas | 1 casa | 1 casa | 2 casas | 1 casa |
+| Exibição de zeros finais | Número JSON | 2 casas visuais | Número sem preenchimento | Número JSON | 1 casa visual |
+| Contagem exposta | Não | Não | Não | Não | Não |
+| Opções sem votos | Omitidas | Omitidas | Omitidas | Incluídas com 0% | Incluídas com 0% |
+| Sem entrevistas | `[]` | `404` | `404` | `[]` | `404` |
+| Ordem de perguntas | Numérica explícita | Ordem de descoberta | Ordem de descoberta | Numérica explícita | Numérica pela geração dos pares |
+| Proteção de tamanho de documento | N/A | Sim | Sim | N/A | Sim |
+| Timeout e capacidade PDF | N/A | N/A | Sim | N/A | N/A |
+
+Essas diferenças refletem os caminhos implementados e não constituem uma regra unificada a ser inferida entre formatos.
 
 ## 8. Catálogo de APIs
 
