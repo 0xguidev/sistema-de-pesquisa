@@ -513,6 +513,133 @@ O `JwtAuthGuard` é registrado globalmente. Assim, todo controlador exige JWT v�
 
 Não fazem parte do comportamento atual: recuperação ou redefinição de senha por fluxo de “esqueci minha senha”, verificação de endereço de e-mail, autenticação multifator, listagem de sessões/dispositivos, encerramento seletivo de outra sessão, login social e mudança de papel por endpoint.
 
+### 4.5 Criação completa de pesquisa
+
+#### RF-PES-001 — Criar pesquisa e estrutura aninhada
+
+A conta autenticada deve poder criar uma pesquisa por `POST /surveys`, informando obrigatoriamente `title`, `location` e `type`. O corpo pode incluir `questions`; quando omitido, a pesquisa é criada sem perguntas. Quando presente, cada pergunta deve conter `questionTitle`, `questionNum` e um array `options`, que pode estar vazio. Cada opção deve conter `optionTitle` e `optionNum`. Cada pergunta pode ainda conter `conditionalRules`.
+
+A operação cria pesquisa, perguntas, opções e regras condicionais em uma única transação. Qualquer falha de estrutura ou de persistência impede a gravação parcial do agregado. Em caso de sucesso, responde com HTTP `201`, mensagem `Pesquisa criada com sucesso.` e `surveyId`.
+
+Na criação completa:
+
+- título, local e tipo são aparados e não podem ficar vazios;
+- título e número de cada pergunta são obrigatórios, e o número deve ser inteiro positivo;
+- título e número de cada opção são obrigatórios, e o número deve ser inteiro positivo;
+- números de perguntas não podem se repetir dentro do payload da pesquisa;
+- números de opções não podem se repetir dentro de uma mesma pergunta;
+- uma regra condicional deve apontar para uma pergunta existente no mesmo payload e para uma opção existente nessa pergunta;
+- a pergunta não pode depender de si própria;
+- dependências podem referenciar qualquer outra pergunta incluída no payload, pois toda a estrutura é resolvida antes da persistência.
+
+Estrutura inválida retorna HTTP `400` sem persistência parcial. Conflitos de chave única ou de chave estrangeira detectados durante a transação retornam HTTP `409` com mensagem genérica de dados conflitantes.
+
+#### RF-PES-002 — Representar regras condicionais
+
+Uma regra condicional declara que a pergunta à qual está anexada depende de uma pergunta identificada por número e de uma opção identificada por número nessa pergunta, sempre no contexto da mesma pesquisa. No payload de criação completa, os campos externos são `questionNum` e `optionNum`; internamente, eles são convertidos para `dependsOnQuestionNumber` e `dependsOnOptionNumber` e resolvidos para os UUIDs correspondentes.
+
+Regras condicionais não possuem endpoints dedicados de criação, consulta, edição ou exclusão. Elas são criadas junto da pesquisa completa ou junto da criação individual de uma pergunta, aparecem dentro do detalhe da pesquisa e são removidas como efeito da exclusão das perguntas ou opções relacionadas.
+
+### 4.6 Gestão de pesquisas
+
+#### RF-PES-003 — Listar pesquisas da conta
+
+`GET /surveys` deve listar somente pesquisas da conta autenticada. O parâmetro `page` é convertido para número, deve ser no mínimo 1 e assume 1 quando omitido. A persistência usa páginas fixas de 10 registros. A resposta HTTP `200` é um array contendo apenas `id` e `title`; embora o repositório calcule o total, o controlador atual não o inclui na resposta.
+
+Página não numérica ou menor que 1 retorna HTTP `400`. Erro de repositório é mapeado para HTTP `500`. Não há ordenação explícita na consulta, portanto a API não garante ordem estável entre pesquisas nem entre páginas.
+
+#### RF-PES-004 — Obter detalhe de pesquisa
+
+`GET /surveys/:id` deve aceitar UUID válido e localizar a pesquisa pela combinação de identificador e conta autenticada. A resposta HTTP `200` inclui os dados da pesquisa e sua estrutura aninhada: perguntas, opções e regras condicionais. No detalhe, cada regra é apresentada pelos números `questionNum` e `optionNum` da dependência.
+
+UUID inválido retorna HTTP `400`. Pesquisa ausente ou pertencente a outra conta retorna HTTP `404`, sem expor dados do outro titular. A consulta não declara ordenação para perguntas, opções ou regras condicionais; clientes não devem inferir uma ordem garantida do detalhe.
+
+#### RF-PES-005 — Atualizar pesquisa
+
+`PUT /surveys/:id` deve permitir ao proprietário alterar `title`, `location` ou ambos. O endpoint não altera `type`, perguntas, opções nem regras condicionais. Pelo menos um valor truthy deve ser fornecido. Sucesso retorna HTTP `204`; corpo vazio, título vazio isolado ou local vazio isolado retorna HTTP `400`; pesquisa inexistente retorna HTTP `404`; pesquisa de outra conta retorna HTTP `403`.
+
+O endpoint individual de atualização aceita strings sem aplicar `trim` ou os mínimos da criação completa. O `slug` da pesquisa não é recalculado quando o título é alterado.
+
+#### RF-PES-006 — Excluir pesquisa
+
+`DELETE /surveys/:id` deve permitir a exclusão apenas pelo proprietário. Sucesso retorna HTTP `204`; pesquisa inexistente retorna HTTP `404`; pesquisa de outra conta retorna HTTP `403`.
+
+A chave estrangeira da pesquisa elimina perguntas e entrevistas em cascata; perguntas eliminam opções em cascata, e entrevistas eliminam respostas em cascata. Regras condicionais usam relações restritivas e não são removidas automaticamente por este caso de uso. Assim, uma pesquisa com regras condicionais persistidas pode ter a exclusão bloqueada até que essas regras sejam removidas pelos fluxos atualmente disponíveis, conforme detalhado nas seções 3.3.2 e 3.5.
+
+### 4.7 Gestão individual de perguntas
+
+#### RF-PER-001 — Criar pergunta
+
+`POST /questions` deve criar uma pergunta em pesquisa pertencente à conta autenticada. O corpo contém `questionTitle`, `questionNum`, `surveyId` e, opcionalmente, `conditionalRules` com `dependsOnQuestionNumber` e `dependsOnOptionNumber`. A pesquisa é localizada por `(surveyId, accountId)`; pesquisa inexistente ou de outra conta retorna HTTP `404`.
+
+Para cada regra, a API procura, na mesma pesquisa e conta, uma pergunta com o número indicado e, nela, uma opção com o número indicado. Dependência ou opção ausente retorna HTTP `404`, e a nova pergunta não é persistida. Pergunta e regras válidas são gravadas em uma única transação. Sucesso retorna HTTP `201` e a representação da pergunta criada.
+
+#### RF-PER-002 — Obter pergunta por identificador
+
+`GET /questions/:id` deve retornar HTTP `200` com identificador, título, número, pesquisa, conta, slug e timestamps da pergunta. Pergunta inexistente retorna HTTP `404`; pergunta pertencente a outra conta retorna HTTP `403`.
+
+#### RF-PER-003 — Listar perguntas de uma pesquisa
+
+`GET /questions/survey/:id` deve primeiro confirmar que a pesquisa pertence à conta autenticada e então listar apenas suas perguntas. Pesquisa inexistente ou de outra conta retorna HTTP `404`. A resposta HTTP `200` é ordenada por `number` em ordem crescente e contém identificador, título, número, pesquisa e conta de cada pergunta. Uma pesquisa válida sem perguntas produz array vazio.
+
+#### RF-PER-004 — Atualizar pergunta
+
+`PUT /questions/:id` deve permitir ao proprietário alterar `title`, `num` ou ambos. Pelo menos um valor truthy deve ser fornecido. Sucesso retorna HTTP `204`; payload sem valor aceito retorna HTTP `400`; pergunta inexistente retorna HTTP `404`; pergunta de outra conta retorna HTTP `403`.
+
+Ao alterar o título, a entidade recalcula o slug da pergunta. A atualização não altera nem revalida regras condicionais já persistidas que armazenam os números das dependências.
+
+#### RF-PER-005 — Excluir pergunta
+
+`DELETE /questions/:id` deve permitir a exclusão apenas pelo proprietário. Antes de remover a pergunta, o caso de uso exclui regras em que ela é a pergunta condicionada e regras em que ela é a pergunta de dependência. Sucesso retorna HTTP `204`; pergunta inexistente retorna HTTP `404`; pergunta de outra conta retorna HTTP `403`.
+
+As opções da pergunta são eliminadas por cascata. Respostas existentes referenciam pergunta e opção com comportamento restritivo; por isso, uma pergunta já usada em respostas pode não ser removível enquanto essas respostas existirem.
+
+### 4.8 Gestão individual de opções de resposta
+
+#### RF-OPC-001 — Criar opção
+
+`POST /option-answers` deve criar uma opção em pergunta pertencente à conta autenticada. O corpo contém `optionTitle`, `optionNum` e `questionId`, sendo este último um UUID válido. Pergunta inexistente ou pertencente a outra conta retorna HTTP `404`. Sucesso retorna HTTP `201`; o controlador atual não devolve a representação criada.
+
+#### RF-OPC-002 — Obter opção por identificador
+
+`GET /option-answers/:optionId` deve validar o identificador como UUID e localizar a opção em conjunto com a conta autenticada. Sucesso retorna HTTP `200` com identificador, título, número, pergunta, conta, slug e timestamps. UUID inválido retorna HTTP `400`; opção inexistente ou de outra conta retorna HTTP `404`.
+
+#### RF-OPC-003 — Listar opções de uma pergunta
+
+`GET /option-answers/question/:questionId` deve validar `questionId` como UUID e retornar somente opções que combinem a pergunta e a conta autenticada. A resposta HTTP `200` contém identificador, pergunta, título e número. A consulta não declara ordenação, portanto não garante ordem por `optionNum`.
+
+O endpoint não confirma separadamente a existência ou a titularidade da pergunta: pergunta inexistente, pergunta de outra conta ou pergunta válida sem opções produz array vazio. UUID inválido retorna HTTP `400`.
+
+#### RF-OPC-004 — Atualizar opção
+
+`PUT /option-answers/:id` deve permitir ao proprietário alterar `title`, `num` ou ambos. Pelo menos um valor truthy deve ser fornecido. Sucesso retorna HTTP `204`; payload vazio retorna HTTP `400`; opção inexistente ou de outra conta retorna HTTP `404`.
+
+O título e o número são atualizados sem recalcular o slug e sem atualizar regras condicionais que armazenem o número anterior da opção.
+
+#### RF-OPC-005 — Excluir opção
+
+`DELETE /option-answers/:id` deve localizar a opção em conjunto com a conta autenticada. Antes de removê-la, o caso de uso exclui regras condicionais que dependam dessa opção. Sucesso retorna HTTP `204`; opção inexistente ou de outra conta retorna HTTP `404`.
+
+Respostas existentes referenciam a opção com exclusão restritiva. Portanto, uma opção já usada em respostas pode não ser removível enquanto essas respostas existirem.
+
+### 4.9 Notas de implementação sobre rigor de validação
+
+A criação completa e os endpoints individuais não aplicam a mesma política:
+
+| Regra | `POST /surveys` completo | Endpoints individuais |
+| --- | --- | --- |
+| Textos de pesquisa/pergunta/opção | `trim` e rejeição de vazio | Em geral, apenas tipo `string`; updates usam verificação truthy |
+| Números de pergunta/opção | Inteiros positivos | Apenas tipo `number`; não há teste geral de inteiro ou positividade |
+| Número de pergunta duplicado | Rejeitado no payload | Não verificado e não restringido pelo schema |
+| Número de opção duplicado na pergunta | Rejeitado no payload | Não verificado e não restringido pelo schema |
+| Dependência ausente | HTTP `400`, transação não iniciada | HTTP `404`, pergunta não criada |
+| Autodependência | Rejeitada explicitamente | Sem verificação explícita; a pergunta nova ainda não existe durante a resolução |
+| Atomicidade | Todo o agregado em uma transação | Pergunta e suas regras em uma transação; opção é operação isolada |
+
+No fluxo individual, uma pergunta nova normalmente não consegue depender de si mesma porque a resolução ocorre antes de sua persistência. Contudo, como números duplicados são permitidos nesse fluxo, uma regra com o mesmo número da nova pergunta pode resolver para uma pergunta preexistente com número duplicado; isso não equivale à validação explícita de autodependência existente na criação completa.
+
+Também não há verificação de duplicidade entre regras condicionais idênticas. Os números armazenados em `ConditionalRule` coexistem com UUIDs resolvidos, e alterações posteriores nos números de perguntas ou opções não disparam sincronização automática dessas regras.
+
 ## 5. Regras de negócio
 
 ### 5.1 Normalização e validação de conta
@@ -550,6 +677,21 @@ Não fazem parte do comportamento atual: recuperação ou redefinição de senha
 - Logout marca `revokedAt`; não depende de esperar a expiração natural.
 - Um access token só é aceito se o `sid` corresponder a uma sessão não revogada e não expirada do mesmo `sub`.
 - O marco `revokedBefore` invalida tokens cujo `iat` seja anterior ou igual ao corte, preservada a exceção implementada para sessão comprovadamente criada depois do instante exato de revogação dentro do mesmo segundo.
+
+### 5.5 Regras de autoria e titularidade de pesquisas
+
+- Toda operação de autoria exige JWT válido e usa `sub` como identificador da conta operadora.
+- Pesquisa é criada com `userId` igual à conta autenticada; o cliente não fornece outro proprietário.
+- Pergunta individual só pode ser criada em pesquisa localizada por `(surveyId, userId)`.
+- Opção individual só pode ser criada em pergunta localizada por `(questionId, userId)`.
+- A criação de resposta e as chaves compostas do banco reforçam que pergunta, opção e pesquisa pertencem ao mesmo titular, conforme a seção 3.
+- Leituras de detalhe de pesquisa, listagem de perguntas e operações sobre opções filtram titularidade no repositório. O tratamento externo varia entre `403`, `404` e array vazio conforme documentado nos requisitos específicos; essa diferença é comportamento atual, não uma regra uniforme de ocultação.
+- `title`, `location` e `type` caracterizam a pesquisa na criação. A atualização implementada altera somente título e local; não há endpoint para mudar o tipo.
+- `questionNum` organiza perguntas e serve de referência para regras condicionais. `optionNum` identifica uma opção dentro da pergunta para a mesma finalidade.
+- Na criação completa, números são únicos dentro de seus respectivos escopos lógicos. Nos endpoints individuais, essa unicidade não é aplicada pelo caso de uso nem pelo banco.
+- A listagem específica de perguntas ordena por número crescente. Listagens de pesquisas, opções e estruturas aninhadas no detalhe não possuem `orderBy` e não oferecem garantia de ordenação.
+- Regras condicionais só podem ser formadas a partir de dependências resolvidas na mesma pesquisa no fluxo completo ou na mesma combinação de pesquisa e conta no fluxo individual.
+- Não existem endpoints próprios para manter `ConditionalRule`; correções exigem os fluxos estruturais disponíveis, e exclusões relacionadas executam as limpezas explicitamente implementadas.
 
 ## 6. Segurança
 
