@@ -417,15 +417,200 @@ As chaves estrangeiras compostas reforçam a coerência dessa hierarquia no banc
 
 ## 4. Requisitos funcionais
 
-> A preencher com requisitos funcionais verificáveis e rastreáveis ao comportamento existente.
+### 4.1 Contas
+
+#### RF-AUT-001 — Cadastrar conta
+
+A API deve permitir o cadastro público de uma conta por `POST /accounts`, mediante nome, e-mail e senha válidos. O e-mail deve ser normalizado antes da verificação de existência e da persistência, a senha deve ser verificada contra a política de comprometimento e apenas seu hash bcrypt deve ser armazenado. A conta criada recebe o papel `USER`; campos adicionais enviados pelo cliente não permitem autoatribuição de `ADMIN`.
+
+Em uma criação válida, a API responde com HTTP `201` e sem representação da conta no corpo. Se o e-mail normalizado já estiver cadastrado, a resposta também é concluída sem revelar a existência da conta e mantém o comportamento HTTP `201`. Dados inválidos produzem HTTP `400`.
+
+#### RF-AUT-002 — Atualizar a própria conta
+
+A API deve permitir que uma conta autenticada altere seu nome, e-mail e/ou senha por `PUT /accounts`. Pelo menos um desses campos deve estar presente. Apenas a conta identificada pelo claim `sub` do token pode ser alterada; o endpoint não aceita mudança de papel.
+
+Nome e e-mail são normalizados e revalidados. Uma nova senha passa pelas mesmas validações do cadastro e é novamente armazenada como hash bcrypt. A alteração válida responde com HTTP `204`. Corpo sem qualquer campo alterável ou dados inválidos produzem HTTP `400`; conta inexistente produz HTTP `404`; conflito de e-mail com outra conta produz HTTP `409`.
+
+Uma mudança somente de nome ou e-mail mantém as sessões existentes. Uma mudança de senha atualiza a conta e, na mesma transação, grava o marco de revogação global e marca as sessões ainda ativas como revogadas.
+
+#### RF-AUT-003 — Excluir a própria conta
+
+A API deve permitir que uma conta autenticada solicite sua exclusão por `DELETE /accounts`. Em caso de sucesso, responde com HTTP `204`, as sessões relacionadas são removidas em cascata e permanece um tombstone em `RevokedTokenSubject` para invalidar tokens emitidos anteriormente. Conta inexistente produz HTTP `404`.
+
+A exclusão continua sujeita às restrições referenciais descritas na seção 3: dados de produto ainda diretamente associados à conta podem impedir a operação no banco. Não há fluxo administrativo de exclusão de outra conta.
+
+### 4.2 Autenticação e sessões
+
+#### RF-AUT-004 — Autenticar com e-mail e senha
+
+A API deve autenticar publicamente por `POST /sessions`. O e-mail recebido é aparado, convertido para minúsculas e validado como e-mail antes da busca. A senha é comparada ao hash bcrypt armazenado. Conta inexistente e senha incorreta resultam no mesmo HTTP `401`, sem indicar qual credencial falhou.
+
+Se o custo do hash armazenado estiver abaixo do custo bcrypt configurado, a senha válida é recalculada e o hash é atualizado durante o login. Em caso de sucesso, a API cria uma sessão e responde com HTTP `201` e:
+
+- `access_token`: JWT de acesso;
+- `refresh_token`: token opaco de renovação;
+- `refresh_expires_at`: expiração do refresh token em ISO 8601;
+- `token_type`: valor `Bearer`.
+
+#### RF-AUT-005 — Usar token de acesso
+
+O token de acesso deve ser apresentado exclusivamente no cabeçalho `Authorization: Bearer`. Cookies não são usados como fonte do JWT. Em cada requisição protegida, a API deve validar assinatura, algoritmo, claims obrigatórios, emissor, audiência, expiração, revogação, atividade da sessão e existência atual da conta.
+
+Tokens ausentes, inválidos, expirados ou ligados a sessão/conta inativa produzem HTTP `401` antes da execução do controlador protegido.
+
+#### RF-AUT-006 — Renovar a sessão com rotação
+
+A API deve renovar tokens publicamente por `POST /sessions/refresh`, recebendo `refresh_token` com comprimento entre 40 e 200 caracteres. O token deve identificar uma sessão existente, ativa e não expirada e deve corresponder, por comparação segura, ao hash atualmente armazenado.
+
+Cada renovação bem-sucedida substitui o hash atual, atualiza `lastUsedAt`, registra o hash anterior em `SessionUsedToken` e devolve HTTP `201` com um novo par de tokens no mesmo formato do login. A expiração absoluta da sessão original é preservada; a rotação não amplia `expiresAt`.
+
+Token malformado, desconhecido, expirado, revogado ou diferente do token corrente resulta em HTTP `401` com a mensagem `Invalid refresh token`.
+
+#### RF-AUT-007 — Impedir reutilização de refresh token
+
+Ao detectar que um refresh token já consumido é reapresentado para a mesma sessão, a API deve tratar o evento como replay, revogar a sessão inteira e rejeitar a tentativa com HTTP `401`. Como consequência, o refresh token mais novo emitido para essa sessão também deixa de ser aceito. Uma disputa de rotação concorrente que não consiga reivindicar atomicamente o token corrente recebe o mesmo tratamento de segurança.
+
+#### RF-AUT-008 — Encerrar a sessão atual
+
+A conta autenticada deve poder chamar `DELETE /sessions/current`. A API marca com `revokedAt` a sessão identificada pelos claims `sid` e `sub` do token e responde com HTTP `200` e `{ "revoked": true }`. Após a operação, nem o token de acesso nem o refresh token dessa sessão são aceitos.
+
+#### RF-AUT-009 — Revogar todas as sessões da conta
+
+A conta autenticada deve poder chamar `DELETE /sessions`. A API marca como revogadas todas as sessões ainda ativas que possuam o mesmo `accountId` e responde com HTTP `200` e `{ "revoked": true }`. Os refresh tokens dessas sessões e os tokens de acesso vinculados a elas deixam de ser aceitos.
+
+#### RF-AUT-010 — Expirar e limpar sessões
+
+Uma sessão deve ser considerada ativa somente enquanto não estiver revogada e `expiresAt` for posterior ao momento da validação. A aplicação executa periodicamente uma limpeza que exclui sessões já expiradas; o intervalo é configurável entre 1 e 1.440 minutos e tem padrão de 60 minutos. A validade do refresh token é configurável entre 1 e 90 dias, com padrão de 30 dias.
+
+#### RF-AUT-011 — Registrar metadados mínimos da sessão
+
+No login, a API pode persistir o cabeçalho `User-Agent`, limitado aos primeiros 200 caracteres, e um hash pseudonimizado do endereço IP. O IP somente é persistido quando `SESSION_IP_HASH_SECRET` está configurado; nesse caso é usado HMAC-SHA-256, não o endereço em texto claro. Ausência desses metadados não impede a criação da sessão.
+
+Eventos de login, renovação, replay, logout e limitação de taxa são auditados sem registrar credenciais ou tokens. Identificadores e IPs enviados ao log de segurança são pseudonimizados com HMAC-SHA-256 e truncados para uso operacional.
+
+### 4.3 Superfície pública e protegida
+
+As rotas de autenticação explicitamente públicas são:
+
+| Método e rota | Finalidade | Exige JWT |
+| --- | --- | --- |
+| `POST /accounts` | Cadastro de conta | Não |
+| `POST /sessions` | Login e criação de sessão | Não |
+| `POST /sessions/refresh` | Rotação do refresh token | Não |
+
+As rotas de conta e sessão protegidas são:
+
+| Método e rota | Finalidade | Exige JWT |
+| --- | --- | --- |
+| `PUT /accounts` | Atualização da própria conta | Sim |
+| `DELETE /accounts` | Exclusão da própria conta | Sim |
+| `DELETE /sessions/current` | Revogação da sessão atual | Sim |
+| `DELETE /sessions` | Revogação de todas as sessões da conta | Sim |
+
+O `JwtAuthGuard` é registrado globalmente. Assim, todo controlador exige JWT válido, exceto quando a classe ou o método está explicitamente marcado como público. A rota operacional pública de métricas não integra os fluxos de autenticação acima.
+
+### 4.4 Funcionalidades de conta não implementadas
+
+Não fazem parte do comportamento atual: recuperação ou redefinição de senha por fluxo de “esqueci minha senha”, verificação de endereço de e-mail, autenticação multifator, listagem de sessões/dispositivos, encerramento seletivo de outra sessão, login social e mudança de papel por endpoint.
 
 ## 5. Regras de negócio
 
-> A preencher com validações, condições, cálculos, restrições e fluxos de decisão implementados.
+### 5.1 Normalização e validação de conta
+
+- O nome é submetido a `trim` e deve possuir entre 2 e 100 caracteres após a normalização.
+- O e-mail é submetido a `trim` e convertido para minúsculas antes de validação, consulta e persistência.
+- O e-mail deve ter formato válido e é único globalmente no banco. Diferenças apenas de maiúsculas, minúsculas ou espaços externos não criam identidades distintas pelos fluxos implementados.
+- A senha deve possuir entre 8 e 128 caracteres no valor recebido e não pode ser composta apenas por espaços.
+- A senha deve ser rejeitada se o SHA-256 de seu valor estiver na lista local de senhas comprometidas. Essa lista combina hashes embutidos na aplicação com hashes adicionais configuráveis em `COMPROMISED_PASSWORD_SHA256`; não há consulta a serviço externo.
+- Cadastro e atualização não aceitam `role` como campo alterável. Uma nova conta recebe `USER` por padrão.
+
+### 5.2 Armazenamento e verificação de senha
+
+- Senhas são transformadas com bcrypt antes da persistência; texto claro não deve ser armazenado.
+- O custo bcrypt é configurável de 10 a 14 e tem padrão 10.
+- O login compara a senha apresentada com o hash por bcrypt.
+- Após autenticação válida, hashes com custo inferior ao configurado são recalculados de forma transparente.
+- A alteração de senha revoga tokens e sessões existentes; a simples atualização do hash por aumento de custo durante login não executa essa revogação.
+
+### 5.3 Identidade, papéis e efeito de alterações
+
+- A identidade estável do token é o UUID da conta no claim `sub`, e não o e-mail.
+- Alterar somente o e-mail não invalida sessões existentes, pois `sub` permanece inalterado.
+- O modelo admite os papéis `USER` e `ADMIN`, e existe um guard capaz de aplicar metadados de papel.
+- Nenhum controlador atualmente declara `@Roles(...)`; portanto, não há restrição de rota específica para `USER` ou `ADMIN` na superfície implementada.
+- O papel não é confiado como claim persistente do JWT. A estratégia consulta a conta no banco em toda requisição autenticada e acrescenta o papel atual ao contexto da requisição. Uma alteração de papel feita na fonte de verdade tem efeito na próxima requisição, embora atualmente nenhuma rota diferencie os papéis.
+- Após exclusão bem-sucedida da conta, o tombstone de revogação invalida tokens anteriores, as sessões deixam de existir e a estratégia também rejeita qualquer token cuja conta já não seja encontrada.
+
+### 5.4 Regras de sessão e token
+
+- Uma sessão é identificada por UUID e cada refresh token tem o formato lógico `sessionId.segredo`, com segredo aleatório de 32 bytes codificado em base64url.
+- Apenas SHA-256 do refresh token corrente é persistido; o token em texto claro é devolvido ao cliente e não é recuperável do banco.
+- A rotação é de uso único: o hash anterior é movido para o histórico de tokens usados.
+- Rotação, registro do token anterior e atualização de `lastUsedAt` ocorrem em transação e usam atualização condicional para evitar dois sucessos concorrentes.
+- Logout marca `revokedAt`; não depende de esperar a expiração natural.
+- Um access token só é aceito se o `sid` corresponder a uma sessão não revogada e não expirada do mesmo `sub`.
+- O marco `revokedBefore` invalida tokens cujo `iat` seja anterior ou igual ao corte, preservada a exceção implementada para sessão comprovadamente criada depois do instante exato de revogação dentro do mesmo segundo.
 
 ## 6. Segurança
 
-> A preencher com mecanismos e requisitos de autenticação, autorização, proteção de dados, auditoria e demais controles atualmente implementados.
+### 6.1 Access tokens JWT
+
+Os access tokens são JWTs assinados assimetricamente com RS256. A aplicação valida na inicialização que as chaves privada e pública configuradas em base64 formam um par RSA correspondente com pelo menos 2.048 bits. A chave privada assina tokens; a chave pública valida requisições.
+
+O payload exigido contém:
+
+| Claim | Conteúdo |
+| --- | --- |
+| `sub` | UUID da conta |
+| `sid` | UUID da sessão |
+| `iat` | instante de emissão em segundos Unix |
+| `exp` | instante de expiração em segundos Unix |
+| `iss` | `sistema-de-pesquisa` |
+| `aud` | `sistema-de-pesquisa` |
+
+O algoritmo aceito é exclusivamente RS256, e emissor e audiência devem corresponder exatamente aos valores acima. A duração do token de acesso é configurada por `ACCESS_TOKEN_TTL_SECONDS`, entre 300 e 86.400 segundos, com padrão de 900 segundos. O papel é carregado do banco após a validação e não faz parte dos claims assinados emitidos pelo serviço de sessão.
+
+### 6.2 Ordem de validação de uma requisição protegida
+
+Para liberar uma rota protegida, a implementação exige cumulativamente:
+
+1. token Bearer presente e assinatura RS256 válida;
+2. `sub`, `sid`, `iss`, `aud`, `iat` e `exp` presentes e estruturalmente válidos;
+3. emissor e audiência esperados e token não expirado;
+4. token não abrangido pelo marco global de revogação da conta;
+5. sessão correspondente ao par `sid`/`sub` existente, ativa e não expirada;
+6. conta ainda existente;
+7. carregamento do papel atual da conta;
+8. eventual regra de papel declarada no controlador — atualmente nenhuma é declarada.
+
+Falha de autenticação retorna HTTP `401`. O `RolesGuard` retornaria HTTP `403` com `Insufficient role` se uma rota declarasse um papel incompatível, mas esse cenário não está exposto por nenhum controlador atual.
+
+### 6.3 Limites de taxa relacionados à autenticação
+
+Os limites são configuráveis e usam, por padrão, armazenamento compartilhado no PostgreSQL. A memória do processo pode ser escolhida por configuração. Os valores padrão são:
+
+| Operação | Chave de controle | Limite padrão | Janela/bloqueio padrão |
+| --- | --- | ---: | ---: |
+| Cadastro | Endereço IP | 5 requisições | 3.600 segundos |
+| Login | Endereço IP | 20 requisições | 900 segundos |
+| Login | Endereço IP + SHA-256 do e-mail normalizado | 5 requisições | 900 segundos |
+| Renovação | Endereço IP | 30 requisições | 60 segundos |
+| Renovação | SHA-256 do UUID de sessão extraído do token | 10 requisições | 60 segundos |
+
+O cadastro aplica somente o limitador de cadastro por IP; o login aplica os dois limitadores de login; a renovação aplica os dois limitadores de refresh. Um identificador de sessão inválido é agrupado sob uma chave pseudonimizada comum. Ao exceder um limite, a API responde com HTTP `429`, mensagem `Too many requests. Please try again later.` e cabeçalho `Retry-After`.
+
+Os endereços IP usados como chave do limitador dependem da configuração segura de proxies confiáveis. E-mail, UUID de sessão e valores incluídos em auditoria são transformados antes do uso operacional indicado; senhas e tokens não são registrados.
+
+### 6.4 Comportamentos de segurança deliberados
+
+- Cadastro duplicado não confirma publicamente que o e-mail já existe.
+- Login usa a mesma resposta de credencial incorreta para conta inexistente e senha inválida.
+- Refresh tokens são opacos, armazenados apenas como hash e rotacionados a cada uso.
+- Reutilização de token antigo revoga toda a sessão afetada.
+- Mudança de senha revoga sessões e estabelece um corte temporal para tokens anteriores.
+- Exclusão bem-sucedida mantém o corte de revogação mesmo sem a conta.
+- Papel e existência da conta são consultados novamente em cada requisição protegida.
+- Não existe recuperação de senha, verificação de e-mail, MFA ou listagem de sessões a ser protegida ou presumida nesta versão.
 
 ## 7. Relatórios
 
