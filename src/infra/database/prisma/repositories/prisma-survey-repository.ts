@@ -80,6 +80,7 @@ export class PrismaSurveyRepository implements SurveyRepository {
 
     const [surveys, total] = await Promise.all([
       this.prisma.survey.findMany({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take,
         select: {
