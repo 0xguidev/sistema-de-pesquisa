@@ -1,3 +1,4 @@
+import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { expect, beforeEach, describe, it, vi } from 'vitest'
 import { GenerateSimpleReportUseCase } from './generate-simple-report'
 import { InMemoryInterviewRepository } from 'test/repositories/in-memory-interview-repository'
@@ -6,12 +7,17 @@ import { makeOptionAnswer } from 'test/factories/make-option-answer'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
+let optionRepository: InMemoryOptionAnswersRepository
 let sut: GenerateSimpleReportUseCase
 
 describe('Generate simple report', () => {
   beforeEach(() => {
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
-    sut = new GenerateSimpleReportUseCase(inMemoryInterviewRepository)
+    optionRepository = new InMemoryOptionAnswersRepository()
+    sut = new GenerateSimpleReportUseCase(
+      inMemoryInterviewRepository,
+      optionRepository,
+    )
   })
 
   it('should generate simple report data', async () => {
@@ -125,6 +131,15 @@ describe('Generate simple report', () => {
       .fn()
       .mockResolvedValue(mockData)
 
+    optionRepository.items.push(
+      makeOptionAnswer({
+        questionId: question1.id,
+        accountId: new UniqueEntityID('account-1'),
+        optionNum: 3,
+        optionTitle: 'Sem votos',
+      }),
+    )
+
     const result = await sut.execute('survey-1', 'account-1')
 
     expect(Array.isArray(result)).toBe(true)
@@ -133,11 +148,17 @@ describe('Generate simple report', () => {
     // Q1: Azul 50%, Vermelho 50%
     expect(result[0].questionNum).toBe(1)
     expect(result[0].questionTitle).toBe(question1.questionTitle)
-    expect(result[0].options.length).toBe(2)
+    expect(result[0].options.length).toBe(3)
     expect(result[0].options[0].percentage).toBe(50)
     expect(result[0].options[0].answer).toBe('Azul')
     expect(result[0].options[1].percentage).toBe(50)
     expect(result[0].options[1].answer).toBe('Vermelho')
+
+    expect(result[0].options[2]).toEqual({
+      num: 3,
+      answer: 'Sem votos',
+      percentage: 0,
+    })
 
     // Q2: Cachorro 100%
     expect(result[1].questionNum).toBe(2)

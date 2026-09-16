@@ -1,3 +1,4 @@
+import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { expect, beforeEach, describe, it, vi } from 'vitest'
 import { GenerateSimpleReportWordUseCase } from './generate-simple-report-word'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
@@ -8,12 +9,17 @@ import { ResourceNotFoundError } from '@/core/errors/errors/resource-not-found-e
 import JSZip from 'jszip'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
+let optionRepository: InMemoryOptionAnswersRepository
 let sut: GenerateSimpleReportWordUseCase
 
 describe('Generate simple report word', () => {
   beforeEach(() => {
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
-    sut = new GenerateSimpleReportWordUseCase(inMemoryInterviewRepository)
+    optionRepository = new InMemoryOptionAnswersRepository()
+    sut = new GenerateSimpleReportWordUseCase(
+      inMemoryInterviewRepository,
+      optionRepository,
+    )
   })
 
   it('should generate a Word document buffer', async () => {
@@ -63,6 +69,15 @@ describe('Generate simple report word', () => {
       .fn()
       .mockResolvedValue(mockData)
 
+    optionRepository.items.push(
+      makeOptionAnswer({
+        questionId: question.id,
+        accountId: new UniqueEntityID('account-1'),
+        optionNum: 3,
+        optionTitle: 'Sem votos',
+      }),
+    )
+
     const result = await sut.execute('survey-1', 'account-1')
 
     expect(result).toBeInstanceOf(Buffer)
@@ -75,6 +90,8 @@ describe('Generate simple report word', () => {
     )
     expect(documentXml).toContain('Azul')
     expect(documentXml).toContain('100.00%')
+    expect(documentXml).toContain('Sem votos')
+    expect(documentXml).toContain('>0.00%</w:t>')
     expect(documentXml).not.toContain('<script>')
     expect(inMemoryInterviewRepository.findBySurveyId).toHaveBeenCalledWith(
       'survey-1',

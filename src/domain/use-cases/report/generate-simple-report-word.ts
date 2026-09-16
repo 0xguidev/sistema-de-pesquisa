@@ -1,3 +1,5 @@
+import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
+import { initializeReportOptions } from './utils/initialize-report-options'
 import { Injectable, Optional } from '@nestjs/common'
 import { ReportProtection } from './report-protection'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
@@ -21,6 +23,7 @@ import {
 export class GenerateSimpleReportWordUseCase {
   constructor(
     private interviewRepository: InterviewRepository,
+    private optionAnswerRepository: OptionAnswerRepository,
     @Optional() private protection?: ReportProtection,
   ) {}
 
@@ -63,7 +66,12 @@ export class GenerateSimpleReportWordUseCase {
           }
 
           if (!report[questionId]) {
-            report[questionId] = {}
+            report[questionId] = await initializeReportOptions(
+              this.optionAnswerRepository,
+              questionId,
+              accountId,
+              this.protection,
+            )
           }
 
           const answerText = answer.option.title

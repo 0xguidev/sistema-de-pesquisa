@@ -1,3 +1,4 @@
+import { InMemoryOptionAnswersRepository } from 'test/repositories/in-memory-option-answer-repository'
 import { expect, beforeEach, describe, it, vi } from 'vitest'
 import { GenerateSimpleReportPdfUseCase } from './generate-simple-report-pdf'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
@@ -9,6 +10,7 @@ import { ReportProtection } from './report-protection'
 import { PdfRenderer } from './pdf-renderer'
 
 let inMemoryInterviewRepository: InMemoryInterviewRepository
+let optionRepository: InMemoryOptionAnswersRepository
 let sut: GenerateSimpleReportPdfUseCase
 let renderer: { render: ReturnType<typeof vi.fn> }
 
@@ -23,10 +25,12 @@ describe('Generate simple report PDF', () => {
         ),
     }
     inMemoryInterviewRepository = new InMemoryInterviewRepository()
+    optionRepository = new InMemoryOptionAnswersRepository()
     const protection = {
       maxInterviews: 1000,
       timeoutMs: 30000,
       validateInterviews: vi.fn(),
+      validateOptions: vi.fn(),
       validateDocument: vi.fn(),
       withPdfSlot: vi.fn(
         (
@@ -37,6 +41,7 @@ describe('Generate simple report PDF', () => {
     } as unknown as ReportProtection
     sut = new GenerateSimpleReportPdfUseCase(
       inMemoryInterviewRepository,
+      optionRepository,
       protection,
       renderer as unknown as PdfRenderer,
     )
@@ -116,6 +121,15 @@ describe('Generate simple report PDF', () => {
       .fn()
       .mockResolvedValue(mockData)
 
+    optionRepository.items.push(
+      makeOptionAnswer({
+        questionId: question.id,
+        accountId: new UniqueEntityID('account-1'),
+        optionNum: 3,
+        optionTitle: 'Sem votos',
+      }),
+    )
+
     const result = await sut.execute('survey-1', 'account-1')
 
     expect(result).toBeInstanceOf(Buffer)
@@ -126,6 +140,8 @@ describe('Generate simple report PDF', () => {
     expect(generatedHtml).toContain('Azul')
     expect(generatedHtml).toContain('Vermelho')
     expect(generatedHtml).toContain('50%')
+    expect(generatedHtml).toContain('Sem votos')
+    expect(generatedHtml).toContain('>0%</span>')
     expect(inMemoryInterviewRepository.findBySurveyId).toHaveBeenCalledWith(
       'survey-1',
       'account-1',

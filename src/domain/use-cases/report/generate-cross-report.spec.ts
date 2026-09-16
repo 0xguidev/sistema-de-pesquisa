@@ -149,6 +149,15 @@ describe('Generate cross report', () => {
 
     interviewRepo.findBySurveyId = vi.fn().mockResolvedValue(mockInterviews)
 
+    await optionRepo.create(
+      makeOptionAnswer({
+        questionId: question1.id,
+        accountId,
+        optionNum: 3,
+        optionTitle: 'Sem votos',
+      }),
+    )
+
     const result = await sut.execute('survey-1', 'account-1')
 
     expect(Array.isArray(result)).toBe(true)
@@ -157,7 +166,11 @@ describe('Generate cross report', () => {
     const crossReport = result[0]
     expect(crossReport.questionA).toBe('Qual sua cor favorita?')
     expect(crossReport.questionB).toBe('Qual seu animal favorito?')
-    expect(crossReport.answers.length).toBe(2) // 2 combinações cartesianas
+    expect(crossReport.answers.length).toBe(3)
+    expect(crossReport.answers[2]).toMatchObject({
+      answerA: 'Sem votos',
+      percentage: 0,
+    })
 
     // Azul-Cachorro (1,1): 50%, Vermelho-Cachorro (2,1): 50%
     expect(crossReport.answers[0].percentage).toBe(50)

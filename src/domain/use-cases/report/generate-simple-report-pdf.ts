@@ -1,3 +1,5 @@
+import { OptionAnswerRepository } from '@/domain/repositories/option-answer-repository'
+import { initializeReportOptions } from './utils/initialize-report-options'
 import { Injectable } from '@nestjs/common'
 import { InterviewRepository } from '@/domain/repositories/interview-repository'
 import { buildHtml } from './utils/build-html'
@@ -9,6 +11,7 @@ import { PdfRenderer } from './pdf-renderer'
 export class GenerateSimpleReportPdfUseCase {
   constructor(
     private interviewRepository: InterviewRepository,
+    private optionAnswerRepository: OptionAnswerRepository,
     private protection: ReportProtection,
     private renderer: PdfRenderer,
   ) {}
@@ -60,7 +63,14 @@ export class GenerateSimpleReportPdfUseCase {
             })
           }
 
-          if (!report[qId]) report[qId] = {}
+          if (!report[qId]) {
+            report[qId] = await initializeReportOptions(
+              this.optionAnswerRepository,
+              qId,
+              accountId,
+              this.protection,
+            )
+          }
 
           const text = answer.option.title
 

@@ -108,6 +108,15 @@ describe('Generate Cross Report Word', () => {
       .fn()
       .mockResolvedValue(mockData)
 
+    await inMemoryOptionAnswersRepository.create(
+      makeOptionAnswer({
+        questionId: question1.id,
+        accountId,
+        optionNum: 3,
+        optionTitle: 'Sem votos',
+      }),
+    )
+
     const result = await sut.execute('survey-1', 'account-1')
 
     expect(result).toBeInstanceOf(Buffer)
@@ -120,6 +129,8 @@ describe('Generate Cross Report Word', () => {
     expect(documentXml).toContain('Azul')
     expect(documentXml).toContain('Cachorro')
     expect(documentXml).toContain('100.0%')
+    expect(documentXml).toContain('Sem votos')
+    expect(documentXml).toContain('>0.0%</w:t>')
     expect(inMemoryInterviewRepository.findBySurveyId).toHaveBeenCalledWith(
       'survey-1',
       'account-1',
