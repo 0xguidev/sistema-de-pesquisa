@@ -1212,9 +1212,9 @@ Os contadores expostos são `login_failures_total`, `http_401_total`, `http_403_
 
 ### 9.1 Plataforma e dependências de execução
 
-O produto é uma API HTTP de backend implementada em Node.js, NestJS e TypeScript. O manifesto do projeto fixa o motor Node.js em `20.19.4`, declara NestJS `11.2.1` como dependência principal e TypeScript `5.7` como dependência de desenvolvimento. A instalação e a execução dos scripts usam pnpm, com versão declarada `10.14.0`.
+O produto é uma API HTTP de backend implementada em Node.js, NestJS e TypeScript. O manifesto do projeto fixa o motor Node.js em `24.21.0`, declara NestJS `12.1.2` como dependência principal e TypeScript `6.0` como dependência de desenvolvimento. A instalação e a execução dos scripts usam pnpm, com versão declarada `12.9.1`.
 
-A persistência usa PostgreSQL e Prisma. O cliente e o CLI do Prisma estão na linha `6.19.3`, e o schema declara o provider `postgresql`. A aplicação abre a conexão no início do módulo e a encerra no desligamento; o cliente registra somente avisos e erros do Prisma. Não há, neste repositório, requisito implementado de réplica de leitura, failover, SLA de disponibilidade, política de backup ou configuração própria de pool de conexões.
+A persistência usa PostgreSQL e Prisma. O cliente e o CLI do Prisma estão na linha `7.10.0`, e o schema declara o provider `postgresql`; a URL de conexão fica em `prisma.config.ts` para o CLI e o cliente conecta pelo driver adapter `@prisma/adapter-pg`. A aplicação abre a conexão no início do módulo e a encerra no desligamento; o cliente registra somente avisos e erros do Prisma. Não há, neste repositório, requisito implementado de réplica de leitura, failover, SLA de disponibilidade, política de backup ou configuração própria de pool de conexões.
 
 Outras dependências operacionais relevantes incluem Express como plataforma HTTP do NestJS, `bcryptjs` para senhas, Passport/JWT para autenticação, `@nestjs/throttler` para limitação de taxa, Zod para validação de ambiente, `docx` para documentos e Puppeteer/Chromium para renderização de PDF. Essas versões descrevem o estado do manifesto e do lockfile, não uma promessa de compatibilidade com versões futuras.
 

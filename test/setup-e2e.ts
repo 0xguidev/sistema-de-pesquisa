@@ -1,6 +1,7 @@
 import 'dotenv/config'
 
 import { PrismaClient } from '@prisma/client'
+import { createPrismaPgAdapter } from '../src/infra/database/prisma/prisma-adapter'
 
 const TEST_DATABASE_SUFFIX = '_test'
 const TEST_SCHEMA_PATTERN = /^vitest_test_[a-z0-9_]+_w[12]$/
@@ -40,7 +41,7 @@ process.env.RATE_LIMIT_STORE = 'memory'
 let prisma: PrismaClient
 
 beforeAll(async () => {
-  prisma = new PrismaClient({ datasourceUrl: databaseUrl })
+  prisma = new PrismaClient({ adapter: createPrismaPgAdapter(databaseUrl) })
   const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
     SELECT tablename FROM pg_tables WHERE schemaname = current_schema()
   `

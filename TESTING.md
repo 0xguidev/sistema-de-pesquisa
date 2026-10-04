@@ -1,6 +1,6 @@
 # Test environment
 
-Use Node 20.19.4 and pnpm 10.14.0. Unit tests and coverage do not open TCP
+Use Node 24.21.0 and pnpm 12.9.1. Unit tests and coverage do not open TCP
 ports. The E2E suite requires PostgreSQL reachable through `DATABASE_URL`; its
 global setup derives a dedicated `_test` database and isolated schemas, and
 refuses to run against any other database name. The E2E setup forces

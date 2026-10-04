@@ -1,7 +1,10 @@
 import { PrismaClient } from '@prisma/client'
+import { createPrismaPgAdapter } from './prisma-adapter'
 
 describe('database ownership constraints', () => {
-  const prisma = new PrismaClient()
+  const prisma = new PrismaClient({
+    adapter: createPrismaPgAdapter(process.env.DATABASE_URL ?? ''),
+  })
   const owner = '00000000-0000-4000-8000-000000000001'
   const other = '00000000-0000-4000-8000-000000000002'
   const survey1 = '10000000-0000-4000-8000-000000000001'

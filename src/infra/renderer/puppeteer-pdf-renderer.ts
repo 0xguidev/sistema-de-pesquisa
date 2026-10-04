@@ -26,7 +26,7 @@ function interceptPdfRequest(
 ): void {
   const allowed = isAllowedPdfResource(request.url())
   if (!allowed) {
-    let scheme = 'invalid'
+    let scheme: string
     try {
       scheme = new URL(request.url()).protocol.replace(':', '')
     } catch {

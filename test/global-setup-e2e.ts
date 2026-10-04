@@ -1,6 +1,7 @@
 import 'dotenv/config'
 
 import { PrismaClient } from '@prisma/client'
+import { createPrismaPgAdapter } from '../src/infra/database/prisma/prisma-adapter'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
@@ -30,7 +31,9 @@ async function ensureTestDatabase(source: URL, target: URL): Promise<void> {
   const adminUrl = new URL(source)
   adminUrl.pathname = '/postgres'
   adminUrl.searchParams.set('schema', 'public')
-  const admin = new PrismaClient({ datasourceUrl: adminUrl.toString() })
+  const admin = new PrismaClient({
+    adapter: createPrismaPgAdapter(adminUrl.toString()),
+  })
   const databaseName = target.pathname.slice(1)
 
   try {
@@ -49,7 +52,9 @@ async function ensureTestDatabase(source: URL, target: URL): Promise<void> {
 }
 
 async function dropTestSchemas(targetUrl: URL, schemas: string[]) {
-  const teardown = new PrismaClient({ datasourceUrl: targetUrl.toString() })
+  const teardown = new PrismaClient({
+    adapter: createPrismaPgAdapter(targetUrl.toString()),
+  })
   try {
     for (const schema of schemas) {
       if (!TEST_SCHEMA_PATTERN.test(schema)) {
@@ -86,7 +91,7 @@ export default async function globalSetup() {
       }
       const workerUrl = new URL(targetUrl)
       workerUrl.searchParams.set('schema', schema)
-      await execFileAsync('pnpm', ['prisma', 'db', 'push', '--skip-generate'], {
+      await execFileAsync('pnpm', ['prisma', 'db', 'push'], {
         cwd: process.cwd(),
         env: { ...process.env, DATABASE_URL: workerUrl.toString() },
       })

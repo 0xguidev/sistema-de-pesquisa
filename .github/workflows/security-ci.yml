@@ -14,8 +14,8 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '20.19.4'
-  PNPM_VERSION: '10.14.0'
+  NODE_VERSION: '24.21.0'
+  PNPM_VERSION: '12.9.1'
   PNPM_STORE_DIR: ~/.pnpm-store
 
 jobs:

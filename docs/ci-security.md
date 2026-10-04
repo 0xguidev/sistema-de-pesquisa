@@ -15,18 +15,18 @@ de infraestrutura e SBOM CycloneDX. Auditoria e Trivy retornam erro para achados
 redação para evitar propagar um eventual secret. Relatórios preservados contêm
 somente metadados de CVEs/SARIF e componentes da SBOM, com retenção limitada.
 
-Node `20.19.4`, pnpm `10.14.0`, Actions por SHA e PostgreSQL por digest tornam a
+Node `24.21.0`, pnpm `12.9.1`, Actions por SHA e PostgreSQL por digest tornam a
 execução reproduzível. Dependências são instaladas com `--frozen-lockfile`. O
 cache nativo do `setup-node` usa o hash de `pnpm-lock.yaml` e armazena apenas o
 store de pacotes, nunca arquivos `.env` ou credenciais.
 
 ## Execução local
 
-Use exatamente Node 20.19.4 e pnpm 10.14.0:
+Use exatamente Node 24.21.0 e pnpm 12.9.1:
 
 ```bash
 corepack enable
-corepack prepare pnpm@10.14.0 --activate
+corepack prepare pnpm@12.9.1 --activate
 pnpm install --frozen-lockfile
 pnpm lint
 pnpm typecheck

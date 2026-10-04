@@ -35,6 +35,14 @@ export default [
     },
   },
   {
+    // ESLint 10's no-useless-assignment does not see reads inside decorators,
+    // e.g. `@Body(bodyValidationPipe)`, and reports those pipes as unused.
+    files: ['src/infra/http/controllers/**/*.ts'],
+    rules: {
+      'no-useless-assignment': 'off',
+    },
+  },
+  {
     files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
     languageOptions: {
       globals: {
